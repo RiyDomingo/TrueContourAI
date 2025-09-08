@@ -1,0 +1,268 @@
+{
+  "" : {
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/CyborgRugby-master.dia",
+    "emit-module-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/CyborgRugby-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/CyborgRugby-master-emit-module.dia",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/CyborgRugby-master.swiftdeps"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Application/AppDelegate.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/AppDelegate.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/AppDelegate.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/AppDelegate.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/AppDelegate.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/AppDelegate.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/AppDelegate.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/AppDelegate.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/AppDelegate~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Application/SceneDelegate.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/SceneDelegate.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/SceneDelegate.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/SceneDelegate.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/SceneDelegate.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/SceneDelegate.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/SceneDelegate.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/SceneDelegate.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/SceneDelegate~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Business Logic/Managers/CameraManager.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/CameraManager.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/CameraManager.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/CameraManager.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/CameraManager.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/CameraManager.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/CameraManager.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/CameraManager.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/CameraManager~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Business Logic/Managers/MultiAngleScanManager.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MultiAngleScanManager.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MultiAngleScanManager.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MultiAngleScanManager.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MultiAngleScanManager.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MultiAngleScanManager.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MultiAngleScanManager.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MultiAngleScanManager.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MultiAngleScanManager~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Business Logic/Models/EarFeatures.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/EarFeatures.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/EarFeatures.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/EarFeatures.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/EarFeatures.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/EarFeatures.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/EarFeatures.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/EarFeatures.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/EarFeatures~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Business Logic/Models/EarMetrics.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/EarMetrics.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/EarMetrics.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/EarMetrics.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/EarMetrics.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/EarMetrics.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/EarMetrics.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/EarMetrics.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/EarMetrics~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Business Logic/Models/HeadScanningPose.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/HeadScanningPose.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/HeadScanningPose.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/HeadScanningPose.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/HeadScanningPose.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/HeadScanningPose.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/HeadScanningPose.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/HeadScanningPose.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/HeadScanningPose~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Business Logic/Models/ScanGatingConfig.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanGatingConfig.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanGatingConfig.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanGatingConfig.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanGatingConfig.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanGatingConfig.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanGatingConfig.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanGatingConfig.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanGatingConfig~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Business Logic/Models/ScrumCapMeasurements.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapMeasurements.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapMeasurements.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapMeasurements.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapMeasurements.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapMeasurements.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapMeasurements.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapMeasurements.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapMeasurements~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Business Logic/Services/Logging.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/Logging.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/Logging.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/Logging.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/Logging.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/Logging.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/Logging.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/Logging.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/Logging~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Business Logic/Services/MLEnhancedPoseValidator.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MLEnhancedPoseValidator.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MLEnhancedPoseValidator.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MLEnhancedPoseValidator.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MLEnhancedPoseValidator.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MLEnhancedPoseValidator.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MLEnhancedPoseValidator.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MLEnhancedPoseValidator.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MLEnhancedPoseValidator~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Business Logic/Services/MLQueue.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MLQueue.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MLQueue.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MLQueue.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MLQueue.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MLQueue.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MLQueue.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MLQueue.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MLQueue~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Business Logic/Services/PointCloudMetrics.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/PointCloudMetrics.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/PointCloudMetrics.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/PointCloudMetrics.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/PointCloudMetrics.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/PointCloudMetrics.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/PointCloudMetrics.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/PointCloudMetrics.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/PointCloudMetrics~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Business Logic/Services/RecoveryAdvisor.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RecoveryAdvisor.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RecoveryAdvisor.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RecoveryAdvisor.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RecoveryAdvisor.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RecoveryAdvisor.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RecoveryAdvisor.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RecoveryAdvisor.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RecoveryAdvisor~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Business Logic/Services/ResultsPersistence.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsPersistence.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsPersistence.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsPersistence.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsPersistence.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsPersistence.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsPersistence.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsPersistence.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsPersistence~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Business Logic/Services/RugbyEarProtectionCalculator.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RugbyEarProtectionCalculator.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RugbyEarProtectionCalculator.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RugbyEarProtectionCalculator.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RugbyEarProtectionCalculator.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RugbyEarProtectionCalculator.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RugbyEarProtectionCalculator.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RugbyEarProtectionCalculator.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RugbyEarProtectionCalculator~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Business Logic/Services/RugbyHeadScanFusion.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RugbyHeadScanFusion.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RugbyHeadScanFusion.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RugbyHeadScanFusion.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RugbyHeadScanFusion.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RugbyHeadScanFusion.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RugbyHeadScanFusion.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RugbyHeadScanFusion.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/RugbyHeadScanFusion~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Presentation Layer/Renderers/ScanningViewRenderer.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanningViewRenderer.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanningViewRenderer.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanningViewRenderer.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanningViewRenderer.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanningViewRenderer.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanningViewRenderer.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanningViewRenderer.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanningViewRenderer~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Presentation/Protocols/ScrumCapScanningViewControllerDelegate.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapScanningViewControllerDelegate.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapScanningViewControllerDelegate.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapScanningViewControllerDelegate.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapScanningViewControllerDelegate.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapScanningViewControllerDelegate.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapScanningViewControllerDelegate.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapScanningViewControllerDelegate.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapScanningViewControllerDelegate~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Presentation/ViewControllers/MainViewController.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MainViewController.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MainViewController.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MainViewController.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MainViewController.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MainViewController.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MainViewController.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MainViewController.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MainViewController~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Presentation/ViewControllers/ResultsDetailViewController.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsDetailViewController.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsDetailViewController.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsDetailViewController.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsDetailViewController.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsDetailViewController.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsDetailViewController.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsDetailViewController.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsDetailViewController~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Presentation/ViewControllers/ResultsListViewController.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsListViewController.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsListViewController.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsListViewController.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsListViewController.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsListViewController.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsListViewController.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsListViewController.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ResultsListViewController~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Presentation/ViewControllers/ScanResultsViewController.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanResultsViewController.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanResultsViewController.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanResultsViewController.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanResultsViewController.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanResultsViewController.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanResultsViewController.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanResultsViewController.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScanResultsViewController~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Presentation/ViewControllers/ScrumCapScanningViewController.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapScanningViewController.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapScanningViewController.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapScanningViewController.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapScanningViewController.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapScanningViewController.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapScanningViewController.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapScanningViewController.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/ScrumCapScanningViewController~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CyborgRugby/Presentation/Views/MeasurementCardView.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MeasurementCardView.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MeasurementCardView.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MeasurementCardView.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MeasurementCardView.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MeasurementCardView.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MeasurementCardView.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MeasurementCardView.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/MeasurementCardView~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphoneos/CyborgRugby.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  }
+}

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>colors</key>
+	<array/>
+	<key>images</key>
+	<array>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameDismiss</string>
+			<key>relativePath</key>
+			<string>./Dismiss.imageset</string>
+			<key>swiftSymbol</key>
+			<string>dismiss</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameFlipCamera</string>
+			<key>relativePath</key>
+			<string>./FlipCamera.imageset</string>
+			<key>swiftSymbol</key>
+			<string>flipCamera</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameShutterButton</string>
+			<key>relativePath</key>
+			<string>./ShutterButton.imageset</string>
+			<key>swiftSymbol</key>
+			<string>shutterButton</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameShutterButtonRecording</string>
+			<key>relativePath</key>
+			<string>./ShutterButton-Recording.imageset</string>
+			<key>swiftSymbol</key>
+			<string>shutterButtonRecording</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameShutterButtonSelected</string>
+			<key>relativePath</key>
+			<string>./ShutterButton-Selected.imageset</string>
+			<key>swiftSymbol</key>
+			<string>shutterButtonSelected</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameStandardCyborgLogoText</string>
+			<key>relativePath</key>
+			<string>./StandardCyborgLogoText.imageset</string>
+			<key>swiftSymbol</key>
+			<string>standardCyborgLogoText</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Resources/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameMatcap</string>
+			<key>relativePath</key>
+			<string>./matcap.imageset</string>
+			<key>swiftSymbol</key>
+			<string>matcap</string>
+		</dict>
+	</array>
+	<key>symbols</key>
+	<array/>
+</dict>
+</plist>

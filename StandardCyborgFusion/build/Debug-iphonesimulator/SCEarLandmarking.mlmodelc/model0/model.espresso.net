@@ -1,0 +1,4373 @@
+{
+  "layers" : [
+    {
+      "bottom" : "inputs__image_tensor__0",
+      "alpha" : 0.0078125,
+      "operation" : 1,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "inputs\/truediv:0",
+      "top" : "inputs\/truediv:0",
+      "type" : "elementwise",
+      "name" : "inputs\/truediv:0",
+      "beta" : 0
+    },
+    {
+      "bottom" : "inputs\/truediv:0",
+      "alpha" : -1,
+      "operation" : 0,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "inputs\/sub:0",
+      "top" : "inputs\/sub:0",
+      "type" : "elementwise",
+      "name" : "inputs\/sub:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/Conv\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/Conv\/Conv2D:0",
+      "blob_weights" : 1,
+      "K" : 3,
+      "stride_x" : 2,
+      "name" : "FeatureExtractor\/MobilenetV2\/Conv\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "stride_y" : 2,
+      "has_biases" : 0,
+      "C" : 32,
+      "bottom" : "inputs\/sub:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/Conv\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 32,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 3,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/Conv\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/Conv\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/Conv\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/Conv\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/Conv\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/Conv\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/Conv\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/Conv\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/Conv\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/Conv\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/Conv\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/Conv\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/Conv\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/Conv\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/Conv\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/Conv\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/Conv\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/Conv\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/Conv\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/depthwise:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/depthwise:0",
+      "blob_weights" : 5,
+      "K" : 32,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/depthwise:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 32,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 32,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/Conv\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 32,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 7,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/depthwise:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/project\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/project\/Conv2D:0",
+      "blob_weights" : 9,
+      "K" : 32,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/project\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 16,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/project\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 16,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 11,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/project\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/project\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Conv2D:0",
+      "blob_weights" : 13,
+      "K" : 16,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 96,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 96,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 15,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/depthwise:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/depthwise:0",
+      "blob_weights" : 17,
+      "K" : 96,
+      "stride_x" : 2,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/depthwise:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 96,
+      "pad_t" : 0,
+      "stride_y" : 2,
+      "has_biases" : 0,
+      "C" : 96,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 96,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 19,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/depthwise:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/project\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/project\/Conv2D:0",
+      "blob_weights" : 21,
+      "K" : 96,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/project\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 24,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/project\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 24,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 23,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/project\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/project\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Conv2D:0",
+      "blob_weights" : 25,
+      "K" : 24,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 144,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_1\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 144,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 27,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/depthwise:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/depthwise:0",
+      "blob_weights" : 29,
+      "K" : 144,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/depthwise:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 144,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 144,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 144,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 31,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/depthwise:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/project\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/project\/Conv2D:0",
+      "blob_weights" : 33,
+      "K" : 144,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/project\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 24,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/project\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 24,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 35,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/project\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/project\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/project\/BatchNorm\/FusedBatchNorm:0,FeatureExtractor\/MobilenetV2\/expanded_conv_1\/project\/BatchNorm\/FusedBatchNorm:0",
+      "alpha" : 1,
+      "operation" : 0,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/add:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/add:0",
+      "type" : "elementwise",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/add:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Conv2D:0",
+      "blob_weights" : 37,
+      "K" : 24,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 144,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_2\/add:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 144,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 39,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/depthwise:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/depthwise:0",
+      "blob_weights" : 41,
+      "K" : 144,
+      "stride_x" : 2,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/depthwise:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 144,
+      "pad_t" : 0,
+      "stride_y" : 2,
+      "has_biases" : 0,
+      "C" : 144,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 144,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 43,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/depthwise:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/project\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/project\/Conv2D:0",
+      "blob_weights" : 45,
+      "K" : 144,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/project\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 32,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/project\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 32,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 47,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/project\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/project\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Conv2D:0",
+      "blob_weights" : 49,
+      "K" : 32,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 192,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_3\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 192,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 51,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/depthwise:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/depthwise:0",
+      "blob_weights" : 53,
+      "K" : 192,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/depthwise:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 192,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 192,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 192,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 55,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/depthwise:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/project\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/project\/Conv2D:0",
+      "blob_weights" : 57,
+      "K" : 192,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/project\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 32,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/project\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 32,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 59,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/project\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/project\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/project\/BatchNorm\/FusedBatchNorm:0,FeatureExtractor\/MobilenetV2\/expanded_conv_3\/project\/BatchNorm\/FusedBatchNorm:0",
+      "alpha" : 1,
+      "operation" : 0,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/add:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/add:0",
+      "type" : "elementwise",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/add:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Conv2D:0",
+      "blob_weights" : 61,
+      "K" : 32,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 192,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_4\/add:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 192,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 63,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/depthwise:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/depthwise:0",
+      "blob_weights" : 65,
+      "K" : 192,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/depthwise:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 192,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 192,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 192,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 67,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/depthwise:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/project\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/project\/Conv2D:0",
+      "blob_weights" : 69,
+      "K" : 192,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/project\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 32,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/project\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 32,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 71,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/project\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/project\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/project\/BatchNorm\/FusedBatchNorm:0,FeatureExtractor\/MobilenetV2\/expanded_conv_4\/add:0",
+      "alpha" : 1,
+      "operation" : 0,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/add:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/add:0",
+      "type" : "elementwise",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/add:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Conv2D:0",
+      "blob_weights" : 73,
+      "K" : 32,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 192,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_5\/add:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 192,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 75,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/depthwise:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/depthwise:0",
+      "blob_weights" : 77,
+      "K" : 192,
+      "stride_x" : 2,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/depthwise:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 192,
+      "pad_t" : 0,
+      "stride_y" : 2,
+      "has_biases" : 0,
+      "C" : 192,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 192,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 79,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/depthwise:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/project\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/project\/Conv2D:0",
+      "blob_weights" : 81,
+      "K" : 192,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/project\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 64,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/project\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 64,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 83,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/project\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/project\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Conv2D:0",
+      "blob_weights" : 85,
+      "K" : 64,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 384,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_6\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 384,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 87,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/depthwise:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/depthwise:0",
+      "blob_weights" : 89,
+      "K" : 384,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/depthwise:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 384,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 384,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 384,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 91,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/depthwise:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/project\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/project\/Conv2D:0",
+      "blob_weights" : 93,
+      "K" : 384,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/project\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 64,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/project\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 64,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 95,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/project\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/project\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/project\/BatchNorm\/FusedBatchNorm:0,FeatureExtractor\/MobilenetV2\/expanded_conv_6\/project\/BatchNorm\/FusedBatchNorm:0",
+      "alpha" : 1,
+      "operation" : 0,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/add:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/add:0",
+      "type" : "elementwise",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/add:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Conv2D:0",
+      "blob_weights" : 97,
+      "K" : 64,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 384,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_7\/add:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 384,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 99,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/depthwise:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/depthwise:0",
+      "blob_weights" : 101,
+      "K" : 384,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/depthwise:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 384,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 384,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 384,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 103,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/depthwise:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/project\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/project\/Conv2D:0",
+      "blob_weights" : 105,
+      "K" : 384,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/project\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 64,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/project\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 64,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 107,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/project\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/project\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/project\/BatchNorm\/FusedBatchNorm:0,FeatureExtractor\/MobilenetV2\/expanded_conv_7\/add:0",
+      "alpha" : 1,
+      "operation" : 0,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/add:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/add:0",
+      "type" : "elementwise",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/add:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Conv2D:0",
+      "blob_weights" : 109,
+      "K" : 64,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 384,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_8\/add:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 384,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 111,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/depthwise:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/depthwise:0",
+      "blob_weights" : 113,
+      "K" : 384,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/depthwise:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 384,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 384,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 384,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 115,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/depthwise:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/project\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/project\/Conv2D:0",
+      "blob_weights" : 117,
+      "K" : 384,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/project\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 64,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/project\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 64,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 119,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/project\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/project\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/project\/BatchNorm\/FusedBatchNorm:0,FeatureExtractor\/MobilenetV2\/expanded_conv_8\/add:0",
+      "alpha" : 1,
+      "operation" : 0,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/add:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/add:0",
+      "type" : "elementwise",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/add:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Conv2D:0",
+      "blob_weights" : 121,
+      "K" : 64,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 384,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_9\/add:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 384,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 123,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/depthwise:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/depthwise:0",
+      "blob_weights" : 125,
+      "K" : 384,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/depthwise:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 384,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 384,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 384,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 127,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/depthwise:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/project\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/project\/Conv2D:0",
+      "blob_weights" : 129,
+      "K" : 384,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/project\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 96,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/project\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 96,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 131,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/project\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/project\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Conv2D:0",
+      "blob_weights" : 133,
+      "K" : 96,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 576,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_10\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 576,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 135,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/depthwise:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/depthwise:0",
+      "blob_weights" : 137,
+      "K" : 576,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/depthwise:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 576,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 576,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 576,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 139,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/depthwise:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/project\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/project\/Conv2D:0",
+      "blob_weights" : 141,
+      "K" : 576,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/project\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 96,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/project\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 96,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 143,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/project\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/project\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/project\/BatchNorm\/FusedBatchNorm:0,FeatureExtractor\/MobilenetV2\/expanded_conv_10\/project\/BatchNorm\/FusedBatchNorm:0",
+      "alpha" : 1,
+      "operation" : 0,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/add:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/add:0",
+      "type" : "elementwise",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/add:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Conv2D:0",
+      "blob_weights" : 145,
+      "K" : 96,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 576,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_11\/add:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 576,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 147,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/depthwise:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/depthwise:0",
+      "blob_weights" : 149,
+      "K" : 576,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/depthwise:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 576,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 576,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 576,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 151,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/depthwise:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/project\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/project\/Conv2D:0",
+      "blob_weights" : 153,
+      "K" : 576,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/project\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 96,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/project\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 96,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 155,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/project\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/project\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/project\/BatchNorm\/FusedBatchNorm:0,FeatureExtractor\/MobilenetV2\/expanded_conv_11\/add:0",
+      "alpha" : 1,
+      "operation" : 0,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/add:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/add:0",
+      "type" : "elementwise",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/add:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Conv2D:0",
+      "blob_weights" : 157,
+      "K" : 96,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 576,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_12\/add:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 576,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 159,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/depthwise:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/depthwise:0",
+      "blob_weights" : 161,
+      "K" : 576,
+      "stride_x" : 2,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/depthwise:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 576,
+      "pad_t" : 0,
+      "stride_y" : 2,
+      "has_biases" : 0,
+      "C" : 576,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 576,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 163,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/depthwise:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/project\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/project\/Conv2D:0",
+      "blob_weights" : 165,
+      "K" : 576,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/project\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 160,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/project\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 160,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 167,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/project\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/project\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Conv2D:0",
+      "blob_weights" : 169,
+      "K" : 160,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 960,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_13\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 960,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 171,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/depthwise:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/depthwise:0",
+      "blob_weights" : 173,
+      "K" : 960,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/depthwise:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 960,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 960,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 960,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 175,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/depthwise:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/project\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/project\/Conv2D:0",
+      "blob_weights" : 177,
+      "K" : 960,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/project\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 160,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/project\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 160,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 179,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/project\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/project\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/project\/BatchNorm\/FusedBatchNorm:0,FeatureExtractor\/MobilenetV2\/expanded_conv_13\/project\/BatchNorm\/FusedBatchNorm:0",
+      "alpha" : 1,
+      "operation" : 0,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/add:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/add:0",
+      "type" : "elementwise",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/add:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Conv2D:0",
+      "blob_weights" : 181,
+      "K" : 160,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 960,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_14\/add:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 960,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 183,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/depthwise:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/depthwise:0",
+      "blob_weights" : 185,
+      "K" : 960,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/depthwise:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 960,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 960,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 960,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 187,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/depthwise:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/project\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/project\/Conv2D:0",
+      "blob_weights" : 189,
+      "K" : 960,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/project\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 160,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/project\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 160,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 191,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/project\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/project\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/project\/BatchNorm\/FusedBatchNorm:0,FeatureExtractor\/MobilenetV2\/expanded_conv_14\/add:0",
+      "alpha" : 1,
+      "operation" : 0,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/add:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/add:0",
+      "type" : "elementwise",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/add:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Conv2D:0",
+      "blob_weights" : 193,
+      "K" : 160,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 960,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_15\/add:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 960,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 195,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/depthwise:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/depthwise:0",
+      "blob_weights" : 197,
+      "K" : 960,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/depthwise:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 960,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 960,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/expand\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 960,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 199,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/depthwise:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "mode" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/Relu6:0",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/Relu6:0"
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/Relu6:0_neg",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/Relu6:0_neg",
+      "type" : "activation",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/Relu6:0_neg",
+      "beta" : 0
+    },
+    {
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/Relu6:0_neg",
+      "alpha" : -6,
+      "operation" : 25,
+      "weights" : {
+
+      },
+      "fused_relu" : 0,
+      "debug_info" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/Relu6:0_clip",
+      "top" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/Relu6:0_clip",
+      "type" : "elementwise",
+      "name" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/Relu6:0_clip",
+      "beta" : 0
+    },
+    {
+      "alpha" : -1,
+      "bottom" : "relu_FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/Relu6:0_clip",
+      "weights" : {
+
+      },
+      "mode" : 6,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/Relu6:0",
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/Relu6:0",
+      "type" : "activation",
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/Relu6:0",
+      "beta" : 0
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/project\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/project\/Conv2D:0",
+      "blob_weights" : 201,
+      "K" : 960,
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/project\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 0,
+      "C" : 320,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/depthwise\/Relu6:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "name" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/project\/BatchNorm\/FusedBatchNorm:0",
+      "training_momentum" : 0.89999997615814209,
+      "training_eps" : 0.0010000000474974513,
+      "C" : 320,
+      "training" : 1,
+      "training_instancenorm" : 1,
+      "type" : "batchnorm",
+      "blob_batchnorm_params" : 203,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/project\/Conv2D:0",
+      "debug_info" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/project\/BatchNorm\/FusedBatchNorm:0",
+      "weights" : {
+
+      },
+      "top" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/project\/BatchNorm\/FusedBatchNorm:0"
+    },
+    {
+      "name" : "Reshape:0",
+      "weights" : {
+
+      },
+      "dst_w" : 40,
+      "version" : 1,
+      "dst_n" : 0,
+      "type" : "reshape",
+      "dst_h" : 40,
+      "mode" : 1,
+      "bottom" : "FeatureExtractor\/MobilenetV2\/expanded_conv_16\/project\/BatchNorm\/FusedBatchNorm:0",
+      "debug_info" : "Reshape:0",
+      "dst_seq" : 1,
+      "dst_k" : 20,
+      "top" : "Reshape:0"
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 1,
+      "fused_tanh" : 0,
+      "debug_info" : "cpm_stage1\/Repeat\/convolution2d_1\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "cpm_stage1\/Repeat\/convolution2d_1\/Relu:0",
+      "blob_weights" : 207,
+      "K" : 20,
+      "blob_biases" : 205,
+      "name" : "cpm_stage1\/Repeat\/convolution2d_1\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 1,
+      "C" : 128,
+      "bottom" : "Reshape:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 1,
+      "fused_tanh" : 0,
+      "debug_info" : "cpm_stage1\/Repeat\/convolution2d_2\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "cpm_stage1\/Repeat\/convolution2d_2\/Relu:0",
+      "blob_weights" : 211,
+      "K" : 128,
+      "blob_biases" : 209,
+      "name" : "cpm_stage1\/Repeat\/convolution2d_2\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 1,
+      "C" : 128,
+      "bottom" : "cpm_stage1\/Repeat\/convolution2d_1\/Relu:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 1,
+      "fused_tanh" : 0,
+      "debug_info" : "cpm_stage1\/Repeat\/convolution2d_3\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "cpm_stage1\/Repeat\/convolution2d_3\/Relu:0",
+      "blob_weights" : 215,
+      "K" : 128,
+      "blob_biases" : 213,
+      "name" : "cpm_stage1\/Repeat\/convolution2d_3\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 1,
+      "C" : 128,
+      "bottom" : "cpm_stage1\/Repeat\/convolution2d_2\/Relu:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 1,
+      "fused_tanh" : 0,
+      "debug_info" : "cpm_stage1\/Repeat\/convolution2d_4\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "cpm_stage1\/Repeat\/convolution2d_4\/Relu:0",
+      "blob_weights" : 219,
+      "K" : 128,
+      "blob_biases" : 217,
+      "name" : "cpm_stage1\/Repeat\/convolution2d_4\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 1,
+      "C" : 128,
+      "bottom" : "cpm_stage1\/Repeat\/convolution2d_3\/Relu:0",
+      "weights" : {
+
+      },
+      "Nx" : 3,
+      "pad_mode" : 1,
+      "pad_value" : 0,
+      "Ny" : 3,
+      "n_parallel" : 1
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 1,
+      "fused_tanh" : 0,
+      "debug_info" : "cpm_stage1\/conv2\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "cpm_stage1\/conv2\/Relu:0",
+      "blob_weights" : 223,
+      "K" : 128,
+      "blob_biases" : 221,
+      "name" : "cpm_stage1\/conv2\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 1,
+      "C" : 512,
+      "bottom" : "cpm_stage1\/Repeat\/convolution2d_4\/Relu:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 0,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    },
+    {
+      "pad_r" : 0,
+      "fused_relu" : 0,
+      "fused_tanh" : 0,
+      "debug_info" : "cpm_stage1\/conv3\/Conv2D:0",
+      "pad_fill_mode" : 0,
+      "pad_b" : 0,
+      "pad_l" : 0,
+      "top" : "cpm_stage1__conv3__BiasAdd__0",
+      "blob_weights" : 227,
+      "K" : 512,
+      "blob_biases" : 225,
+      "name" : "cpm_stage1\/conv3\/Conv2D:0",
+      "has_batch_norm" : 0,
+      "type" : "convolution",
+      "n_groups" : 1,
+      "pad_t" : 0,
+      "has_biases" : 1,
+      "C" : 5,
+      "bottom" : "cpm_stage1\/conv2\/Relu:0",
+      "weights" : {
+
+      },
+      "Nx" : 1,
+      "pad_mode" : 0,
+      "pad_value" : 0,
+      "Ny" : 1,
+      "n_parallel" : 1
+    }
+  ],
+  "transform_params" : {
+    "inputs__image_tensor__0" : {
+      "bias_a" : 0,
+      "bias_g" : 0,
+      "bias_r" : 0,
+      "bias_b" : 0,
+      "center_mean" : 0,
+      "is_network_bgr" : 0,
+      "scale" : 1
+    }
+  },
+  "storage" : "model.espresso.weights",
+  "metadata_in_weights" : [
+
+  ],
+  "properties" : {
+
+  },
+  "analyses" : {
+
+  },
+  "format_version" : 200
+}

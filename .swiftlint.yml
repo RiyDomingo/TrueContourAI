@@ -1,0 +1,22 @@
+disabled_rules:
+  - trailing_whitespace
+  - line_length
+  - todo
+
+opt_in_rules:
+  - empty_count
+  - force_unwrapping
+
+included:
+  - CyborgRugby
+
+excluded:
+  - build
+  - scsdk
+
+identifier_name:
+  min_length: 2
+  excluded: [id, x, y, z]
+
+reporter: "xcode"
+

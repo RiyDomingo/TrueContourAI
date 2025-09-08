@@ -1,0 +1,4 @@
+dependencies: \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/StandardCyborgFusion/Sources/StandardCyborgFusion/MetalDepthProcessor/ComputeNormalsKernel.metal \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/metal/32023/lib/clang/32023.620/include/metal/module.modulemap \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/StandardCyborgFusion/Sources/StandardCyborgFusion/MetalDepthProcessor/ApplyLensCalibration.metal

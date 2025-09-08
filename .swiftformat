@@ -1,0 +1,6 @@
+--swiftversion 5.9
+--exclude scsdk,build
+--stripunusedargs closure-only
+--trimwhitespace nonblank-lines
+--nospaceoperators "..<(...)"
+--wrapcollections before-first

@@ -1,0 +1,4 @@
+module StandardCyborgFusion {
+umbrella header "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgFusion/Sources/include/StandardCyborgFusion/StandardCyborgFusion.h"
+export *
+}

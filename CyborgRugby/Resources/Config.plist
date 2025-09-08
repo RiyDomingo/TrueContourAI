@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>fusion</key>
+    <dict>
+        <key>cropBelowNeck</key>
+        <true/>
+        <key>neckOffsetMeters</key>
+        <real>0.15</real>
+        <key>outlierSigma</key>
+        <real>3</real>
+        <key>decimateRatio</key>
+        <real>1</real>
+        <key>preScaleToMillimeters</key>
+        <true/>
+    </dict>
+    <key>meshing</key>
+    <dict>
+        <key>resolution</key>
+        <integer>6</integer>
+        <key>smoothness</key>
+        <integer>3</integer>
+        <key>surfaceTrimmingAmount</key>
+        <integer>4</integer>
+        <key>closed</key>
+        <true/>
+        <key>exportOBJZip</key>
+        <true/>
+        <key>exportGLB</key>
+        <true/>
+    </dict>
+</dict>
+</plist>
+

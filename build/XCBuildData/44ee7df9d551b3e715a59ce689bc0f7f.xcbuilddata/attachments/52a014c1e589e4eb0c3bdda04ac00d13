@@ -1,0 +1,148 @@
+{
+  "" : {
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/StandardCyborgUI-master.dia",
+    "emit-module-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/StandardCyborgUI-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/StandardCyborgUI-master-emit-module.dia",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/StandardCyborgUI-master.swiftdeps"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Sources/AspectFillTextureCommandEncoder.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/AspectFillTextureCommandEncoder.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/AspectFillTextureCommandEncoder.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/AspectFillTextureCommandEncoder.dia",
+    "index-unit-output-path" : "/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/AspectFillTextureCommandEncoder.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/AspectFillTextureCommandEncoder.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/AspectFillTextureCommandEncoder.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/AspectFillTextureCommandEncoder.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/AspectFillTextureCommandEncoder~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Sources/Bundle+SCUI.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/Bundle+SCUI.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/Bundle+SCUI.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/Bundle+SCUI.dia",
+    "index-unit-output-path" : "/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/Bundle+SCUI.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/Bundle+SCUI.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/Bundle+SCUI.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/Bundle+SCUI.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/Bundle+SCUI~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Sources/CameraManager.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/CameraManager.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/CameraManager.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/CameraManager.dia",
+    "index-unit-output-path" : "/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/CameraManager.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/CameraManager.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/CameraManager.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/CameraManager.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/CameraManager~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Sources/DefaultScanningViewRenderer.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/DefaultScanningViewRenderer.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/DefaultScanningViewRenderer.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/DefaultScanningViewRenderer.dia",
+    "index-unit-output-path" : "/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/DefaultScanningViewRenderer.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/DefaultScanningViewRenderer.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/DefaultScanningViewRenderer.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/DefaultScanningViewRenderer.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/DefaultScanningViewRenderer~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Sources/NodeToNodeLineNode.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/NodeToNodeLineNode.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/NodeToNodeLineNode.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/NodeToNodeLineNode.dia",
+    "index-unit-output-path" : "/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/NodeToNodeLineNode.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/NodeToNodeLineNode.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/NodeToNodeLineNode.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/NodeToNodeLineNode.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/NodeToNodeLineNode~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Sources/PointCloudCommandEncoder.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/PointCloudCommandEncoder.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/PointCloudCommandEncoder.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/PointCloudCommandEncoder.dia",
+    "index-unit-output-path" : "/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/PointCloudCommandEncoder.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/PointCloudCommandEncoder.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/PointCloudCommandEncoder.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/PointCloudCommandEncoder.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/PointCloudCommandEncoder~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Sources/SCMeshingHelper.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/SCMeshingHelper.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/SCMeshingHelper.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/SCMeshingHelper.dia",
+    "index-unit-output-path" : "/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/SCMeshingHelper.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/SCMeshingHelper.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/SCMeshingHelper.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/SCMeshingHelper.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/SCMeshingHelper~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Sources/ScanningHapticFeedbackEngine.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningHapticFeedbackEngine.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningHapticFeedbackEngine.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningHapticFeedbackEngine.dia",
+    "index-unit-output-path" : "/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningHapticFeedbackEngine.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningHapticFeedbackEngine.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningHapticFeedbackEngine.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningHapticFeedbackEngine.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningHapticFeedbackEngine~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Sources/ScanningViewController.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningViewController.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningViewController.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningViewController.dia",
+    "index-unit-output-path" : "/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningViewController.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningViewController.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningViewController.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningViewController.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningViewController~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Sources/ScanningViewRenderer.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningViewRenderer.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningViewRenderer.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningViewRenderer.dia",
+    "index-unit-output-path" : "/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningViewRenderer.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningViewRenderer.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningViewRenderer.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningViewRenderer.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScanningViewRenderer~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Sources/ScenePreviewViewController.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScenePreviewViewController.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScenePreviewViewController.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScenePreviewViewController.dia",
+    "index-unit-output-path" : "/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScenePreviewViewController.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScenePreviewViewController.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScenePreviewViewController.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScenePreviewViewController.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ScenePreviewViewController~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/StandardCyborgUI/Sources/ShutterButton.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ShutterButton.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ShutterButton.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ShutterButton.dia",
+    "index-unit-output-path" : "/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ShutterButton.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ShutterButton.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ShutterButton.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ShutterButton.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/ShutterButton~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/GeneratedAssetSymbols~partial.swiftmodule"
+  },
+  "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/DerivedSources/resource_bundle_accessor.swift" : {
+    "const-values" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/resource_bundle_accessor.swiftconstvalues",
+    "dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/resource_bundle_accessor.d",
+    "diagnostics" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/resource_bundle_accessor.dia",
+    "index-unit-output-path" : "/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/resource_bundle_accessor.o",
+    "llvm-bc" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/resource_bundle_accessor.bc",
+    "object" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/resource_bundle_accessor.o",
+    "swift-dependencies" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/resource_bundle_accessor.swiftdeps",
+    "swiftmodule" : "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/StandardCyborgUI/build/StandardCyborgUI.build/Debug-iphonesimulator/StandardCyborgUI.build/Objects-normal/x86_64/resource_bundle_accessor~partial.swiftmodule"
+  }
+}

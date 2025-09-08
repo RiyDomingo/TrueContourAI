@@ -1,0 +1,19 @@
+<!-- Add these entries to your Info.plist for CyborgRugby -->
+<!-- Copy and paste into your app's Info.plist file -->
+
+<key>NSCameraUsageDescription</key>
+<string>CyborgRugby needs camera access for 3D head scanning to fit your rugby scrum cap precisely</string>
+
+<key>NSFaceIDUsageDescription</key>
+<string>CyborgRugby uses TrueDepth camera technology for accurate 3D measurements of your head and ears</string>
+
+<!-- Optional: If you want to access motion data for head movement detection -->
+<key>NSMotionUsageDescription</key>
+<string>CyborgRugby uses motion sensors to detect head movement and improve scanning accuracy</string>
+
+<!-- Required device capability -->
+<key>UIRequiredDeviceCapabilities</key>
+<array>
+    <string>arkit</string>
+    <string>front-facing-camera</string>
+</array>

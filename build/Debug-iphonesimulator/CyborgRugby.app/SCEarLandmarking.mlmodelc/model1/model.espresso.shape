@@ -1,0 +1,119 @@
+{
+  "layer_shapes" : {
+    "softmax2d_reduce_sum_output" : {
+      "k" : 5,
+      "w" : 1,
+      "n" : 1,
+      "h" : 1
+    },
+    "multiply_softmax2d_dsnt_y_output" : {
+      "k" : 5,
+      "w" : 40,
+      "n" : 1,
+      "h" : 40
+    },
+    "multiply_softmax2d_dsnt_x_output" : {
+      "k" : 5,
+      "w" : 40,
+      "n" : 1,
+      "h" : 40
+    },
+    "dsnt_y_output" : {
+      "k" : 1,
+      "w" : 40,
+      "n" : 1,
+      "h" : 40
+    },
+    "softmax2d_target_exp_output" : {
+      "k" : 5,
+      "w" : 40,
+      "n" : 1,
+      "h" : 40
+    },
+    "heatmap_max_neg_output" : {
+      "k" : 5,
+      "w" : 1,
+      "n" : 1,
+      "h" : 1
+    },
+    "heatmap_subtract_max_output" : {
+      "k" : 5,
+      "w" : 40,
+      "n" : 1,
+      "h" : 40
+    },
+    "heatmap_max_output" : {
+      "k" : 5,
+      "w" : 1,
+      "n" : 1,
+      "h" : 1
+    },
+    "cpm_stage1__conv3__BiasAdd__0" : {
+      "k" : 5,
+      "w" : 40,
+      "n" : 1,
+      "h" : 40
+    },
+    "transpose_heatmap_output" : {
+      "k" : 5,
+      "w" : 40,
+      "n" : 1,
+      "h" : 40
+    },
+    "dnst_reduce_sum_x_output" : {
+      "k" : 5,
+      "w" : 1,
+      "n" : 1,
+      "h" : 1
+    },
+    "softmax2d_output" : {
+      "k" : 5,
+      "w" : 40,
+      "n" : 1,
+      "h" : 40
+    },
+    "dnst_reduce_sum_y_output" : {
+      "k" : 5,
+      "w" : 1,
+      "n" : 1,
+      "h" : 1
+    },
+    "softmax2d_reduce_sum_inv_output" : {
+      "k" : 5,
+      "w" : 1,
+      "n" : 1,
+      "h" : 1
+    },
+    "dsnt_x_output" : {
+      "k" : 1,
+      "w" : 40,
+      "n" : 1,
+      "h" : 40
+    },
+    "transpose_concat_output" : {
+      "k" : 5,
+      "w" : 2,
+      "n" : 1,
+      "h" : 1
+    },
+    "centered_coordinates_yx_add1_output" : {
+      "k" : 5,
+      "w" : 2,
+      "n" : 1,
+      "h" : 1
+    },
+    "normed_coordinates_yx" : {
+      "k" : 5,
+      "w" : 2,
+      "n" : 1,
+      "h" : 1
+    },
+    "concat_output" : {
+      "k" : 5,
+      "w" : 1,
+      "n" : 1,
+      "seq" : 2,
+      "h" : 1
+    }
+  }
+}

@@ -1,0 +1,4 @@
+module SparseICP {
+umbrella header "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CppDependencies/SparseICP/include/SparseICP.h"
+export *
+}

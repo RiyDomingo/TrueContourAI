@@ -1,0 +1,30 @@
+dependencies: \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/src/io/gltf/SceneGraphFileIO_GLTF.cpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/io/gltf/SceneGraphFileIO_GLTF.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/io/gltf/Base64.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/io/imgfile/ColorImageFileIO.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/io/ply/DepthImageFileIO_PLY.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/io/ply/GeometryFileIO_PLY.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/io/json/LandmarkFileIO_JSON.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/io/json/PerspectiveCameraFileIO_JSON.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/io/json/PlaneFileIO_JSON.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/io/json/PolylineFileIO_JSON.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/sc3d/Geometry.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/sc3d/Face3.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/math/Mat3x4.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/math/Vec3.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/math/MathHelpers.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/math/Vec2.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/sc3d/Size2D.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/util/AssertHelper.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/sc3d/VertexSelection.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/sc3d/ColorImage.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/math/Vec4.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/scene_graph/SceneGraph.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/util/guid.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/math/Transform.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include/standard_cyborg/math/Quaternion.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/CppDependencies/json/include/json.hpp \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/CppDependencies/tinygltf/include/tiny_gltf.h \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/CppDependencies/stb/include/stb_image.h \
+  /Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/CppDependencies/stb/include/stb_image_write.h

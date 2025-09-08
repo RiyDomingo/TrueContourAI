@@ -1,0 +1,806 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 70;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 101 /* AppDelegate.swift */; };
+		002 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 102 /* SceneDelegate.swift */; };
+		003 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 103 /* MainViewController.swift */; };
+		004 /* ScrumCapScanningViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 104 /* ScrumCapScanningViewController.swift */; };
+		005 /* ScanResultsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 105 /* ScanResultsViewController.swift */; };
+		006 /* MultiAngleScanManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 106 /* MultiAngleScanManager.swift */; };
+		007 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 107 /* CameraManager.swift */; };
+		008 /* HeadScanningPose.swift in Sources */ = {isa = PBXBuildFile; fileRef = 108 /* HeadScanningPose.swift */; };
+		009 /* ScrumCapMeasurements.swift in Sources */ = {isa = PBXBuildFile; fileRef = 109 /* ScrumCapMeasurements.swift */; };
+		010 /* MLEnhancedPoseValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110 /* MLEnhancedPoseValidator.swift */; };
+		011 /* RugbyEarProtectionCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111 /* RugbyEarProtectionCalculator.swift */; };
+		012 /* ScanningViewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 112 /* ScanningViewRenderer.swift */; };
+		013 /* ScrumCapScanningViewControllerDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 113 /* ScrumCapScanningViewControllerDelegate.swift */; };
+		014 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 114 /* Main.storyboard */; };
+		015 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 115 /* LaunchScreen.storyboard */; };
+		016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 116 /* Assets.xcassets */; };
+		017 /* SCEarLandmarking.mlmodel in Resources */ = {isa = PBXBuildFile; fileRef = 117 /* SCEarLandmarking.mlmodel */; };
+		018 /* SCEarTrackingModel.mlmodel in Resources */ = {isa = PBXBuildFile; fileRef = 118 /* SCEarTrackingModel.mlmodel */; };
+		019 /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 119 /* CoreML.framework */; };
+		020 /* Vision.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 120 /* Vision.framework */; };
+		021 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 122 /* Metal.framework */; };
+		022 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 123 /* MetalKit.framework */; };
+		023 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 124 /* AVFoundation.framework */; };
+		024 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 125 /* CoreMotion.framework */; };
+		025 /* ScanGatingConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1266 /* ScanGatingConfig.swift */; };
+		026 /* PointCloudMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1267 /* PointCloudMetrics.swift */; };
+		027 /* StandardCyborgFusion in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 134A81F62E6B02EB00EE0746 /* StandardCyborgFusion */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		028 /* StandardCyborgUI in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 134A81F92E6B02FC00EE0746 /* StandardCyborgUI */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		030 /* EarMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1269 /* EarMetrics.swift */; };
+		031 /* EarFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1270 /* EarFeatures.swift */; };
+		032 /* ResultsPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1271 /* ResultsPersistence.swift */; };
+		033 /* ResultsListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1272 /* ResultsListViewController.swift */; };
+		034 /* RugbyHeadScanFusion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1273 /* RugbyHeadScanFusion.swift */; };
+		035 /* RecoveryAdvisor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1274 /* RecoveryAdvisor.swift */; };
+		036 /* ResultsDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1275 /* ResultsDetailViewController.swift */; };
+		037 /* Logging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1276 /* Logging.swift */; };
+		038 /* MLQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1277 /* MLQueue.swift */; };
+		039 /* MeasurementCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1278 /* MeasurementCardView.swift */; };
+		040 /* RugbyICPBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = 1280 /* RugbyICPBridge.mm */; };
+		041 /* RugbyMeshExporter.mm in Sources */ = {isa = PBXBuildFile; fileRef = 1283 /* RugbyMeshExporter.mm */; };
+		134A81F72E6B02EB00EE0746 /* StandardCyborgFusion in Frameworks */ = {isa = PBXBuildFile; productRef = 134A81F62E6B02EB00EE0746 /* StandardCyborgFusion */; };
+		134A81FA2E6B02FC00EE0746 /* StandardCyborgUI in Frameworks */ = {isa = PBXBuildFile; productRef = 134A81F92E6B02FC00EE0746 /* StandardCyborgUI */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		134030462E6DCA0B007D251A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 400;
+			remoteInfo = CyborgRugby;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		404 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				027 /* StandardCyborgFusion in Embed Frameworks */,
+				028 /* StandardCyborgUI in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		100 /* CyborgRugby.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CyborgRugby.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		101 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		102 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		103 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
+		104 /* ScrumCapScanningViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrumCapScanningViewController.swift; sourceTree = "<group>"; };
+		105 /* ScanResultsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResultsViewController.swift; sourceTree = "<group>"; };
+		106 /* MultiAngleScanManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiAngleScanManager.swift; sourceTree = "<group>"; };
+		107 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
+		108 /* HeadScanningPose.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeadScanningPose.swift; sourceTree = "<group>"; };
+		109 /* ScrumCapMeasurements.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrumCapMeasurements.swift; sourceTree = "<group>"; };
+		110 /* MLEnhancedPoseValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLEnhancedPoseValidator.swift; sourceTree = "<group>"; };
+		111 /* RugbyEarProtectionCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RugbyEarProtectionCalculator.swift; sourceTree = "<group>"; };
+		112 /* ScanningViewRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanningViewRenderer.swift; sourceTree = "<group>"; };
+		113 /* ScrumCapScanningViewControllerDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrumCapScanningViewControllerDelegate.swift; sourceTree = "<group>"; };
+		114 /* Main.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = Main.storyboard; sourceTree = "<group>"; };
+		115 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		116 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		117 /* SCEarLandmarking.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = SCEarLandmarking.mlmodel; sourceTree = "<group>"; };
+		118 /* SCEarTrackingModel.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = SCEarTrackingModel.mlmodel; sourceTree = "<group>"; };
+		119 /* CoreML.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreML.framework; path = System/Library/Frameworks/CoreML.framework; sourceTree = SDKROOT; };
+		120 /* Vision.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Vision.framework; path = System/Library/Frameworks/Vision.framework; sourceTree = SDKROOT; };
+		121 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		122 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		123 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		124 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		125 /* CoreMotion.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMotion.framework; path = System/Library/Frameworks/CoreMotion.framework; sourceTree = SDKROOT; };
+		1266 /* ScanGatingConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanGatingConfig.swift; sourceTree = "<group>"; };
+		1267 /* PointCloudMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointCloudMetrics.swift; sourceTree = "<group>"; };
+		1268 /* MeasurementCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasurementCalculator.swift; sourceTree = "<group>"; };
+		1269 /* EarMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EarMetrics.swift; sourceTree = "<group>"; };
+		1270 /* EarFeatures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EarFeatures.swift; sourceTree = "<group>"; };
+		1271 /* ResultsPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsPersistence.swift; sourceTree = "<group>"; };
+		1272 /* ResultsListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsListViewController.swift; sourceTree = "<group>"; };
+		1273 /* RugbyHeadScanFusion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RugbyHeadScanFusion.swift; sourceTree = "<group>"; };
+		1274 /* RecoveryAdvisor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryAdvisor.swift; sourceTree = "<group>"; };
+		1275 /* ResultsDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsDetailViewController.swift; sourceTree = "<group>"; };
+		1276 /* Logging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logging.swift; sourceTree = "<group>"; };
+		1277 /* MLQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLQueue.swift; sourceTree = "<group>"; };
+		1278 /* MeasurementCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasurementCardView.swift; sourceTree = "<group>"; };
+		1279 /* RugbyICPBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RugbyICPBridge.h; sourceTree = "<group>"; };
+		1280 /* RugbyICPBridge.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RugbyICPBridge.mm; sourceTree = "<group>"; };
+		1282 /* RugbyMeshExporter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RugbyMeshExporter.h; sourceTree = "<group>"; };
+		1283 /* RugbyMeshExporter.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RugbyMeshExporter.mm; sourceTree = "<group>"; };
+		134030422E6DCA0B007D251A /* CyborgRugbyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CyborgRugbyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		134030552E6DCD28007D251A /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 134030412E6DCA0B007D251A /* CyborgRugbyTests */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		134030432E6DCA0B007D251A /* CyborgRugbyTests */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (134030552E6DCD28007D251A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = CyborgRugbyTests; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1340303F2E6DCA0B007D251A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		200 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				019 /* CoreML.framework in Frameworks */,
+				020 /* Vision.framework in Frameworks */,
+				134A81F72E6B02EB00EE0746 /* StandardCyborgFusion in Frameworks */,
+				134A81FA2E6B02FC00EE0746 /* StandardCyborgUI in Frameworks */,
+				021 /* Metal.framework in Frameworks */,
+				022 /* MetalKit.framework in Frameworks */,
+				023 /* AVFoundation.framework in Frameworks */,
+				024 /* CoreMotion.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		300 = {
+			isa = PBXGroup;
+			children = (
+				301 /* CyborgRugby */,
+				134030432E6DCA0B007D251A /* CyborgRugbyTests */,
+				302 /* Products */,
+				303 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		301 /* CyborgRugby */ = {
+			isa = PBXGroup;
+			children = (
+				304 /* Application */,
+				305 /* Business Logic */,
+				306 /* Presentation */,
+				307 /* Presentation Layer */,
+				308 /* Resources */,
+			);
+			path = CyborgRugby;
+			sourceTree = "<group>";
+		};
+		302 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				100 /* CyborgRugby.app */,
+				134030422E6DCA0B007D251A /* CyborgRugbyTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		303 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				119 /* CoreML.framework */,
+				120 /* Vision.framework */,
+				122 /* Metal.framework */,
+				123 /* MetalKit.framework */,
+				124 /* AVFoundation.framework */,
+				125 /* CoreMotion.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		304 /* Application */ = {
+			isa = PBXGroup;
+			children = (
+				101 /* AppDelegate.swift */,
+				102 /* SceneDelegate.swift */,
+				121 /* Info.plist */,
+			);
+			path = Application;
+			sourceTree = "<group>";
+		};
+		305 /* Business Logic */ = {
+			isa = PBXGroup;
+			children = (
+				309 /* Managers */,
+				310 /* Models */,
+				311 /* Services */,
+			);
+			path = "Business Logic";
+			sourceTree = "<group>";
+		};
+		306 /* Presentation */ = {
+			isa = PBXGroup;
+			children = (
+				312 /* ViewControllers */,
+				313 /* Protocols */,
+				317 /* Views */,
+			);
+			path = Presentation;
+			sourceTree = "<group>";
+		};
+		307 /* Presentation Layer */ = {
+			isa = PBXGroup;
+			children = (
+				314 /* Renderers */,
+			);
+			path = "Presentation Layer";
+			sourceTree = "<group>";
+		};
+		308 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				116 /* Assets.xcassets */,
+				315 /* Base.lproj */,
+				316 /* MLModels */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		309 /* Managers */ = {
+			isa = PBXGroup;
+			children = (
+				106 /* MultiAngleScanManager.swift */,
+				107 /* CameraManager.swift */,
+			);
+			path = Managers;
+			sourceTree = "<group>";
+		};
+		310 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				108 /* HeadScanningPose.swift */,
+				109 /* ScrumCapMeasurements.swift */,
+				1266 /* ScanGatingConfig.swift */,
+				1269 /* EarMetrics.swift */,
+				1270 /* EarFeatures.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		311 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				110 /* MLEnhancedPoseValidator.swift */,
+				111 /* RugbyEarProtectionCalculator.swift */,
+				1267 /* PointCloudMetrics.swift */,
+				1268 /* MeasurementCalculator.swift */,
+				1271 /* ResultsPersistence.swift */,
+				1273 /* RugbyHeadScanFusion.swift */,
+				1274 /* RecoveryAdvisor.swift */,
+				1276 /* Logging.swift */,
+				1277 /* MLQueue.swift */,
+				1279 /* RugbyICPBridge.h */,
+				1280 /* RugbyICPBridge.mm */,
+				1282 /* RugbyMeshExporter.h */,
+				1283 /* RugbyMeshExporter.mm */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		312 /* ViewControllers */ = {
+			isa = PBXGroup;
+			children = (
+				103 /* MainViewController.swift */,
+				104 /* ScrumCapScanningViewController.swift */,
+				105 /* ScanResultsViewController.swift */,
+				1272 /* ResultsListViewController.swift */,
+				1275 /* ResultsDetailViewController.swift */,
+			);
+			path = ViewControllers;
+			sourceTree = "<group>";
+		};
+		313 /* Protocols */ = {
+			isa = PBXGroup;
+			children = (
+				113 /* ScrumCapScanningViewControllerDelegate.swift */,
+			);
+			path = Protocols;
+			sourceTree = "<group>";
+		};
+		314 /* Renderers */ = {
+			isa = PBXGroup;
+			children = (
+				112 /* ScanningViewRenderer.swift */,
+			);
+			path = Renderers;
+			sourceTree = "<group>";
+		};
+		315 /* Base.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				114 /* Main.storyboard */,
+				115 /* LaunchScreen.storyboard */,
+			);
+			path = Base.lproj;
+			sourceTree = "<group>";
+		};
+		316 /* MLModels */ = {
+			isa = PBXGroup;
+			children = (
+				117 /* SCEarLandmarking.mlmodel */,
+				118 /* SCEarTrackingModel.mlmodel */,
+			);
+			path = MLModels;
+			sourceTree = "<group>";
+		};
+		317 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				1278 /* MeasurementCardView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		134030412E6DCA0B007D251A /* CyborgRugbyTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 134030482E6DCA0B007D251A /* Build configuration list for PBXNativeTarget "CyborgRugbyTests" */;
+			buildPhases = (
+				1340303E2E6DCA0B007D251A /* Sources */,
+				1340303F2E6DCA0B007D251A /* Frameworks */,
+				134030402E6DCA0B007D251A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				134030472E6DCA0B007D251A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				134030432E6DCA0B007D251A /* CyborgRugbyTests */,
+			);
+			name = CyborgRugbyTests;
+			packageProductDependencies = (
+			);
+			productName = CyborgRugbyTests;
+			productReference = 134030422E6DCA0B007D251A /* CyborgRugbyTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		400 /* CyborgRugby */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 401 /* Build configuration list for PBXNativeTarget "CyborgRugby" */;
+			buildPhases = (
+				402 /* Sources */,
+				200 /* Frameworks */,
+				403 /* Resources */,
+				404 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CyborgRugby;
+			productName = CyborgRugby;
+			productReference = 100 /* CyborgRugby.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		500 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					134030412E6DCA0B007D251A = {
+						CreatedOnToolsVersion = 16.4;
+						LastSwiftMigration = 1640;
+						TestTargetID = 400;
+					};
+					400 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = 501 /* Build configuration list for PBXProject "CyborgRugby" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 300;
+			packageReferences = (
+				134A81FE2E6B096D00EE0746 /* XCLocalSwiftPackageReference "StandardCyborgUI" */,
+				134A82012E6B0A3700EE0746 /* XCLocalSwiftPackageReference "StandardCyborgFusion" */,
+			);
+			productRefGroup = 302 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				400 /* CyborgRugby */,
+				134030412E6DCA0B007D251A /* CyborgRugbyTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		134030402E6DCA0B007D251A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		403 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				015 /* LaunchScreen.storyboard in Resources */,
+				016 /* Assets.xcassets in Resources */,
+				014 /* Main.storyboard in Resources */,
+				017 /* SCEarLandmarking.mlmodel in Resources */,
+				018 /* SCEarTrackingModel.mlmodel in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1340303E2E6DCA0B007D251A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		402 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				001 /* AppDelegate.swift in Sources */,
+				002 /* SceneDelegate.swift in Sources */,
+				003 /* MainViewController.swift in Sources */,
+				004 /* ScrumCapScanningViewController.swift in Sources */,
+				005 /* ScanResultsViewController.swift in Sources */,
+				006 /* MultiAngleScanManager.swift in Sources */,
+				007 /* CameraManager.swift in Sources */,
+				008 /* HeadScanningPose.swift in Sources */,
+				009 /* ScrumCapMeasurements.swift in Sources */,
+				010 /* MLEnhancedPoseValidator.swift in Sources */,
+				011 /* RugbyEarProtectionCalculator.swift in Sources */,
+				012 /* ScanningViewRenderer.swift in Sources */,
+				013 /* ScrumCapScanningViewControllerDelegate.swift in Sources */,
+				025 /* ScanGatingConfig.swift in Sources */,
+				026 /* PointCloudMetrics.swift in Sources */,
+				030 /* EarMetrics.swift in Sources */,
+				031 /* EarFeatures.swift in Sources */,
+				032 /* ResultsPersistence.swift in Sources */,
+				036 /* ResultsDetailViewController.swift in Sources */,
+				033 /* ResultsListViewController.swift in Sources */,
+				034 /* RugbyHeadScanFusion.swift in Sources */,
+				035 /* RecoveryAdvisor.swift in Sources */,
+				037 /* Logging.swift in Sources */,
+				038 /* MLQueue.swift in Sources */,
+				039 /* MeasurementCardView.swift in Sources */,
+				040 /* RugbyICPBridge.mm in Sources */,
+				041 /* RugbyMeshExporter.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		134030472E6DCA0B007D251A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 400 /* CyborgRugby */;
+			targetProxy = 134030462E6DCA0B007D251A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		134030492E6DCA0B007D251A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6S4895V2RV;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.impactmechanica.CyborgRugbyTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CyborgRugby.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CyborgRugby";
+			};
+			name = Debug;
+		};
+		1340304A2E6DCA0B007D251A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6S4895V2RV;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.impactmechanica.CyborgRugbyTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CyborgRugby.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CyborgRugby";
+			};
+			name = Release;
+		};
+		600 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		601 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		602 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COREML_CODEGEN_LANGUAGE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6S4895V2RV;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CyborgRugby/Application/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "CyborgRugby needs camera access to scan for rugby scrum cap fitting";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.standardcyborg.CyborgRugby;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "CyborgRugby/CyborgRugby-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		603 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COREML_CODEGEN_LANGUAGE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6S4895V2RV;
+				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CyborgRugby/Application/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "CyborgRugby needs camera access to scan for rugby scrum cap fitting";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.standardcyborg.CyborgRugby;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "CyborgRugby/CyborgRugby-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		134030482E6DCA0B007D251A /* Build configuration list for PBXNativeTarget "CyborgRugbyTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				134030492E6DCA0B007D251A /* Debug */,
+				1340304A2E6DCA0B007D251A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		401 /* Build configuration list for PBXNativeTarget "CyborgRugby" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				602 /* Debug */,
+				603 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		501 /* Build configuration list for PBXProject "CyborgRugby" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				600 /* Debug */,
+				601 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		134A81FE2E6B096D00EE0746 /* XCLocalSwiftPackageReference "StandardCyborgUI" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = StandardCyborgUI;
+		};
+		134A82012E6B0A3700EE0746 /* XCLocalSwiftPackageReference "StandardCyborgFusion" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = StandardCyborgFusion;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		134A81F62E6B02EB00EE0746 /* StandardCyborgFusion */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = StandardCyborgFusion;
+		};
+		134A81F92E6B02FC00EE0746 /* StandardCyborgUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = StandardCyborgUI;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 500 /* Project object */;
+}

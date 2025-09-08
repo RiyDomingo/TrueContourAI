@@ -1,0 +1,14 @@
+/Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/CyborgRugby/Application/AppDelegate.swift
+/Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/CyborgRugby/Application/SceneDelegate.swift
+/Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/CyborgRugby/Presentation/ViewControllers/MainViewController.swift
+/Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/CyborgRugby/Presentation/ViewControllers/ScrumCapScanningViewController.swift
+/Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/CyborgRugby/Presentation/ViewControllers/ScanResultsViewController.swift
+/Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/CyborgRugby/Business\ Logic/Managers/MultiAngleScanManager.swift
+/Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/CyborgRugby/Business\ Logic/Managers/CameraManager.swift
+/Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/CyborgRugby/Business\ Logic/Models/HeadScanningPose.swift
+/Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/CyborgRugby/Business\ Logic/Models/ScrumCapMeasurements.swift
+/Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/CyborgRugby/Business\ Logic/Services/MLEnhancedPoseValidator.swift
+/Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/CyborgRugby/Business\ Logic/Services/RugbyEarProtectionCalculator.swift
+/Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/CyborgRugby/Presentation\ Layer/Renderers/ScanningViewRenderer.swift
+/Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/CyborgRugby/Presentation/Protocols/ScrumCapScanningViewControllerDelegate.swift
+/Users/riyaddomingo/Desktop/Claude\ Code\ Projects/StandardCyborgCocoa-master/build/CyborgRugby.build/Debug-iphonesimulator/CyborgRugby.build/DerivedSources/GeneratedAssetSymbols.swift

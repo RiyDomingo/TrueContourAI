@@ -1,0 +1,121 @@
+[
+  {
+    "metadataOutputVersion" : "3.0",
+    "userDefinedMetadata" : {
+      "iou_threshold" : "0.6",
+      "classes" : "ear",
+      "confidence_threshold" : "0.4"
+    },
+    "classLabels" : [
+      "ear"
+    ],
+    "availability" : {
+      "macOS" : "10.14",
+      "tvOS" : "12.0",
+      "visionOS" : "1.0",
+      "watchOS" : "5.0",
+      "iOS" : "12.0",
+      "macCatalyst" : "12.0"
+    },
+    "inputSchema" : [
+      {
+        "height" : "300",
+        "colorspace" : "RGB",
+        "isOptional" : "0",
+        "width" : "300",
+        "isColor" : "1",
+        "formattedType" : "Image (Color 300 × 300)",
+        "hasSizeFlexibility" : "0",
+        "type" : "Image",
+        "shortDescription" : "Input image",
+        "name" : "image"
+      },
+      {
+        "isOptional" : "0",
+        "formattedType" : "Double",
+        "type" : "Double",
+        "name" : "iouThreshold",
+        "shortDescription" : "(optional) IOU Threshold override"
+      },
+      {
+        "isOptional" : "0",
+        "formattedType" : "Double",
+        "type" : "Double",
+        "name" : "confidenceThreshold",
+        "shortDescription" : "(optional) Confidence Threshold override"
+      }
+    ],
+    "outputSchema" : [
+      {
+        "dataType" : "Double",
+        "hasShapeFlexibility" : "1",
+        "isOptional" : "0",
+        "shapeFlexibility" : "0...1 × 1",
+        "shapeRange" : "[[0, 1], [1, 1]]",
+        "formattedType" : "MultiArray (Double 0 × 1)",
+        "type" : "MultiArray",
+        "shape" : "[0, 1]",
+        "name" : "confidence",
+        "shortDescription" : "Boxes × Class confidence"
+      },
+      {
+        "dataType" : "Double",
+        "hasShapeFlexibility" : "1",
+        "isOptional" : "0",
+        "shapeFlexibility" : "0...1 × 4",
+        "shapeRange" : "[[0, 1], [4, 4]]",
+        "formattedType" : "MultiArray (Double 0 × 4)",
+        "type" : "MultiArray",
+        "shape" : "[0, 4]",
+        "name" : "coordinates",
+        "shortDescription" : "Boxes × [x, y, width, height] (relative to image size)"
+      }
+    ],
+    "modelParameters" : [
+
+    ],
+    "storagePrecision" : "Float16",
+    "neuralNetworkLayerTypeHistogram" : {
+      "UnaryExp" : 1,
+      "Concat" : 3,
+      "Slice" : 7,
+      "UnaryThreshold" : 43,
+      "Convolution" : 72,
+      "ActivationSigmoid" : 1,
+      "Reshape" : 12,
+      "Permute" : 16,
+      "Multiply" : 5,
+      "Add" : 11,
+      "BatchNorm" : 72,
+      "ActivationLinear" : 86,
+      "LoadConstant" : 2,
+      "ActivationReLU" : 43
+    },
+    "method" : "predict",
+    "version" : "ssdlite_mobilenet_v2_feet_only_2019_08_22",
+    "isUpdatable" : "0",
+    "specificationVersion" : 3,
+    "stateSchema" : [
+
+    ],
+    "computePrecision" : "Float16",
+    "shortDescription" : "MobileNetV2 + SSDLite",
+    "license" : "https:\/\/github.com\/tensorflow\/models\/blob\/master\/research\/object_detection",
+    "generatedClassName" : "SCEarTrackingModel",
+    "author" : "Standard Cyborg",
+    "modelType" : {
+      "name" : "MLModelType_pipeline",
+      "structure" : [
+        {
+          "name" : "MLModelType_neuralNetwork"
+        },
+        {
+          "name" : "MLModelType_neuralNetwork"
+        },
+        {
+          "name" : "MLModelType_nonMaximumSuppression"
+        }
+      ]
+    }
+  }
+]

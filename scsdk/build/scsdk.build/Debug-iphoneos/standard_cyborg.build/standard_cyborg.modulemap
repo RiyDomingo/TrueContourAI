@@ -1,0 +1,4 @@
+module standard_cyborg {
+umbrella "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/scsdk/Sources/standard_cyborg/include"
+export *
+}
