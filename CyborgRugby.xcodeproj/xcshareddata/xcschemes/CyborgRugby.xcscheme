@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1500"
+   LastUpgradeVersion = "1640"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -33,7 +33,7 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "1340302A2E6DC063007D251A"
+               BlueprintIdentifier = "134030412E6DCA0B007D251A"
                BuildableName = "CyborgRugbyTests.xctest"
                BlueprintName = "CyborgRugbyTests"
                ReferencedContainer = "container:CyborgRugby.xcodeproj">

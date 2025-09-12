@@ -10,9 +10,7 @@
 		001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 101 /* AppDelegate.swift */; };
 		002 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 102 /* SceneDelegate.swift */; };
 		003 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 103 /* MainViewController.swift */; };
-		004 /* ScrumCapScanningViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 104 /* ScrumCapScanningViewController.swift */; };
 		005 /* ScanResultsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 105 /* ScanResultsViewController.swift */; };
-		006 /* MultiAngleScanManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 106 /* MultiAngleScanManager.swift */; };
 		007 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 107 /* CameraManager.swift */; };
 		008 /* HeadScanningPose.swift in Sources */ = {isa = PBXBuildFile; fileRef = 108 /* HeadScanningPose.swift */; };
 		009 /* ScrumCapMeasurements.swift in Sources */ = {isa = PBXBuildFile; fileRef = 109 /* ScrumCapMeasurements.swift */; };
@@ -22,7 +20,6 @@
 		013 /* ScrumCapScanningViewControllerDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 113 /* ScrumCapScanningViewControllerDelegate.swift */; };
 		014 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 114 /* Main.storyboard */; };
 		015 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 115 /* LaunchScreen.storyboard */; };
-		016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 116 /* Assets.xcassets */; };
 		017 /* SCEarLandmarking.mlmodel in Resources */ = {isa = PBXBuildFile; fileRef = 117 /* SCEarLandmarking.mlmodel */; };
 		018 /* SCEarTrackingModel.mlmodel in Resources */ = {isa = PBXBuildFile; fileRef = 118 /* SCEarTrackingModel.mlmodel */; };
 		019 /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 119 /* CoreML.framework */; };
@@ -49,6 +46,31 @@
 		041 /* RugbyMeshExporter.mm in Sources */ = {isa = PBXBuildFile; fileRef = 1283 /* RugbyMeshExporter.mm */; };
 		134A81F72E6B02EB00EE0746 /* StandardCyborgFusion in Frameworks */ = {isa = PBXBuildFile; productRef = 134A81F62E6B02EB00EE0746 /* StandardCyborgFusion */; };
 		134A81FA2E6B02FC00EE0746 /* StandardCyborgUI in Frameworks */ = {isa = PBXBuildFile; productRef = 134A81F92E6B02FC00EE0746 /* StandardCyborgUI */; };
+		13B082D42E6EF56B0076E5B3 /* EducationHubViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B082D32E6EF56B0076E5B3 /* EducationHubViewController.swift */; };
+		13B082D62E6EF5770076E5B3 /* EducationDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B082D52E6EF5770076E5B3 /* EducationDetailViewController.swift */; };
+		13B082D82E6EF57F0076E5B3 /* PlayerProfileViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B082D72E6EF57F0076E5B3 /* PlayerProfileViewController.swift */; };
+		13B082DA2E6EF58B0076E5B3 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B082D92E6EF58B0076E5B3 /* SettingsViewController.swift */; };
+		13B082DC2E6EF5D10076E5B3 /* OnboardingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B082DB2E6EF5D10076E5B3 /* OnboardingViewController.swift */; };
+		13B082E12E6EF7230076E5B3 /* AchievementManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B082DD2E6EF7230076E5B3 /* AchievementManager.swift */; };
+		13B082E22E6EF7230076E5B3 /* PlayerProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B082DE2E6EF7230076E5B3 /* PlayerProfile.swift */; };
+		13B082E32E6EF7230076E5B3 /* ScanHistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B082DF2E6EF7230076E5B3 /* ScanHistoryManager.swift */; };
+		13B082E42E6EF7230076E5B3 /* VoiceCoach.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B082E02E6EF7230076E5B3 /* VoiceCoach.swift */; };
+		13B082E62E6EFC180076E5B3 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B082E52E6EFC180076E5B3 /* AppConfig.swift */; };
+		13B082E82E6EFCEB0076E5B3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B082E72E6EFCEB0076E5B3 /* Assets.xcassets */; };
+		13B082FE2E6F6B9C0076E5B3 /* CameraCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B082FD2E6F6B9C0076E5B3 /* CameraCaptureService.swift */; };
+		13B083002E6F6BAE0076E5B3 /* PoseDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B082FF2E6F6BAE0076E5B3 /* PoseDetectionService.swift */; };
+		13B083022E6F6BBA0076E5B3 /* ScanningUIStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B083012E6F6BBA0076E5B3 /* ScanningUIStateManager.swift */; };
+		13B083042E6F6C000076E5B3 /* RefactoredScrumCapScanningViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B083032E6F6C000076E5B3 /* RefactoredScrumCapScanningViewController.swift */; };
+		13B083092E7014F90076E5B3 /* MeasurementGenerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B083052E7014F90076E5B3 /* MeasurementGenerationService.swift */; };
+		13B0830A2E7014F90076E5B3 /* ReconstructionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B083062E7014F90076E5B3 /* ReconstructionService.swift */; };
+		13B0830B2E7014F90076E5B3 /* ScanProgressService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B083082E7014F90076E5B3 /* ScanProgressService.swift */; };
+		13B0830C2E7014F90076E5B3 /* ScanOrchestrationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B083072E7014F90076E5B3 /* ScanOrchestrationService.swift */; };
+		13B0830E2E7015270076E5B3 /* RefactoredMultiAngleScanManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B0830D2E7015270076E5B3 /* RefactoredMultiAngleScanManager.swift */; };
+		13B083102E7020000076E5B3 /* ScanResults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B0830F2E7020000076E5B3 /* ScanResults.swift */; };
+		13B083122E7020100076E5B3 /* MultiAngleScanManagerDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B083112E7020100076E5B3 /* MultiAngleScanManagerDelegate.swift */; };
+		13B083142E7020200076E5B3 /* MeasurementCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1268 /* MeasurementCalculator.swift */; };
+		13B084522E706EE30076E5B3 /* ZipArchive in Frameworks */ = {isa = PBXBuildFile; productRef = 13B084512E706EE30076E5B3 /* ZipArchive */; };
+		13B084542E7071DB0076E5B3 /* ZipArchive in Frameworks */ = {isa = PBXBuildFile; productRef = 13B084532E7071DB0076E5B3 /* ZipArchive */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -81,9 +103,7 @@
 		101 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		102 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		103 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
-		104 /* ScrumCapScanningViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrumCapScanningViewController.swift; sourceTree = "<group>"; };
 		105 /* ScanResultsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResultsViewController.swift; sourceTree = "<group>"; };
-		106 /* MultiAngleScanManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiAngleScanManager.swift; sourceTree = "<group>"; };
 		107 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
 		108 /* HeadScanningPose.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeadScanningPose.swift; sourceTree = "<group>"; };
 		109 /* ScrumCapMeasurements.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrumCapMeasurements.swift; sourceTree = "<group>"; };
@@ -93,7 +113,6 @@
 		113 /* ScrumCapScanningViewControllerDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrumCapScanningViewControllerDelegate.swift; sourceTree = "<group>"; };
 		114 /* Main.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = Main.storyboard; sourceTree = "<group>"; };
 		115 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
-		116 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		117 /* SCEarLandmarking.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = SCEarLandmarking.mlmodel; sourceTree = "<group>"; };
 		118 /* SCEarTrackingModel.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = SCEarTrackingModel.mlmodel; sourceTree = "<group>"; };
 		119 /* CoreML.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreML.framework; path = System/Library/Frameworks/CoreML.framework; sourceTree = SDKROOT; };
@@ -121,6 +140,28 @@
 		1282 /* RugbyMeshExporter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RugbyMeshExporter.h; sourceTree = "<group>"; };
 		1283 /* RugbyMeshExporter.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RugbyMeshExporter.mm; sourceTree = "<group>"; };
 		134030422E6DCA0B007D251A /* CyborgRugbyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CyborgRugbyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B082D32E6EF56B0076E5B3 /* EducationHubViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EducationHubViewController.swift; sourceTree = "<group>"; };
+		13B082D52E6EF5770076E5B3 /* EducationDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EducationDetailViewController.swift; sourceTree = "<group>"; };
+		13B082D72E6EF57F0076E5B3 /* PlayerProfileViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerProfileViewController.swift; sourceTree = "<group>"; };
+		13B082D92E6EF58B0076E5B3 /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
+		13B082DB2E6EF5D10076E5B3 /* OnboardingViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewController.swift; sourceTree = "<group>"; };
+		13B082DD2E6EF7230076E5B3 /* AchievementManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementManager.swift; sourceTree = "<group>"; };
+		13B082DE2E6EF7230076E5B3 /* PlayerProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerProfile.swift; sourceTree = "<group>"; };
+		13B082DF2E6EF7230076E5B3 /* ScanHistoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanHistoryManager.swift; sourceTree = "<group>"; };
+		13B082E02E6EF7230076E5B3 /* VoiceCoach.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceCoach.swift; sourceTree = "<group>"; };
+		13B082E52E6EFC180076E5B3 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		13B082E72E6EFCEB0076E5B3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		13B082FD2E6F6B9C0076E5B3 /* CameraCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureService.swift; sourceTree = "<group>"; };
+		13B082FF2E6F6BAE0076E5B3 /* PoseDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseDetectionService.swift; sourceTree = "<group>"; };
+		13B083012E6F6BBA0076E5B3 /* ScanningUIStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanningUIStateManager.swift; sourceTree = "<group>"; };
+		13B083032E6F6C000076E5B3 /* RefactoredScrumCapScanningViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefactoredScrumCapScanningViewController.swift; sourceTree = "<group>"; };
+		13B083052E7014F90076E5B3 /* MeasurementGenerationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasurementGenerationService.swift; sourceTree = "<group>"; };
+		13B083062E7014F90076E5B3 /* ReconstructionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReconstructionService.swift; sourceTree = "<group>"; };
+		13B083072E7014F90076E5B3 /* ScanOrchestrationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanOrchestrationService.swift; sourceTree = "<group>"; };
+		13B083082E7014F90076E5B3 /* ScanProgressService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanProgressService.swift; sourceTree = "<group>"; };
+		13B0830D2E7015270076E5B3 /* RefactoredMultiAngleScanManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefactoredMultiAngleScanManager.swift; sourceTree = "<group>"; };
+		13B0830F2E7020000076E5B3 /* ScanResults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResults.swift; sourceTree = "<group>"; };
+		13B083112E7020100076E5B3 /* MultiAngleScanManagerDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiAngleScanManagerDelegate.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -154,9 +195,11 @@
 				134A81F72E6B02EB00EE0746 /* StandardCyborgFusion in Frameworks */,
 				134A81FA2E6B02FC00EE0746 /* StandardCyborgUI in Frameworks */,
 				021 /* Metal.framework in Frameworks */,
+				13B084542E7071DB0076E5B3 /* ZipArchive in Frameworks */,
 				022 /* MetalKit.framework in Frameworks */,
 				023 /* AVFoundation.framework in Frameworks */,
 				024 /* CoreMotion.framework in Frameworks */,
+				13B084522E706EE30076E5B3 /* ZipArchive in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -223,6 +266,10 @@
 				309 /* Managers */,
 				310 /* Models */,
 				311 /* Services */,
+				13B082DD2E6EF7230076E5B3 /* AchievementManager.swift */,
+				13B082DE2E6EF7230076E5B3 /* PlayerProfile.swift */,
+				13B082DF2E6EF7230076E5B3 /* ScanHistoryManager.swift */,
+				13B082E02E6EF7230076E5B3 /* VoiceCoach.swift */,
 			);
 			path = "Business Logic";
 			sourceTree = "<group>";
@@ -248,7 +295,7 @@
 		308 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				116 /* Assets.xcassets */,
+				13B082E72E6EFCEB0076E5B3 /* Assets.xcassets */,
 				315 /* Base.lproj */,
 				316 /* MLModels */,
 			);
@@ -258,7 +305,7 @@
 		309 /* Managers */ = {
 			isa = PBXGroup;
 			children = (
-				106 /* MultiAngleScanManager.swift */,
+				13B0830D2E7015270076E5B3 /* RefactoredMultiAngleScanManager.swift */,
 				107 /* CameraManager.swift */,
 			);
 			path = Managers;
@@ -272,6 +319,7 @@
 				1266 /* ScanGatingConfig.swift */,
 				1269 /* EarMetrics.swift */,
 				1270 /* EarFeatures.swift */,
+				13B0830F2E7020000076E5B3 /* ScanResults.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -279,10 +327,18 @@
 		311 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				13B083052E7014F90076E5B3 /* MeasurementGenerationService.swift */,
+				13B083062E7014F90076E5B3 /* ReconstructionService.swift */,
+				13B083072E7014F90076E5B3 /* ScanOrchestrationService.swift */,
+				13B083082E7014F90076E5B3 /* ScanProgressService.swift */,
+				13B082E52E6EFC180076E5B3 /* AppConfig.swift */,
 				110 /* MLEnhancedPoseValidator.swift */,
+				13B082FD2E6F6B9C0076E5B3 /* CameraCaptureService.swift */,
 				111 /* RugbyEarProtectionCalculator.swift */,
 				1267 /* PointCloudMetrics.swift */,
+				13B082FF2E6F6BAE0076E5B3 /* PoseDetectionService.swift */,
 				1268 /* MeasurementCalculator.swift */,
+				13B083012E6F6BBA0076E5B3 /* ScanningUIStateManager.swift */,
 				1271 /* ResultsPersistence.swift */,
 				1273 /* RugbyHeadScanFusion.swift */,
 				1274 /* RecoveryAdvisor.swift */,
@@ -299,9 +355,14 @@
 		312 /* ViewControllers */ = {
 			isa = PBXGroup;
 			children = (
+				13B082D32E6EF56B0076E5B3 /* EducationHubViewController.swift */,
+				13B082D72E6EF57F0076E5B3 /* PlayerProfileViewController.swift */,
+				13B082D52E6EF5770076E5B3 /* EducationDetailViewController.swift */,
 				103 /* MainViewController.swift */,
-				104 /* ScrumCapScanningViewController.swift */,
+				13B083032E6F6C000076E5B3 /* RefactoredScrumCapScanningViewController.swift */,
 				105 /* ScanResultsViewController.swift */,
+				13B082DB2E6EF5D10076E5B3 /* OnboardingViewController.swift */,
+				13B082D92E6EF58B0076E5B3 /* SettingsViewController.swift */,
 				1272 /* ResultsListViewController.swift */,
 				1275 /* ResultsDetailViewController.swift */,
 			);
@@ -312,6 +373,7 @@
 			isa = PBXGroup;
 			children = (
 				113 /* ScrumCapScanningViewControllerDelegate.swift */,
+				13B083112E7020100076E5B3 /* MultiAngleScanManagerDelegate.swift */,
 			);
 			path = Protocols;
 			sourceTree = "<group>";
@@ -402,7 +464,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1640;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 1640;
 				TargetAttributes = {
 					134030412E6DCA0B007D251A = {
 						CreatedOnToolsVersion = 16.4;
@@ -426,6 +488,7 @@
 			packageReferences = (
 				134A81FE2E6B096D00EE0746 /* XCLocalSwiftPackageReference "StandardCyborgUI" */,
 				134A82012E6B0A3700EE0746 /* XCLocalSwiftPackageReference "StandardCyborgFusion" */,
+				13B0844F2E706A350076E5B3 /* XCRemoteSwiftPackageReference "ZipArchive" */,
 			);
 			productRefGroup = 302 /* Products */;
 			projectDirPath = "";
@@ -450,9 +513,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				015 /* LaunchScreen.storyboard in Resources */,
-				016 /* Assets.xcassets in Resources */,
 				014 /* Main.storyboard in Resources */,
 				017 /* SCEarLandmarking.mlmodel in Resources */,
+				13B082E82E6EFCEB0076E5B3 /* Assets.xcassets in Resources */,
 				018 /* SCEarTrackingModel.mlmodel in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -471,32 +534,52 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				13B082D62E6EF5770076E5B3 /* EducationDetailViewController.swift in Sources */,
 				001 /* AppDelegate.swift in Sources */,
 				002 /* SceneDelegate.swift in Sources */,
 				003 /* MainViewController.swift in Sources */,
-				004 /* ScrumCapScanningViewController.swift in Sources */,
 				005 /* ScanResultsViewController.swift in Sources */,
-				006 /* MultiAngleScanManager.swift in Sources */,
 				007 /* CameraManager.swift in Sources */,
 				008 /* HeadScanningPose.swift in Sources */,
 				009 /* ScrumCapMeasurements.swift in Sources */,
 				010 /* MLEnhancedPoseValidator.swift in Sources */,
+				13B082D82E6EF57F0076E5B3 /* PlayerProfileViewController.swift in Sources */,
 				011 /* RugbyEarProtectionCalculator.swift in Sources */,
 				012 /* ScanningViewRenderer.swift in Sources */,
 				013 /* ScrumCapScanningViewControllerDelegate.swift in Sources */,
 				025 /* ScanGatingConfig.swift in Sources */,
+				13B082D42E6EF56B0076E5B3 /* EducationHubViewController.swift in Sources */,
+				13B082E12E6EF7230076E5B3 /* AchievementManager.swift in Sources */,
+				13B082E22E6EF7230076E5B3 /* PlayerProfile.swift in Sources */,
+				13B082E32E6EF7230076E5B3 /* ScanHistoryManager.swift in Sources */,
+				13B082E42E6EF7230076E5B3 /* VoiceCoach.swift in Sources */,
+				13B0830E2E7015270076E5B3 /* RefactoredMultiAngleScanManager.swift in Sources */,
 				026 /* PointCloudMetrics.swift in Sources */,
 				030 /* EarMetrics.swift in Sources */,
 				031 /* EarFeatures.swift in Sources */,
+				13B082DA2E6EF58B0076E5B3 /* SettingsViewController.swift in Sources */,
+				13B082E62E6EFC180076E5B3 /* AppConfig.swift in Sources */,
+				13B083022E6F6BBA0076E5B3 /* ScanningUIStateManager.swift in Sources */,
 				032 /* ResultsPersistence.swift in Sources */,
 				036 /* ResultsDetailViewController.swift in Sources */,
 				033 /* ResultsListViewController.swift in Sources */,
+				13B083002E6F6BAE0076E5B3 /* PoseDetectionService.swift in Sources */,
+				13B083042E6F6C000076E5B3 /* RefactoredScrumCapScanningViewController.swift in Sources */,
 				034 /* RugbyHeadScanFusion.swift in Sources */,
 				035 /* RecoveryAdvisor.swift in Sources */,
+				13B082FE2E6F6B9C0076E5B3 /* CameraCaptureService.swift in Sources */,
 				037 /* Logging.swift in Sources */,
+				13B082DC2E6EF5D10076E5B3 /* OnboardingViewController.swift in Sources */,
 				038 /* MLQueue.swift in Sources */,
 				039 /* MeasurementCardView.swift in Sources */,
 				040 /* RugbyICPBridge.mm in Sources */,
+				13B083092E7014F90076E5B3 /* MeasurementGenerationService.swift in Sources */,
+				13B0830A2E7014F90076E5B3 /* ReconstructionService.swift in Sources */,
+				13B0830B2E7014F90076E5B3 /* ScanProgressService.swift in Sources */,
+				13B0830C2E7014F90076E5B3 /* ScanOrchestrationService.swift in Sources */,
+				13B083102E7020000076E5B3 /* ScanResults.swift in Sources */,
+				13B083122E7020100076E5B3 /* MultiAngleScanManagerDelegate.swift in Sources */,
+				13B083142E7020200076E5B3 /* MeasurementCalculator.swift in Sources */,
 				041 /* RugbyMeshExporter.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -519,7 +602,6 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6S4895V2RV;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				MARKETING_VERSION = 1.0;
@@ -540,7 +622,6 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6S4895V2RV;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				MARKETING_VERSION = 1.0;
@@ -588,6 +669,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 6S4895V2RV;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -651,6 +733,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 6S4895V2RV;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -681,7 +764,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				COREML_CODEGEN_LANGUAGE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6S4895V2RV;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CyborgRugby/Application/Info.plist;
@@ -719,7 +801,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				COREML_CODEGEN_LANGUAGE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 6S4895V2RV;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CyborgRugby/Application/Info.plist;
@@ -791,6 +872,17 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		13B0844F2E706A350076E5B3 /* XCRemoteSwiftPackageReference "ZipArchive" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ZipArchive/ZipArchive";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.6.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		134A81F62E6B02EB00EE0746 /* StandardCyborgFusion */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -799,6 +891,16 @@
 		134A81F92E6B02FC00EE0746 /* StandardCyborgUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = StandardCyborgUI;
+		};
+		13B084512E706EE30076E5B3 /* ZipArchive */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 13B0844F2E706A350076E5B3 /* XCRemoteSwiftPackageReference "ZipArchive" */;
+			productName = ZipArchive;
+		};
+		13B084532E7071DB0076E5B3 /* ZipArchive */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 13B0844F2E706A350076E5B3 /* XCRemoteSwiftPackageReference "ZipArchive" */;
+			productName = ZipArchive;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -60,3 +60,21 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Documentation files (temporary build artifacts)
+*.md.backup
+*_FIXES.md
+*_STATUS.md
+*_SUMMARY.md
+*_GUIDE.md
+*_INTEGRATION.md
+*_ANALYSIS.md

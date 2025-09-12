@@ -14,22 +14,20 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         window = UIWindow(windowScene: windowScene)
         
-        // Create main view controller programmatically
-        let mainViewController = MainViewController()
-        let navigationController = UINavigationController(rootViewController: mainViewController)
+        // Create onboarding view controller as the initial view
+        let onboardingViewController = OnboardingViewController()
+        let navController = UINavigationController(rootViewController: onboardingViewController)
         
-        // Customize navigation bar for rugby theme
+        // Customize navigation bar
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor.systemGreen
+        appearance.backgroundColor = .systemGreen
         appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
-        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+        navController.navigationBar.standardAppearance = appearance
+        navController.navigationBar.scrollEdgeAppearance = appearance
+        navController.navigationBar.tintColor = .white
         
-        navigationController.navigationBar.standardAppearance = appearance
-        navigationController.navigationBar.scrollEdgeAppearance = appearance
-        navigationController.navigationBar.tintColor = UIColor.white
-        
-        window?.rootViewController = navigationController
+        window?.rootViewController = navController
         window?.makeKeyAndVisible()
     }
 

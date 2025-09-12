@@ -13,6 +13,10 @@ import Metal
 import CoreMotion
 import CoreML
 import Vision
+import SceneKit
+
+// Add this import for haptic feedback
+import AudioToolbox
 
 class ScrumCapScanningViewController: UIViewController {
     
@@ -21,19 +25,30 @@ class ScrumCapScanningViewController: UIViewController {
     
     // MARK: - UI Components (Programmatic)
     private var metalContainerView: UIView!
+    private var sceneView: SCNView!
     private var poseInstructionLabel: UILabel!
     private var statusHintLabel: UILabel!
     private var poseProgressStack: UIStackView!
     private var poseProgressLabel: UILabel!
-    private var poseProgressView: UIView!
     private var scanningButton: UIButton!
     private var skipPoseButton: UIButton!
-    private var measurementDisplayView: UIView!
+    private var timerLabel: UILabel!
+    
+    // Add new UI components for achievements and voice coaching
+    private var achievementBannerView: UIView!
+    private var achievementIconImageView: UIImageView!
+    private var achievementTitleLabel: UILabel!
+    private var achievementDescriptionLabel: UILabel!
     
     // MARK: - Properties
     private let metalDevice = MTLCreateSystemDefaultDevice()!
     private lazy var algorithmCommandQueue = metalDevice.makeCommandQueue()!
     private lazy var visualizationCommandQueue = metalDevice.makeCommandQueue()!
+    
+    // Add new components
+    private let voiceCoach = VoiceCoach()
+    private let achievementManager = AchievementManager.shared
+    private let playerProfile = PlayerProfile.shared
     
     // StandardCyborg components
     private var reconstructionManager: SCReconstructionManager?
@@ -61,6 +76,13 @@ class ScrumCapScanningViewController: UIViewController {
     private var poseData: [HeadScanningPose: CVPixelBuffer] = [:]
     private var isScanning = false
     private var scanningTimer: Timer?
+    private var scanStartTime: Date?
+    
+    // Add new state variables
+    private var poseStartTime: Date?
+    private var perfectPoseTimer: Timer?
+    private var isPerfectPose = false
+    
     // Stability gating config + variables
     private var gatingConfig: ScanGatingConfig = .resolved()
     private var consecutiveValidCount: Int = 0
@@ -70,6 +92,8 @@ class ScrumCapScanningViewController: UIViewController {
     // UI state
     private let metalLayer = CAMetalLayer()
     private var latestViewMatrix = matrix_identity_float4x4
+    private var pointCloudNode: SCNNode?
+    private var scene rootNode: SCNNode?
     
     // MARK: - Lifecycle
     
@@ -77,6 +101,7 @@ class ScrumCapScanningViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupMetalLayer()
+        setupSceneView()
         setupCyborgRugby()
         setupCameraManager()
         startFirstPose()
@@ -106,11 +131,15 @@ class ScrumCapScanningViewController: UIViewController {
         super.viewWillDisappear(animated)
         cameraManager.stopCapture()
         motionManager.stopDeviceMotionUpdates()
+        scanningTimer?.invalidate()
+        perfectPoseTimer?.invalidate()
+        voiceCoach.stopSpeaking()
     }
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         updateMetalLayerFrame()
+        updateSceneViewFrame()
     }
     
     // MARK: - Setup Methods
@@ -122,6 +151,36 @@ class ScrumCapScanningViewController: UIViewController {
         metalLayer.isOpaque = true
         metalLayer.contentsScale = UIScreen.main.scale
         metalContainerView.layer.addSublayer(metalLayer)
+    }
+    
+    private func setupSceneView() {
+        sceneView = SCNView()
+        sceneView.backgroundColor = UIColor.clear
+        sceneView.translatesAutoresizingMaskIntoConstraints = false
+        sceneView.isHidden = true // Hidden by default, shown during scanning
+        view.insertSubview(sceneView, aboveSubview: metalContainerView)
+        
+        // Create a basic scene
+        let scene = SCNScene()
+        sceneView.scene = scene
+        
+        // Add lighting
+        let ambientLight = SCNLight()
+        ambientLight.type = .ambient
+        ambientLight.color = UIColor.white
+        let ambientLightNode = SCNNode()
+        ambientLightNode.light = ambientLight
+        scene.rootNode.addChildNode(ambientLightNode)
+        
+        let directionalLight = SCNLight()
+        directionalLight.type = .directional
+        directionalLight.color = UIColor.white
+        let directionalLightNode = SCNNode()
+        directionalLightNode.light = directionalLight
+        directionalLightNode.position = SCNVector3(0, 10, 10)
+        scene.rootNode.addChildNode(directionalLightNode)
+        
+        self.sceneRootNode = scene.rootNode
     }
     
     private func setupCyborgRugby() {
@@ -152,6 +211,14 @@ class ScrumCapScanningViewController: UIViewController {
     private func setupUI() {
         view.backgroundColor = .black
 
+        // Add profile button to navigation bar
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "person.fill"),
+            style: .plain,
+            target: self,
+            action: #selector(showProfile)
+        )
+
         // Metal container for live preview
         if metalContainerView == nil { metalContainerView = UIView() }
         metalContainerView.translatesAutoresizingMaskIntoConstraints = false
@@ -160,39 +227,44 @@ class ScrumCapScanningViewController: UIViewController {
         // Pose instruction label
         if poseInstructionLabel == nil { poseInstructionLabel = UILabel() }
         poseInstructionLabel.textColor = .white
-        poseInstructionLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        poseInstructionLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
         poseInstructionLabel.textAlignment = .center
         poseInstructionLabel.numberOfLines = 0
-        poseInstructionLabel.font = UIFont.preferredFont(forTextStyle: .title2)
-        poseInstructionLabel.adjustsFontForContentSizeCategory = true
         poseInstructionLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(poseInstructionLabel)
 
         // Status hint label (valid/stable progress)
         if statusHintLabel == nil { statusHintLabel = UILabel() }
         statusHintLabel.textColor = .systemYellow
-        statusHintLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
-        statusHintLabel.adjustsFontForContentSizeCategory = true
+        statusHintLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         statusHintLabel.textAlignment = .center
         statusHintLabel.numberOfLines = 1
         statusHintLabel.translatesAutoresizingMaskIntoConstraints = false
         statusHintLabel.isHidden = true
         view.addSubview(statusHintLabel)
 
+        // Timer label
+        timerLabel = UILabel()
+        timerLabel.textColor = .white
+        timerLabel.font = UIFont.monospacedDigitSystemFont(ofSize: 16, weight: .medium)
+        timerLabel.textAlignment = .center
+        timerLabel.translatesAutoresizingMaskIntoConstraints = false
+        timerLabel.isHidden = true
+        view.addSubview(timerLabel)
+
         // Pose progress stack (dots)
         poseProgressStack = UIStackView()
         poseProgressStack.axis = .horizontal
         poseProgressStack.alignment = .center
         poseProgressStack.distribution = .equalCentering
-        poseProgressStack.spacing = 6
+        poseProgressStack.spacing = 8
         poseProgressStack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(poseProgressStack)
 
         // Pose progress label (e.g., 3 of 7)
         poseProgressLabel = UILabel()
         poseProgressLabel.textColor = .white
-        poseProgressLabel.font = UIFont.preferredFont(forTextStyle: .caption1)
-        poseProgressLabel.adjustsFontForContentSizeCategory = true
+        poseProgressLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         poseProgressLabel.textAlignment = .center
         poseProgressLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(poseProgressLabel)
@@ -203,15 +275,15 @@ class ScrumCapScanningViewController: UIViewController {
             var config = UIButton.Configuration.filled()
             config.title = "Start Scanning"
             config.image = UIImage(systemName: "camera.viewfinder")
-            config.imagePadding = 6
+            config.imagePadding = 8
             config.cornerStyle = .large
             scanningButton.configuration = config
         } else {
             scanningButton.setTitle("Start Scanning", for: .normal)
             scanningButton.setTitleColor(.white, for: .normal)
             scanningButton.backgroundColor = .systemBlue
-            scanningButton.layer.cornerRadius = 12
-            scanningButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 20, bottom: 12, right: 20)
+            scanningButton.layer.cornerRadius = 16
+            scanningButton.contentEdgeInsets = UIEdgeInsets(top: 16, left: 24, bottom: 16, right: 24)
         }
         scanningButton.translatesAutoresizingMaskIntoConstraints = false
         scanningButton.addTarget(self, action: #selector(scanningButtonTapped(_:)), for: .touchUpInside)
@@ -225,15 +297,15 @@ class ScrumCapScanningViewController: UIViewController {
             var config = UIButton.Configuration.tinted()
             config.title = "Skip Pose"
             config.image = UIImage(systemName: "forward.fill")
-            config.imagePadding = 6
-            config.cornerStyle = .medium
+            config.imagePadding = 8
+            config.cornerStyle = .large
             skipPoseButton.configuration = config
         } else {
             skipPoseButton.setTitle("Skip Pose", for: .normal)
             skipPoseButton.setTitleColor(.white, for: .normal)
             skipPoseButton.backgroundColor = .systemOrange
-            skipPoseButton.layer.cornerRadius = 10
-            skipPoseButton.contentEdgeInsets = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16)
+            skipPoseButton.layer.cornerRadius = 12
+            skipPoseButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 20, bottom: 12, right: 20)
         }
         skipPoseButton.translatesAutoresizingMaskIntoConstraints = false
         skipPoseButton.addTarget(self, action: #selector(skipPoseButtonTapped(_:)), for: .touchUpInside)
@@ -242,6 +314,9 @@ class ScrumCapScanningViewController: UIViewController {
         skipPoseButton.accessibilityIdentifier = "scan.skipPose"
         skipPoseButton.accessibilityLabel = "Skip pose"
 
+        // Add achievement banner view
+        setupAchievementBanner()
+        
         // Layout constraints
         NSLayoutConstraint.activate([
             // Metal view fills the screen
@@ -249,33 +324,49 @@ class ScrumCapScanningViewController: UIViewController {
             metalContainerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             metalContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             metalContainerView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            
+            // Scene view fills the screen (above metal view)
+            sceneView.topAnchor.constraint(equalTo: view.topAnchor),
+            sceneView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            sceneView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            sceneView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
             // Pose instructions near top
-            poseInstructionLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
-            poseInstructionLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            poseInstructionLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            poseInstructionLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            poseInstructionLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            poseInstructionLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
 
             // Hint label below instructions
-            statusHintLabel.topAnchor.constraint(equalTo: poseInstructionLabel.bottomAnchor, constant: 6),
-            statusHintLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            statusHintLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            statusHintLabel.topAnchor.constraint(equalTo: poseInstructionLabel.bottomAnchor, constant: 10),
+            statusHintLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            statusHintLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
 
-            // Pose progress stack below hint
-            poseProgressStack.topAnchor.constraint(equalTo: statusHintLabel.bottomAnchor, constant: 8),
+            // Timer label below hint
+            timerLabel.topAnchor.constraint(equalTo: statusHintLabel.bottomAnchor, constant: 8),
+            timerLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+
+            // Pose progress stack below timer
+            poseProgressStack.topAnchor.constraint(equalTo: timerLabel.bottomAnchor, constant: 12),
             poseProgressStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
             // Pose progress label below dots
-            poseProgressLabel.topAnchor.constraint(equalTo: poseProgressStack.bottomAnchor, constant: 4),
-            poseProgressLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            poseProgressLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            poseProgressLabel.topAnchor.constraint(equalTo: poseProgressStack.bottomAnchor, constant: 8),
+            poseProgressLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            poseProgressLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
 
             // Scanning button at bottom center
             scanningButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            scanningButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            scanningButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
 
             // Skip button above scanning button
             skipPoseButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            skipPoseButton.bottomAnchor.constraint(equalTo: scanningButton.topAnchor, constant: -10)
+            skipPoseButton.bottomAnchor.constraint(equalTo: scanningButton.topAnchor, constant: -12),
+            
+            // Achievement banner at top
+            achievementBannerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
+            achievementBannerView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            achievementBannerView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            achievementBannerView.heightAnchor.constraint(equalToConstant: 80)
         ])
 
         // Initial UI state
@@ -293,6 +384,62 @@ class ScrumCapScanningViewController: UIViewController {
         CATransaction.commit()
     }
     
+    private func updateSceneViewFrame() {
+        sceneView.frame = metalContainerView.bounds
+    }
+    
+    private func setupAchievementBanner() {
+        achievementBannerView = UIView()
+        achievementBannerView.backgroundColor = UIColor.systemGreen.withAlphaComponent(0.9)
+        achievementBannerView.layer.cornerRadius = 12
+        achievementBannerView.layer.masksToBounds = true
+        achievementBannerView.translatesAutoresizingMaskIntoConstraints = false
+        achievementBannerView.isHidden = true
+        view.addSubview(achievementBannerView)
+        
+        let stackView = UIStackView()
+        stackView.axis = .horizontal
+        stackView.alignment = .center
+        stackView.spacing = 12
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        achievementBannerView.addSubview(stackView)
+        
+        achievementIconImageView = UIImageView()
+        achievementIconImageView.tintColor = .white
+        achievementIconImageView.contentMode = .scaleAspectFit
+        achievementIconImageView.translatesAutoresizingMaskIntoConstraints = false
+        achievementIconImageView.widthAnchor.constraint(equalToConstant: 30).isActive = true
+        achievementIconImageView.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        stackView.addArrangedSubview(achievementIconImageView)
+        
+        let textStackView = UIStackView()
+        textStackView.axis = .vertical
+        textStackView.alignment = .leading
+        textStackView.spacing = 4
+        textStackView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.addArrangedSubview(textStackView)
+        
+        achievementTitleLabel = UILabel()
+        achievementTitleLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        achievementTitleLabel.textColor = .white
+        achievementTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        textStackView.addArrangedSubview(achievementTitleLabel)
+        
+        achievementDescriptionLabel = UILabel()
+        achievementDescriptionLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
+        achievementDescriptionLabel.textColor = .white
+        achievementDescriptionLabel.numberOfLines = 0
+        achievementDescriptionLabel.translatesAutoresizingMaskIntoConstraints = false
+        textStackView.addArrangedSubview(achievementDescriptionLabel)
+        
+        NSLayoutConstraint.activate([
+            stackView.topAnchor.constraint(equalTo: achievementBannerView.topAnchor, constant: 10),
+            stackView.leadingAnchor.constraint(equalTo: achievementBannerView.leadingAnchor, constant: 15),
+            stackView.trailingAnchor.constraint(equalTo: achievementBannerView.trailingAnchor, constant: -15),
+            stackView.bottomAnchor.constraint(equalTo: achievementBannerView.bottomAnchor, constant: -10)
+        ])
+    }
+    
     private func startMotionTracking() {
         guard motionManager.isDeviceMotionAvailable else { return }
         
@@ -301,6 +448,13 @@ class ScrumCapScanningViewController: UIViewController {
             // Feed device motion to reconstruction for improved tracking
             self.reconstructionManager?.accumulateDeviceMotion(motion)
         }
+    }
+    
+    // MARK: - Actions
+    
+    @objc private func showProfile() {
+        let profileVC = PlayerProfileViewController()
+        navigationController?.pushViewController(profileVC, animated: true)
     }
     
     // MARK: - Scanning Control
@@ -331,9 +485,18 @@ class ScrumCapScanningViewController: UIViewController {
         guard !isScanning else { return }
         
         isScanning = true
+        scanStartTime = Date()
+        poseStartTime = Date()
+        startTimer()
+        
         scanningButton.setTitle("Stop Scanning", for: .normal)
         scanningButton.backgroundColor = .systemRed
         skipPoseButton.isHidden = false
+        
+        // Show 3D visualization
+        sceneView.isHidden = false
+        metalContainerView.isHidden = true
+        
         // Prepare reconstruction manager for a new pose
         reconstructionManager?.includesColorBuffersInMetadata = false
         reconstructionManager?.includesDepthBuffersInMetadata = false
@@ -346,6 +509,13 @@ class ScrumCapScanningViewController: UIViewController {
         scanningTimer?.invalidate(); scanningTimer = nil
         statusHintLabel.isHidden = false
         updateHintLabel()
+        
+        // Voice coaching
+        voiceCoach.speak(.startScanning)
+        
+        // Start perfect pose timer
+        startPerfectPoseTimer()
+        
         print("🏉 Started scanning pose (gated): \(currentPose.displayName)")
     }
     
@@ -353,6 +523,8 @@ class ScrumCapScanningViewController: UIViewController {
         guard isScanning else { return }
         
         scanningTimer?.invalidate(); scanningTimer = nil
+        stopTimer()
+        stopPerfectPoseTimer()
         completePoseScanning()
     }
     
@@ -360,9 +532,25 @@ class ScrumCapScanningViewController: UIViewController {
         guard isScanning else { return }
         
         isScanning = false
+        stopTimer()
+        stopPerfectPoseTimer()
+        
         scanningButton.setTitle("Start Scanning", for: .normal)
         scanningButton.backgroundColor = .systemBlue
         skipPoseButton.isHidden = true
+        
+        // Hide 3D visualization
+        sceneView.isHidden = true
+        metalContainerView.isHidden = false
+        
+        // Voice coaching
+        voiceCoach.speak(.poseComplete)
+        
+        // Haptic feedback
+        provideHapticFeedback(.success)
+        
+        // Check for achievements
+        checkPoseAchievements()
         
         // Finalize reconstruction and capture point cloud for the pose
         let pose = currentPose
@@ -372,6 +560,11 @@ class ScrumCapScanningViewController: UIViewController {
             self.reconstructionManager?.reset()
             
             DispatchQueue.main.async {
+                // Update 3D visualization with the point cloud
+                if let pointCloud = pointCloud {
+                    self.updatePointCloudVisualization(pointCloud)
+                }
+                
                 // Mark pose complete and record result
                 self.completedPoses.insert(pose)
                 if let pc = pointCloud {
@@ -448,6 +641,12 @@ class ScrumCapScanningViewController: UIViewController {
     private func completeAllScanning() {
         print("🏉 All poses completed! Processing measurements...")
         
+        // Voice coaching
+        voiceCoach.speak(.scanningComplete)
+        
+        // Check for achievements
+        checkScanCompletionAchievements()
+        
         // Compute measurements from captured point clouds using a robust local calculator
         let perPoseResults = multiAngleScanManager.results()
         let fullMeasurements = computeMeasurements(from: perPoseResults)
@@ -505,8 +704,8 @@ class ScrumCapScanningViewController: UIViewController {
             iv.contentMode = .scaleAspectFit
             iv.tintColor = .white
             iv.translatesAutoresizingMaskIntoConstraints = false
-            iv.widthAnchor.constraint(equalToConstant: 16).isActive = true
-            iv.heightAnchor.constraint(equalToConstant: 16).isActive = true
+            iv.widthAnchor.constraint(equalToConstant: 20).isActive = true
+            iv.heightAnchor.constraint(equalToConstant: 20).isActive = true
             if completedPoses.contains(pose) {
                 iv.image = UIImage(systemName: "checkmark.circle.fill")
                 iv.tintColor = .systemGreen
@@ -525,6 +724,193 @@ class ScrumCapScanningViewController: UIViewController {
         poseProgressLabel.text = "Pose \(index) of \(total)"
         poseProgressLabel.accessibilityIdentifier = "scan.progress"
         poseProgressLabel.accessibilityLabel = "Pose \(index) of \(total)"
+    }
+    
+    // MARK: - Timer Methods
+    
+    private func startTimer() {
+        scanStartTime = Date()
+        timerLabel.isHidden = false
+        updateTimerLabel()
+        
+        scanningTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            self?.updateTimerLabel()
+        }
+    }
+    
+    private func stopTimer() {
+        scanningTimer?.invalidate()
+        scanningTimer = nil
+        timerLabel.isHidden = true
+    }
+    
+    private func updateTimerLabel() {
+        guard let startTime = scanStartTime else { return }
+        let elapsedTime = Date().timeIntervalSince(startTime)
+        let minutes = Int(elapsedTime / 60)
+        let seconds = Int(elapsedTime.truncatingRemainder(dividingBy: 60))
+        let milliseconds = Int((elapsedTime.truncatingRemainder(dividingBy: 1)) * 10)
+        timerLabel.text = String(format: "%02d:%02d.%d", minutes, seconds, milliseconds)
+    }
+    
+    // MARK: - Achievement System
+    
+    private func checkPoseAchievements() {
+        // Check for perfect pose achievement
+        if isPerfectPose {
+            if achievementManager.unlockAchievement(.perfectPose) {
+                showAchievementBanner(.perfectPose)
+                voiceCoach.speak(.achievementUnlocked("Perfect Pose"))
+            }
+        }
+        
+        // Check for all poses achievement
+        if completedPoses.count == HeadScanningPose.allCases.count - 1 { // -1 because we haven't added the last pose yet
+            if achievementManager.unlockAchievement(.allPoses) {
+                showAchievementBanner(.allPoses)
+                voiceCoach.speak(.achievementUnlocked("All Poses Master"))
+            }
+        }
+    }
+    
+    private func checkScanCompletionAchievements() {
+        // Check for first scan achievement
+        if achievementManager.unlockAchievement(.firstScan) {
+            showAchievementBanner(.firstScan)
+            voiceCoach.speak(.achievementUnlocked("First Scan"))
+        }
+        
+        // Check for quick scan achievement
+        if let startTime = scanStartTime {
+            let totalTime = Date().timeIntervalSince(startTime)
+            if totalTime < 120 { // 2 minutes
+                if achievementManager.unlockAchievement(.quickScan) {
+                    showAchievementBanner(.quickScan)
+                    voiceCoach.speak(.achievementUnlocked("Quick Scan"))
+                }
+            }
+            // Update player profile with scan time
+            playerProfile.addScanTime(Int(totalTime))
+        }
+        
+        // Check for expert scanner achievement
+        let scanCount = playerProfile.scanCount
+        if scanCount >= 9 { // 10th scan (0-indexed)
+            if achievementManager.unlockAchievement(.expertScanner) {
+                showAchievementBanner(.expertScanner)
+                voiceCoach.speak(.achievementUnlocked("Expert Scanner"))
+            }
+        }
+        
+        // Increment scan count
+        playerProfile.incrementScanCount()
+    }
+    
+    private func showAchievementBanner(_ achievement: AchievementManager.Achievement) {
+        achievementIconImageView.image = UIImage(systemName: achievement.icon)
+        achievementTitleLabel.text = achievement.title
+        achievementDescriptionLabel.text = achievement.description
+        
+        achievementBannerView.isHidden = false
+        
+        // Hide after 3 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            self.achievementBannerView.isHidden = true
+        }
+    }
+    
+    // MARK: - Perfect Pose Timer
+    
+    private func startPerfectPoseTimer() {
+        perfectPoseTimer?.invalidate()
+        isPerfectPose = false
+        
+        perfectPoseTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self = self, self.isScanning, self.consecutiveValidCount >= 5 else { return }
+            
+            if !self.isPerfectPose {
+                self.isPerfectPose = true
+                // Voice coaching for perfect position
+                self.voiceCoach.speak(.goodPosition)
+                // Haptic feedback
+                self.provideHapticFeedback(.success)
+            }
+        }
+    }
+    
+    private func stopPerfectPoseTimer() {
+        perfectPoseTimer?.invalidate()
+        perfectPoseTimer = nil
+        isPerfectPose = false
+    }
+    
+    // MARK: - Haptic Feedback
+    
+    private func provideHapticFeedback(_ type: UINotificationFeedbackGenerator.FeedbackType) {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(type)
+    }
+    
+    private func provideHapticFeedback(_ type: UIImpactFeedbackGenerator.FeedbackStyle) {
+        let generator = UIImpactFeedbackGenerator(style: type)
+        generator.impactOccurred()
+    }
+    
+    // MARK: - 3D Visualization
+    
+    private func updatePointCloudVisualization(_ pointCloud: SCPointCloud) {
+        // Remove existing point cloud node
+        pointCloudNode?.removeFromParentNode()
+        
+        // Create a new node for the point cloud
+        let pointsNode = SCNNode()
+        
+        // Extract points from SCPointCloud
+        let data = pointCloud.pointsData as Data
+        let stride = SCPointCloud.pointStride()
+        let posOffset = SCPointCloud.positionOffset()
+        let compSize = SCPointCloud.positionComponentSize()
+        let count = Int(pointCloud.pointCount)
+        
+        // Create geometry source for positions
+        let positions = data.withUnsafeBytes { (rawBuf: UnsafeRawBufferPointer) -> [SCNVector3] in
+            guard let base = rawBuf.baseAddress else { return [] }
+            var positions: [SCNVector3] = []
+            positions.reserveCapacity(count)
+            
+            for i in 0..<count {
+                let offset = i * Int(stride) + Int(posOffset)
+                let px = base.advanced(by: offset + 0 * Int(compSize)).assumingMemoryBound(to: Float.self).pointee
+                let py = base.advanced(by: offset + 1 * Int(compSize)).assumingMemoryBound(to: Float.self).pointee
+                let pz = base.advanced(by: offset + 2 * Int(compSize)).assumingMemoryBound(to: Float.self).pointee
+                positions.append(SCNVector3(px, py, pz))
+            }
+            
+            return positions
+        }
+        
+        // Create geometry element
+        let indices = Array(0..<UInt32(count))
+        let dataElement = NSData(bytes: indices, length: count * MemoryLayout<UInt32>.size) as Data
+        let geometryElement = SCNGeometryElement(data: dataElement, primitiveType: .point, primitiveCount: count, bytesPerIndex: MemoryLayout<UInt32>.size)
+        
+        // Create geometry
+        let geometrySource = SCNGeometrySource(vertices: positions)
+        let geometry = SCNGeometry(sources: [geometrySource], elements: [geometryElement])
+        
+        // Style the points
+        geometry.materials = [SCNMaterial.materialWithColor(.systemGreen)]
+        
+        pointsNode.geometry = geometry
+        sceneRootNode?.addChildNode(pointsNode)
+        pointCloudNode = pointsNode
+        
+        // Position the camera to view the point cloud
+        let cameraNode = SCNNode()
+        cameraNode.camera = SCNCamera()
+        cameraNode.position = SCNVector3(0, 0, 0.5)
+        sceneRootNode?.addChildNode(cameraNode)
+        sceneView.pointOfView = cameraNode
     }
     
     // MARK: - Results Processing
@@ -696,6 +1082,8 @@ extension ScrumCapScanningViewController: CameraManagerDelegate {
                 let adviceText: String
                 if validation.confidence < 0.3 {
                     adviceText = "Lighting looks low. Move to a brighter area or face a light source."
+                    // Voice coaching for lighting issue
+                    self.voiceCoach.speak(.lightingIssue)
                 } else {
                     switch self.currentPose {
                     case .leftProfile: adviceText = "Turn a bit more to the left and hold steady."
@@ -703,6 +1091,8 @@ extension ScrumCapScanningViewController: CameraManagerDelegate {
                     case .lookingDown: adviceText = "Tilt your head slightly down to show the back of your head."
                     default: adviceText = "Hold steady. Sit comfortably and keep your head still."
                     }
+                    // Voice coaching for position adjustment
+                    self.voiceCoach.speak(.adjustPosition(adviceText))
                 }
                 self.poseInstructionLabel.text = "⚠️ \(validation.feedback)\n\(adviceText)"
                 self.consecutiveValidCount = 0
@@ -926,7 +1316,7 @@ private extension ScrumCapScanningViewController {
 
         return ScrumCapMeasurements(
             headCircumference: ValidatedMeasurement(value: headCircCM, confidence: 0.85, validationStatus: .validated, alternativeValues: [], measurementSource: .directScan(poses: Array(scans.keys))),
-            earToEarOverTop: ValidatedMeasurement(value: headCircCM, confidence: 0.6, validationStatus: .estimated, alternativeValues: [], measurementSource: .statisticalEstimation(basedOn: ["slice perimeter"])) ,
+            earToEarOverTop: ValidatedMeasurement(value: headCircUMference, confidence: 0.6, validationStatus: .estimated, alternativeValues: [], measurementSource: .statisticalEstimation(basedOn: ["slice perimeter"])) ,
             foreheadToNeckBase: ValidatedMeasurement(value: depthMM, confidence: 0.6, validationStatus: .estimated, alternativeValues: [], measurementSource: .directScan(poses: Array(scans.keys))) ,
             leftEarDimensions: leftEar,
             rightEarDimensions: rightEar,
@@ -937,5 +1327,17 @@ private extension ScrumCapScanningViewController {
             jawLineToEar: ValidatedMeasurement(value: 100.0, confidence: 0.3, validationStatus: .estimated, alternativeValues: [], measurementSource: .statisticalEstimation(basedOn: ["defaults"])) ,
             chinToEarDistance: ValidatedMeasurement(value: 110.0, confidence: 0.3, validationStatus: .estimated, alternativeValues: [], measurementSource: .statisticalEstimation(basedOn: ["defaults"]))
         )
+    }
+}
+
+// MARK: - SCNMaterial Extension
+
+extension SCNMaterial {
+    static func materialWithColor(_ color: UIColor) -> SCNMaterial {
+        let material = SCNMaterial()
+        material.diffuse.contents = color
+        material.specular.contents = UIColor.white
+        material.shininess = 0.1
+        return material
     }
 }

@@ -7,145 +7,547 @@
 
 import UIKit
 import OSLog
+import SceneKit
 
 class ScanResultsViewController: UIViewController {
     
     // MARK: - UI Components
+    private let scrollView = UIScrollView()
+    private let contentView = UIView()
     
-    @IBOutlet weak var scrollView: UIScrollView!
-    @IBOutlet weak var contentStackView: UIStackView!
+    // Hero section
+    private let heroView = UIView()
+    private let heroImageView = UIImageView()
+    private let heroTitleLabel = UILabel()
+    private let heroSubtitleLabel = UILabel()
     
-    @IBOutlet weak var overallQualityView: UIView!
-    @IBOutlet weak var qualityLabel: UILabel!
-    @IBOutlet weak var confidenceLabel: UILabel!
-    @IBOutlet weak var qualityProgressView: UIProgressView!
+    // Quality section
+    private let qualityCardView = UIView()
+    private let qualityTitleLabel = UILabel()
+    private let qualityScoreLabel = UILabel()
+    private let qualityProgressView = UIProgressView()
+    private let qualityDescriptionLabel = UILabel()
     
-    @IBOutlet weak var measurementsTableView: UITableView!
-    @IBOutlet weak var earProtectionView: UIView!
-    @IBOutlet weak var recommendationsTableView: UITableView!
+    // Summary cards
+    private let summaryStackView = UIStackView()
     
-    @IBOutlet weak var scrumCapSizeLabel: UILabel!
-    @IBOutlet weak var headShapeLabel: UILabel!
-    @IBOutlet weak var asymmetryLabel: UILabel!
+    // 3D Visualization
+    private let visualizationCardView = UIView()
+    private let visualizationTitleLabel = UILabel()
+    private let sceneView = SCNView()
+    private let visualizationDescriptionLabel = UILabel()
     
-    @IBOutlet weak var exportButton: UIButton!
-    @IBOutlet weak var retryButton: UIButton!
-    @IBOutlet weak var proceedButton: UIButton!
+    // Protection analysis
+    private let protectionCardView = UIView()
+    private let protectionTitleLabel = UILabel()
+    private let protection effectivenessLabel = UILabel()
+    private let protectionDetailsStackView = UIStackView()
+    
+    // Recommendations
+    private let recommendationsCardView = UIView()
+    private let recommendationsTitleLabel = UILabel()
+    private let recommendationsStackView = UIStackView()
+    
+    // Action buttons
+    private let actionStackView = UIStackView()
+    private let primaryActionButton = UIButton()
+    private let secondaryActionButton = UIButton()
+    private let viewDetailsButton = UIButton()
     
     // MARK: - Data
-    
     var scanResult: CompleteScanResult!
     var protectionAnalysis: EarProtectionAnalysis!
     
     private let rugbyEarAnalyzer = RugbyEarProtectionCalculator()
     private var measurementItems: [MeasurementDisplayItem] = []
     private var recommendationItems: [RecommendationDisplayItem] = []
-    private var summaryCardsStack: UIStackView?
+    private var pointCloudNode: SCNNode?
+    private var sceneRootNode: SCNNode?
     
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        title = "Scrum Cap Fitting Results"
+        title = "Your Scrum Cap Fit"
         setupUI()
         processResults()
         displayResults()
+        setup3DVisualization()
     }
     
-    // MARK: - Setup
+    // MARK: - UI Setup
     
     private func setupUI() {
-        // Configure navigation
-        navigationItem.hidesBackButton = true
+        view.backgroundColor = .systemBackground
+        
+        // Add profile button to navigation bar
         navigationItem.rightBarButtonItem = UIBarButtonItem(
-            barButtonSystemItem: .action,
+            image: UIImage(systemName: "person.fill"),
+            style: .plain,
             target: self,
-            action: #selector(shareResults)
+            action: #selector(showProfile)
         )
         
-        // Style overall quality view
-        overallQualityView.layer.cornerRadius = 12
-        overallQualityView.layer.shadowColor = UIColor.black.cgColor
-        overallQualityView.layer.shadowOffset = CGSize(width: 0, height: 2)
-        overallQualityView.layer.shadowRadius = 4
-        overallQualityView.layer.shadowOpacity = 0.1
-        
-        // Configure table views
-        measurementsTableView.delegate = self
-        measurementsTableView.dataSource = self
-        measurementsTableView.register(UITableViewCell.self, forCellReuseIdentifier: "MeasurementCell")
-        
-        recommendationsTableView.delegate = self
-        recommendationsTableView.dataSource = self
-        recommendationsTableView.register(UITableViewCell.self, forCellReuseIdentifier: "RecommendationCell")
-        
-        // Dynamic Type for key labels
-        qualityLabel.font = UIFont.preferredFont(forTextStyle: .title2)
-        qualityLabel.adjustsFontForContentSizeCategory = true
-        confidenceLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
-        confidenceLabel.adjustsFontForContentSizeCategory = true
-        scrumCapSizeLabel.font = UIFont.preferredFont(forTextStyle: .headline)
-        scrumCapSizeLabel.adjustsFontForContentSizeCategory = true
-        headShapeLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
-        headShapeLabel.adjustsFontForContentSizeCategory = true
-        asymmetryLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
-        asymmetryLabel.adjustsFontForContentSizeCategory = true
-
-        // Style buttons
-        styleButtons()
-
-        // Insert summary cards container below overall quality view
-        if summaryCardsStack == nil {
-            let stack = UIStackView()
-            stack.axis = .vertical
-            stack.spacing = 12
-            stack.translatesAutoresizingMaskIntoConstraints = false
-            stack.isLayoutMarginsRelativeArrangement = true
-            stack.layoutMargins = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
-            summaryCardsStack = stack
-            contentStackView.insertArrangedSubview(stack, at: 1) // just after overall quality
-        }
+        setupScrollView()
+        setupHeroSection()
+        setupQualitySection()
+        setupSummaryCards()
+        setupVisualizationSection()
+        setupProtectionSection()
+        setupRecommendationsSection()
+        setupActionButtons()
+        setupConstraints()
     }
     
-    private func styleButtons() {
-        if #available(iOS 15.0, *) {
-            var exportCfg = UIButton.Configuration.tinted()
-            exportCfg.title = "Export"
-            exportCfg.image = UIImage(systemName: "square.and.arrow.up")
-            exportCfg.imagePadding = 6
-            exportCfg.cornerStyle = .medium
-            exportButton.configuration = exportCfg
-
-            var retryCfg = UIButton.Configuration.tinted()
-            retryCfg.title = "Retry"
-            retryCfg.image = UIImage(systemName: "arrow.counterclockwise")
-            retryCfg.imagePadding = 6
-            retryCfg.cornerStyle = .medium
-            retryButton.configuration = retryCfg
-
-            var proceedCfg = UIButton.Configuration.filled()
-            proceedCfg.title = "Proceed"
-            proceedCfg.image = UIImage(systemName: "checkmark.circle.fill")
-            proceedCfg.baseBackgroundColor = .systemGreen
-            proceedCfg.imagePadding = 6
-            proceedCfg.cornerStyle = .large
-            proceedButton.configuration = proceedCfg
-        } else {
-            styleLegacyButton(exportButton, color: .systemBlue)
-            styleLegacyButton(retryButton, color: .systemOrange)
-            styleLegacyButton(proceedButton, color: .systemGreen)
-        }
-        exportButton.accessibilityIdentifier = "results.export"
-        retryButton.accessibilityIdentifier = "results.retry"
-        proceedButton.accessibilityIdentifier = "results.proceed"
+    private func setupScrollView() {
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scrollView)
+        
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.addSubview(contentView)
     }
-
-    private func styleLegacyButton(_ button: UIButton, color: UIColor) {
-        button.layer.cornerRadius = 8
-        button.backgroundColor = color
-        button.setTitleColor(.white, for: .normal)
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+    
+    private func setupHeroSection() {
+        heroView.backgroundColor = .systemGreen
+        heroView.layer.cornerRadius = 16
+        heroView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(heroView)
+        
+        heroImageView.image = UIImage(systemName: "sportscourt")
+        heroImageView.tintColor = .white
+        heroImageView.contentMode = .scaleAspectFit
+        heroImageView.translatesAutoresizingMaskIntoConstraints = false
+        heroView.addSubview(heroImageView)
+        
+        heroTitleLabel.text = "Perfect Fit Analysis Complete"
+        heroTitleLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+        heroTitleLabel.textColor = .white
+        heroTitleLabel.textAlignment = .center
+        heroTitleLabel.numberOfLines = 0
+        heroTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        heroView.addSubview(heroTitleLabel)
+        
+        heroSubtitleLabel.text = "Your custom scrum cap measurements are ready"
+        heroSubtitleLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        heroSubtitleLabel.textColor = .white.withAlphaComponent(0.9)
+        heroSubtitleLabel.textAlignment = .center
+        heroSubtitleLabel.numberOfLines = 0
+        heroSubtitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        heroView.addSubview(heroSubtitleLabel)
+        
+        // Hero view constraints
+        NSLayoutConstraint.activate([
+            heroImageView.topAnchor.constraint(equalTo: heroView.topAnchor, constant: 20),
+            heroImageView.centerXAnchor.constraint(equalTo: heroView.centerXAnchor),
+            heroImageView.widthAnchor.constraint(equalToConstant: 60),
+            heroImageView.heightAnchor.constraint(equalToConstant: 60),
+            
+            heroTitleLabel.topAnchor.constraint(equalTo: heroImageView.bottomAnchor, constant: 15),
+            heroTitleLabel.leadingAnchor.constraint(equalTo: heroView.leadingAnchor, constant: 20),
+            heroTitleLabel.trailingAnchor.constraint(equalTo: heroView.trailingAnchor, constant: -20),
+            
+            heroSubtitleLabel.topAnchor.constraint(equalTo: heroTitleLabel.bottomAnchor, constant: 8),
+            heroSubtitleLabel.leadingAnchor.constraint(equalTo: heroView.leadingAnchor, constant: 20),
+            heroSubtitleLabel.trailingAnchor.constraint(equalTo: heroView.trailingAnchor, constant: -20),
+            heroSubtitleLabel.bottomAnchor.constraint(equalTo: heroView.bottomAnchor, constant: -20)
+        ])
+    }
+    
+    private func setupQualitySection() {
+        qualityCardView.backgroundColor = .systemBackground
+        qualityCardView.layer.cornerRadius = 16
+        qualityCardView.layer.shadowColor = UIColor.black.cgColor
+        qualityCardView.layer.shadowOffset = CGSize(width: 0, height: 2)
+        qualityCardView.layer.shadowRadius = 8
+        qualityCardView.layer.shadowOpacity = 0.1
+        qualityCardView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(qualityCardView)
+        
+        qualityTitleLabel.text = "Scan Quality"
+        qualityTitleLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
+        qualityTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        qualityCardView.addSubview(qualityTitleLabel)
+        
+        qualityScoreLabel.font = UIFont.systemFont(ofSize: 32, weight: .bold)
+        qualityScoreLabel.translatesAutoresizingMaskIntoConstraints = false
+        qualityCardView.addSubview(qualityScoreLabel)
+        
+        qualityProgressView.translatesAutoresizingMaskIntoConstraints = false
+        qualityProgressView.layer.cornerRadius = 7
+        qualityProgressView.layer.masksToBounds = true
+        qualityProgressView.trackTintColor = .systemGray5
+        qualityCardView.addSubview(qualityProgressView)
+        
+        qualityDescriptionLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        qualityDescriptionLabel.textColor = .secondaryLabel
+        qualityDescriptionLabel.numberOfLines = 0
+        qualityDescriptionLabel.translatesAutoresizingMaskIntoConstraints = false
+        qualityCardView.addSubview(qualityDescriptionLabel)
+        
+        // Quality section constraints
+        NSLayoutConstraint.activate([
+            qualityTitleLabel.topAnchor.constraint(equalTo: qualityCardView.topAnchor, constant: 20),
+            qualityTitleLabel.leadingAnchor.constraint(equalTo: qualityCardView.leadingAnchor, constant: 20),
+            qualityTitleLabel.trailingAnchor.constraint(equalTo: qualityCardView.trailingAnchor, constant: -20),
+            
+            qualityScoreLabel.topAnchor.constraint(equalTo: qualityTitleLabel.bottomAnchor, constant: 10),
+            qualityScoreLabel.leadingAnchor.constraint(equalTo: qualityCardView.leadingAnchor, constant: 20),
+            qualityScoreLabel.trailingAnchor.constraint(equalTo: qualityCardView.trailingAnchor, constant: -20),
+            
+            qualityProgressView.topAnchor.constraint(equalTo: qualityScoreLabel.bottomAnchor, constant: 15),
+            qualityProgressView.leadingAnchor.constraint(equalTo: qualityCardView.leadingAnchor, constant: 20),
+            qualityProgressView.trailingAnchor.constraint(equalTo: qualityCardView.trailingAnchor, constant: -20),
+            qualityProgressView.heightAnchor.constraint(equalToConstant: 14),
+            
+            qualityDescriptionLabel.topAnchor.constraint(equalTo: qualityProgressView.bottomAnchor, constant: 15),
+            qualityDescriptionLabel.leadingAnchor.constraint(equalTo: qualityCardView.leadingAnchor, constant: 20),
+            qualityDescriptionLabel.trailingAnchor.constraint(equalTo: qualityCardView.trailingAnchor, constant: -20),
+            qualityDescriptionLabel.bottomAnchor.constraint(equalTo: qualityCardView.bottomAnchor, constant: -20)
+        ])
+    }
+    
+    private func setupSummaryCards() {
+        summaryStackView.axis = .horizontal
+        summaryStackView.distribution = .fillEqually
+        summaryStackView.spacing = 15
+        summaryStackView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(summaryStackView)
+        
+        // We'll populate these in displayResults
+    }
+    
+    private func createSummaryCard(title: String, value: String, subtitle: String?) -> UIView {
+        let cardView = UIView()
+        cardView.backgroundColor = .systemGray6
+        cardView.layer.cornerRadius = 12
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        titleLabel.textColor = .secondaryLabel
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(titleLabel)
+        
+        let valueLabel = UILabel()
+        valueLabel.text = value
+        valueLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
+        valueLabel.textAlignment = .center
+        valueLabel.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(valueLabel)
+        
+        let subtitleLabel = UILabel()
+        subtitleLabel.text = subtitle
+        subtitleLabel.font = UIFont.systemFont(ofSize: 12, weight: .regular)
+        subtitleLabel.textColor = .secondaryLabel
+        subtitleLabel.textAlignment = .center
+        subtitleLabel.numberOfLines = 0
+        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(subtitleLabel)
+        
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 15),
+            titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 10),
+            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -10),
+            
+            valueLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 5),
+            valueLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 10),
+            valueLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -10),
+            
+            subtitleLabel.topAnchor.constraint(equalTo: valueLabel.bottomAnchor, constant: 5),
+            subtitleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 10),
+            subtitleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -10),
+            subtitleLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -15)
+        ])
+        
+        return cardView
+    }
+    
+    private func setupVisualizationSection() {
+        visualizationCardView.backgroundColor = .systemBackground
+        visualizationCardView.layer.cornerRadius = 16
+        visualizationCardView.layer.shadowColor = UIColor.black.cgColor
+        visualizationCardView.layer.shadowOffset = CGSize(width: 0, height: 2)
+        visualizationCardView.layer.shadowRadius = 8
+        visualizationCardView.layer.shadowOpacity = 0.1
+        visualizationCardView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(visualizationCardView)
+        
+        visualizationTitleLabel.text = "3D Head Model"
+        visualizationTitleLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
+        visualizationTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        visualizationCardView.addSubview(visualizationTitleLabel)
+        
+        sceneView.backgroundColor = UIColor.systemGray6
+        sceneView.layer.cornerRadius = 12
+        sceneView.translatesAutoresizingMaskIntoConstraints = false
+        visualizationCardView.addSubview(sceneView)
+        
+        visualizationDescriptionLabel.text = "Your precise 3D head scan showing measurement points"
+        visualizationDescriptionLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
+        visualizationDescriptionLabel.textColor = .secondaryLabel
+        visualizationDescriptionLabel.numberOfLines = 0
+        visualizationDescriptionLabel.textAlignment = .center
+        visualizationDescriptionLabel.translatesAutoresizingMaskIntoConstraints = false
+        visualizationCardView.addSubview(visualizationDescriptionLabel)
+        
+        // Visualization section constraints
+        NSLayoutConstraint.activate([
+            visualizationTitleLabel.topAnchor.constraint(equalTo: visualizationCardView.topAnchor, constant: 20),
+            visualizationTitleLabel.leadingAnchor.constraint(equalTo: visualizationCardView.leadingAnchor, constant: 20),
+            visualizationTitleLabel.trailingAnchor.constraint(equalTo: visualizationCardView.trailingAnchor, constant: -20),
+            
+            sceneView.topAnchor.constraint(equalTo: visualizationTitleLabel.bottomAnchor, constant: 15),
+            sceneView.leadingAnchor.constraint(equalTo: visualizationCardView.leadingAnchor, constant: 20),
+            sceneView.trailingAnchor.constraint(equalTo: visualizationCardView.trailingAnchor, constant: -20),
+            sceneView.heightAnchor.constraint(equalToConstant: 200),
+            
+            visualizationDescriptionLabel.topAnchor.constraint(equalTo: sceneView.bottomAnchor, constant: 15),
+            visualizationDescriptionLabel.leadingAnchor.constraint(equalTo: visualizationCardView.leadingAnchor, constant: 20),
+            visualizationDescriptionLabel.trailingAnchor.constraint(equalTo: visualizationCardView.trailingAnchor, constant: -20),
+            visualizationDescriptionLabel.bottomAnchor.constraint(equalTo: visualizationCardView.bottomAnchor, constant: -20)
+        ])
+    }
+    
+    private func setupProtectionSection() {
+        protectionCardView.backgroundColor = .systemBackground
+        protectionCardView.layer.cornerRadius = 16
+        protectionCardView.layer.shadowColor = UIColor.black.cgColor
+        protectionCardView.layer.shadowOffset = CGSize(width: 0, height: 2)
+        protectionCardView.layer.shadowRadius = 8
+        protectionCardView.layer.shadowOpacity = 0.1
+        protectionCardView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(protectionCardView)
+        
+        protectionTitleLabel.text = "Protection Analysis"
+        protectionTitleLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
+        protectionTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        protectionCardView.addSubview(protectionTitleLabel)
+        
+        protection effectivenessLabel.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
+        protection effectivenessLabel.textAlignment = .center
+        protection effectivenessLabel.translatesAutoresizingMaskIntoConstraints = false
+        protectionCardView.addSubview(protection effectivenessLabel)
+        
+        protectionDetailsStackView.axis = .vertical
+        protectionDetailsStackView.spacing = 10
+        protectionDetailsStackView.alignment = .fill
+        protectionDetailsStackView.translatesAutoresizingMaskIntoConstraints = false
+        protectionCardView.addSubview(protectionDetailsStackView)
+        
+        // Protection section constraints
+        NSLayoutConstraint.activate([
+            protectionTitleLabel.topAnchor.constraint(equalTo: protectionCardView.topAnchor, constant: 20),
+            protectionTitleLabel.leadingAnchor.constraint(equalTo: protectionCardView.leadingAnchor, constant: 20),
+            protectionTitleLabel.trailingAnchor.constraint(equalTo: protectionCardView.trailingAnchor, constant: -20),
+            
+            protection effectivenessLabel.topAnchor.constraint(equalTo: protectionTitleLabel.bottomAnchor, constant: 15),
+            protection effectivenessLabel.leadingAnchor.constraint(equalTo: protectionCardView.leadingAnchor, constant: 20),
+            protection effectivenessLabel.trailingAnchor.constraint(equalTo: protectionCardView.trailingAnchor, constant: -20),
+            
+            protectionDetailsStackView.topAnchor.constraint(equalTo: protection effectivenessLabel.bottomAnchor, constant: 15),
+            protectionDetailsStackView.leadingAnchor.constraint(equalTo: protectionCardView.leadingAnchor, constant: 20),
+            protectionDetailsStackView.trailingAnchor.constraint(equalTo: protectionCardView.trailingAnchor, constant: -20),
+            protectionDetailsStackView.bottomAnchor.constraint(equalTo: protectionCardView.bottomAnchor, constant: -20)
+        ])
+    }
+    
+    private func setupRecommendationsSection() {
+        recommendationsCardView.backgroundColor = .systemBackground
+        recommendationsCardView.layer.cornerRadius = 16
+        recommendationsCardView.layer.shadowColor = UIColor.black.cgColor
+        recommendationsCardView.layer.shadowOffset = CGSize(width: 0, height: 2)
+        recommendationsCardView.layer.shadowRadius = 8
+        recommendationsCardView.layer.shadowOpacity = 0.1
+        recommendationsCardView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(recommendationsCardView)
+        
+        recommendationsTitleLabel.text = "Recommendations"
+        recommendationsTitleLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
+        recommendationsTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        recommendationsCardView.addSubview(recommendationsTitleLabel)
+        
+        recommendationsStackView.axis = .vertical
+        recommendationsStackView.spacing = 12
+        recommendationsStackView.alignment = .fill
+        recommendationsStackView.translatesAutoresizingMaskIntoConstraints = false
+        recommendationsCardView.addSubview(recommendationsStackView)
+        
+        // Recommendations section constraints
+        NSLayoutConstraint.activate([
+            recommendationsTitleLabel.topAnchor.constraint(equalTo: recommendationsCardView.topAnchor, constant: 20),
+            recommendationsTitleLabel.leadingAnchor.constraint(equalTo: recommendationsCardView.leadingAnchor, constant: 20),
+            recommendationsTitleLabel.trailingAnchor.constraint(equalTo: recommendationsCardView.trailingAnchor, constant: -20),
+            
+            recommendationsStackView.topAnchor.constraint(equalTo: recommendationsTitleLabel.bottomAnchor, constant: 15),
+            recommendationsStackView.leadingAnchor.constraint(equalTo: recommendationsCardView.leadingAnchor, constant: 20),
+            recommendationsStackView.trailingAnchor.constraint(equalTo: recommendationsCardView.trailingAnchor, constant: -20),
+            recommendationsStackView.bottomAnchor.constraint(equalTo: recommendationsCardView.bottomAnchor, constant: -20)
+        ])
+    }
+    
+    private func setupActionButtons() {
+        actionStackView.axis = .vertical
+        actionStackView.spacing = 15
+        actionStackView.alignment = .fill
+        actionStackView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(actionStackView)
+        
+        // Primary action button - Get Custom Scrum Cap
+        if #available(iOS 15.0, *) {
+            var config = UIButton.Configuration.filled()
+            config.title = "Get My Custom Scrum Cap - $199"
+            config.image = UIImage(systemName: "cart")
+            config.imagePadding = 10
+            config.cornerStyle = .large
+            config.baseBackgroundColor = .systemGreen
+            config.baseForegroundColor = .white
+            primaryActionButton.configuration = config
+        } else {
+            primaryActionButton.setTitle("Get My Custom Scrum Cap - $199", for: .normal)
+            primaryActionButton.setTitleColor(.white, for: .normal)
+            primaryActionButton.backgroundColor = .systemGreen
+            primaryActionButton.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
+            primaryActionButton.layer.cornerRadius = 16
+        }
+        primaryActionButton.translatesAutoresizingMaskIntoConstraints = false
+        primaryActionButton.addTarget(self, action: #selector(primaryActionButtonTapped), for: .touchUpInside)
+        actionStackView.addArrangedSubview(primaryActionButton)
+        
+        // Secondary action button - Compare Options
+        if #available(iOS 15.0, *) {
+            var config = UIButton.Configuration.tinted()
+            config.title = "Compare Cap Options"
+            config.image = UIImage(systemName: "arrow.left.arrow.right")
+            config.imagePadding = 10
+            config.cornerStyle = .large
+            secondaryActionButton.configuration = config
+        } else {
+            secondaryActionButton.setTitle("Compare Cap Options", for: .normal)
+            secondaryActionButton.setTitleColor(.systemGreen, for: .normal)
+            secondaryActionButton.backgroundColor = UIColor.systemGreen.withAlphaComponent(0.1)
+            secondaryActionButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+            secondaryActionButton.layer.cornerRadius = 12
+        }
+        secondaryActionButton.translatesAutoresizingMaskIntoConstraints = false
+        secondaryActionButton.addTarget(self, action: #selector(secondaryActionButtonTapped), for: .touchUpInside)
+        actionStackView.addArrangedSubview(secondaryActionButton)
+        
+        // View details button
+        viewDetailsButton.setTitle("View Detailed Measurements", for: .normal)
+        viewDetailsButton.setTitleColor(.systemBlue, for: .normal)
+        viewDetailsButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        viewDetailsButton.translatesAutoresizingMaskIntoConstraints = false
+        viewDetailsButton.addTarget(self, action: #selector(viewDetailsButtonTapped), for: .touchUpInside)
+        actionStackView.addArrangedSubview(viewDetailsButton)
+    }
+    
+    private func setupConstraints() {
+        NSLayoutConstraint.activate([
+            // Scroll view
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            
+            // Content view
+            contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+            
+            // Hero section
+            heroView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
+            heroView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            heroView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            
+            // Quality section
+            qualityCardView.topAnchor.constraint(equalTo: heroView.bottomAnchor, constant: 20),
+            qualityCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            qualityCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            
+            // Summary cards
+            summaryStackView.topAnchor.constraint(equalTo: qualityCardView.bottomAnchor, constant: 20),
+            summaryStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            summaryStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            
+            // Visualization section
+            visualizationCardView.topAnchor.constraint(equalTo: summaryStackView.bottomAnchor, constant: 20),
+            visualizationCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            visualizationCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            
+            // Protection section
+            protectionCardView.topAnchor.constraint(equalTo: visualizationCardView.bottomAnchor, constant: 20),
+            protectionCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            protectionCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            
+            // Recommendations section
+            recommendationsCardView.topAnchor.constraint(equalTo: protectionCardView.bottomAnchor, constant: 20),
+            recommendationsCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            recommendationsCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            
+            // Action buttons
+            actionStackView.topAnchor.constraint(equalTo: recommendationsCardView.bottomAnchor, constant: 20),
+            actionStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            actionStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            actionStackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20)
+        ])
+    }
+    
+    // MARK: - 3D Visualization Setup
+    
+    private func setup3DVisualization() {
+        // Create a basic scene
+        let scene = SCNScene()
+        sceneView.scene = scene
+        
+        // Add lighting
+        let ambientLight = SCNLight()
+        ambientLight.type = .ambient
+        ambientLight.color = UIColor.white
+        let ambientLightNode = SCNNode()
+        ambientLightNode.light = ambientLight
+        scene.rootNode.addChildNode(ambientLightNode)
+        
+        let directionalLight = SCNLight()
+        directionalLight.type = .directional
+        directionalLight.color = UIColor.white
+        let directionalLightNode = SCNNode()
+        directionalLightNode.light = directionalLight
+        directionalLightNode.position = SCNVector3(0, 10, 10)
+        scene.rootNode.addChildNode(directionalLightNode)
+        
+        self.sceneRootNode = scene.rootNode
+        
+        // Add a sample 3D model (in a real app, this would be the scanned head model)
+        addSampleHeadModel()
+    }
+    
+    private func addSampleHeadModel() {
+        // Create a simple sphere to represent the head
+        let headGeometry = SCNSphere(radius: 0.1)
+        headGeometry.materials = [SCNMaterial.materialWithColor(.systemGreen)]
+        
+        let headNode = SCNNode(geometry: headGeometry)
+        sceneRootNode?.addChildNode(headNode)
+        pointCloudNode = headNode
+        
+        // Position the camera
+        let cameraNode = SCNNode()
+        cameraNode.camera = SCNCamera()
+        cameraNode.position = SCNVector3(0, 0, 0.3)
+        sceneRootNode?.addChildNode(cameraNode)
+        sceneView.pointOfView = cameraNode
+        
+        // Add rotation animation
+        let spin = CABasicAnimation(keyPath: "rotation")
+        spin.fromValue = NSValue(scnVector4: SCNVector4(0, 1, 0, 0))
+        spin.toValue = NSValue(scnVector4: SCNVector4(0, 1, 0, Double.pi * 2))
+        spin.duration = 10
+        spin.repeatCount = .infinity
+        headNode.addAnimation(spin, forKey: "spin around")
     }
     
     // MARK: - Data Processing
@@ -305,165 +707,251 @@ class ScanResultsViewController: UIViewController {
     // MARK: - Display Results
     
     private func displayResults() {
-        // Overall quality
-        qualityLabel.text = scanResult.qualityDescription
-        confidenceLabel.text = "\(String(format: "%.0f", scanResult.overallQuality * 100))% Confidence"
+        // Quality section
+        qualityScoreLabel.text = "\(String(format: "%.0f", scanResult.overallQuality * 100))%"
         qualityProgressView.progress = scanResult.overallQuality
-        qualityProgressView.tintColor = colorForQuality(scanResult.overallQuality)
+        qualityProgressView.progressTintColor = colorForQuality(scanResult.overallQuality)
+        qualityDescriptionLabel.text = scanResult.qualityDescription
         
-        // Basic measurements
-        let measurements = scanResult.rugbyFitnessMeasurements
-        scrumCapSizeLabel.text = "Size: \(measurements.recommendedSize.rawValue)"
-        headShapeLabel.text = "Shape: \(measurements.headShapeClassification.description)"
+        // Summary cards
+        setupSummaryCardsWithData()
         
-        let asymmetryText = measurements.asymmetryLevel.description
-        asymmetryLabel.text = "Asymmetry: \(asymmetryText)"
-        asymmetryLabel.textColor = colorForAsymmetry(measurements.earAsymmetryFactor)
+        // Protection analysis
+        protection effectivenessLabel.text = protectionAnalysis.protectionEffectiveness.overallDescription
+        setupProtectionDetails()
         
-        // Update ear protection view
-        displayEarProtectionSummary()
-        
-        // Reload table views
-        measurementsTableView.reloadData()
-        recommendationsTableView.reloadData()
-
-        // Build summary cards
-        buildSummaryCards()
-
-        // Configure buttons based on results
-        configureActionButtons()
+        // Recommendations
+        setupRecommendations()
     }
-
-    private func buildSummaryCards() {
-        guard let stack = summaryCardsStack else { return }
-        stack.arrangedSubviews.forEach { v in stack.removeArrangedSubview(v); v.removeFromSuperview() }
-        let m = scanResult.rugbyFitnessMeasurements
-        let cards: [MeasurementCardView] = [
-            MeasurementCardView(
-                icon: UIImage(systemName: "ruler"),
-                title: "Head Circumference",
-                value: String(format: "%.1f cm", m.headCircumference.value),
-                subtitle: "Around widest part of head"
-            ),
-            MeasurementCardView(
-                icon: UIImage(systemName: "arrow.left.and.right"),
-                title: "Back Width",
-                value: String(format: "%.0f mm", m.backHeadWidth.value),
-                subtitle: "Back-of-head width"
-            ),
-            MeasurementCardView(
-                icon: UIImage(systemName: "arrow.up.and.down"),
-                title: "Occipital",
-                value: String(format: "%.0f mm", m.occipitalProminence.value),
-                subtitle: "Bump prominence"
-            ),
-            MeasurementCardView(
-                icon: UIImage(systemName: "tshirt"),
-                title: "Recommended Size",
-                value: m.recommendedSize.rawValue,
-                subtitle: nil
-            )
-        ]
-        cards.forEach { card in
-            card.translatesAutoresizingMaskIntoConstraints = false
-            stack.addArrangedSubview(card)
+    
+    private func setupSummaryCardsWithData() {
+        // Clear existing cards
+        summaryStackView.arrangedSubviews.forEach { view in
+            summaryStackView.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+        
+        let measurements = scanResult.rugbyFitnessMeasurements
+        
+        // Create summary cards
+        let headCircCard = createSummaryCard(
+            title: "Head Circumference",
+            value: String(format: "%.1f cm", measurements.headCircumference.value),
+            subtitle: "Around widest part"
+        )
+        
+        let backWidthCard = createSummaryCard(
+            title: "Back Width",
+            value: String(format: "%.0f mm", measurements.backHeadWidth.value),
+            subtitle: "Back-of-head width"
+        )
+        
+        let occipitalCard = createSummaryCard(
+            title: "Occipital",
+            value: String(format: "%.0f mm", measurements.occipitalProminence.value),
+            subtitle: "Bump prominence"
+        )
+        
+        let sizeCard = createSummaryCard(
+            title: "Recommended Size",
+            value: measurements.recommendedSize.rawValue,
+            subtitle: "Based on measurements"
+        )
+        
+        summaryStackView.addArrangedSubview(headCircCard)
+        summaryStackView.addArrangedSubview(backWidthCard)
+        summaryStackView.addArrangedSubview(occipitalCard)
+        summaryStackView.addArrangedSubview(sizeCard)
+    }
+    
+    private func setupProtectionDetails() {
+        // Clear existing details
+        protectionDetailsStackView.arrangedSubviews.forEach { view in
+            protectionDetailsStackView.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+        
+        // Add protection details
+        let leftEarLabel = UILabel()
+        leftEarLabel.text = "Left Ear: \(String(format: "%.0f", protectionAnalysis.protectionEffectiveness.leftEar * 100))% Effective"
+        leftEarLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        leftEarLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        let rightEarLabel = UILabel()
+        rightEarLabel.text = "Right Ear: \(String(format: "%.0f", protectionAnalysis.protectionEffectiveness.rightEar * 100))% Effective"
+        rightEarLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        rightEarLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        protectionDetailsStackView.addArrangedSubview(leftEarLabel)
+        protectionDetailsStackView.addArrangedSubview(rightEarLabel)
+    }
+    
+    private func setupRecommendations() {
+        // Clear existing recommendations
+        recommendationsStackView.arrangedSubviews.forEach { view in
+            recommendationsStackView.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+        
+        // Add recommendations
+        for item in recommendationItems.prefix(3) { // Show top 3 recommendations
+            let recommendationView = createRecommendationView(for: item)
+            recommendationsStackView.addArrangedSubview(recommendationView)
+        }
+        
+        // Add "View All" button if there are more recommendations
+        if recommendationItems.count > 3 {
+            let viewAllButton = UIButton(type: .system)
+            viewAllButton.setTitle("View All Recommendations", for: .normal)
+            viewAllButton.setTitleColor(.systemBlue, for: .normal)
+            viewAllButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+            viewAllButton.translatesAutoresizingMaskIntoConstraints = false
+            viewAllButton.addTarget(self, action: #selector(viewAllRecommendations), for: .touchUpInside)
+            recommendationsStackView.addArrangedSubview(viewAllButton)
         }
     }
     
-    private func displayEarProtectionSummary() {
-        // Add protection effectiveness labels to ear protection view
-        let leftLabel = UILabel()
-        leftLabel.text = "Left Ear: \(String(format: "%.0f", protectionAnalysis.protectionEffectiveness.leftEar * 100))% Effective"
-        leftLabel.font = UIFont.systemFont(ofSize: 14)
-        leftLabel.translatesAutoresizingMaskIntoConstraints = false
+    private func createRecommendationView(for item: RecommendationDisplayItem) -> UIView {
+        let containerView = UIView()
+        containerView.translatesAutoresizingMaskIntoConstraints = false
         
-        let rightLabel = UILabel()
-        rightLabel.text = "Right Ear: \(String(format: "%.0f", protectionAnalysis.protectionEffectiveness.rightEar * 100))% Effective"
-        rightLabel.font = UIFont.systemFont(ofSize: 14)
-        rightLabel.translatesAutoresizingMaskIntoConstraints = false
+        let titleLabel = UILabel()
+        titleLabel.text = item.title
+        titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        titleLabel.numberOfLines = 0
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(titleLabel)
         
-        let overallLabel = UILabel()
-        overallLabel.text = protectionAnalysis.protectionEffectiveness.overallDescription
-        overallLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
-        overallLabel.textAlignment = .center
-        overallLabel.translatesAutoresizingMaskIntoConstraints = false
+        let descriptionLabel = UILabel()
+        descriptionLabel.text = item.description
+        descriptionLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
+        descriptionLabel.textColor = .secondaryLabel
+        descriptionLabel.numberOfLines = 0
+        descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(descriptionLabel)
         
-        earProtectionView.addSubview(leftLabel)
-        earProtectionView.addSubview(rightLabel)
-        earProtectionView.addSubview(overallLabel)
+        // Add priority indicator
+        let priorityIndicator = UIView()
+        priorityIndicator.layer.cornerRadius = 4
+        priorityIndicator.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(priorityIndicator)
+        
+        switch item.priority {
+        case .low:
+            priorityIndicator.backgroundColor = .systemGreen
+        case .medium:
+            priorityIndicator.backgroundColor = .systemOrange
+        case .high:
+            priorityIndicator.backgroundColor = .systemRed
+        }
         
         NSLayoutConstraint.activate([
-            overallLabel.topAnchor.constraint(equalTo: earProtectionView.topAnchor, constant: 16),
-            overallLabel.centerXAnchor.constraint(equalTo: earProtectionView.centerXAnchor),
+            priorityIndicator.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 8),
+            priorityIndicator.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 0),
+            priorityIndicator.widthAnchor.constraint(equalToConstant: 8),
+            priorityIndicator.heightAnchor.constraint(equalToConstant: 8),
             
-            leftLabel.topAnchor.constraint(equalTo: overallLabel.bottomAnchor, constant: 16),
-            leftLabel.leadingAnchor.constraint(equalTo: earProtectionView.leadingAnchor, constant: 16),
+            titleLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 5),
+            titleLabel.leadingAnchor.constraint(equalTo: priorityIndicator.trailingAnchor, constant: 8),
+            titleLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
             
-            rightLabel.topAnchor.constraint(equalTo: overallLabel.bottomAnchor, constant: 16),
-            rightLabel.trailingAnchor.constraint(equalTo: earProtectionView.trailingAnchor, constant: -16),
-            
-            leftLabel.bottomAnchor.constraint(equalTo: earProtectionView.bottomAnchor, constant: -16),
-            rightLabel.bottomAnchor.constraint(equalTo: earProtectionView.bottomAnchor, constant: -16)
+            descriptionLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 5),
+            descriptionLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            descriptionLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            descriptionLabel.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -5)
         ])
-    }
-    
-    private func configureActionButtons() {
-        // Enable/disable buttons based on result quality
-        let isHighQuality = scanResult.overallQuality > 0.7
         
-        proceedButton.isEnabled = isHighQuality
-        proceedButton.alpha = isHighQuality ? 1.0 : 0.6
-        
-        if !isHighQuality {
-            proceedButton.setTitle("Improve Scan Quality First", for: .normal)
-        }
+        return containerView
     }
     
     // MARK: - Actions
     
-    @IBAction func exportResults(_ sender: UIButton) {
-        let activityVC = UIActivityViewController(
-            activityItems: [generateExportString()],
-            applicationActivities: nil
-        )
-        
-        if let popover = activityVC.popoverPresentationController {
-            popover.sourceView = sender
-            popover.sourceRect = sender.bounds
-        }
-        
-        present(activityVC, animated: true)
+    @objc private func showProfile() {
+        let profileVC = PlayerProfileViewController()
+        navigationController?.pushViewController(profileVC, animated: true)
     }
     
-    @IBAction func retryScanning(_ sender: UIButton) {
+    @objc private func primaryActionButtonTapped() {
+        // Show purchase flow
         let alert = UIAlertController(
-            title: "Retry Scanning",
-            message: "This will start a new scanning session. Current results will be lost.",
+            title: "Ready to Order",
+            message: "Your custom scrum cap measurements are ready for ordering. This would proceed to our secure checkout where you can customize your cap and complete your purchase.",
             preferredStyle: .alert
         )
         
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Retry", style: .destructive) { _ in
-            self.navigationController?.popToRootViewController(animated: true)
+        alert.addAction(UIAlertAction(title: "Continue to Checkout", style: .default) { _ in
+            self.showPurchaseFlow()
         })
         
+        alert.addAction(UIAlertAction(title: "Not Now", style: .cancel))
         present(alert, animated: true)
     }
     
-    @IBAction func proceedToOrdering(_ sender: UIButton) {
-        // In production, this would proceed to ordering flow
+    @objc private func secondaryActionButtonTapped() {
+        // Show cap comparison
         let alert = UIAlertController(
-            title: "Ready to Order",
-            message: "Your measurements are ready for scrum cap ordering. This would proceed to the ordering system.",
+            title: "Cap Options",
+            message: "Compare different scrum cap models and materials that match your measurements and playing position.",
             preferredStyle: .alert
         )
         
+        alert.addAction(UIAlertAction(title: "View Options", style: .default))
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(alert, animated: true)
+    }
+    
+    @objc private func viewDetailsButtonTapped() {
+        // Show detailed measurements
+        showDetailedMeasurements()
+    }
+    
+    @objc private func viewAllRecommendations() {
+        // Show all recommendations
+        showAllRecommendations()
+    }
+    
+    private func showPurchaseFlow() {
+        let alert = UIAlertController(
+            title: "Order Your Custom Scrum Cap",
+            message: "Thank you for choosing CyborgRugby! Your custom 3D-printed scrum cap will be manufactured to your exact measurements and delivered within 2-3 weeks. Free shipping included.\n\nTotal: $199",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Proceed to Payment", style: .default) { _ in
+            // In a real app, this would go to a payment flow
+            let successAlert = UIAlertController(
+                title: "Order Placed!",
+                message: "Your custom scrum cap order has been placed successfully. You'll receive a confirmation email with tracking information.",
+                preferredStyle: .alert
+            )
+            successAlert.addAction(UIAlertAction(title: "OK", style: .default))
+            self.present(successAlert, animated: true)
+        })
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(alert, animated: true)
+    }
+    
+    private func showDetailedMeasurements() {
+        // In a real app, this would show a detailed view of all measurements
+        let alert = UIAlertController(
+            title: "Detailed Measurements",
+            message: "This would show all detailed measurements from your scan including head circumference, ear dimensions, and other key metrics.",
+            preferredStyle: .alert
+        )
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
     
-    @objc private func shareResults() {
-        exportResults(exportButton)
+    private func showAllRecommendations() {
+        // In a real app, this would show all recommendations
+        let alert = UIAlertController(
+            title: "All Recommendations",
+            message: "This would show all personalized recommendations based on your scan results and playing position.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
     
     // MARK: - Helper Methods
@@ -532,65 +1020,6 @@ class ScanResultsViewController: UIViewController {
     }
 }
 
-// MARK: - Table View Data Source & Delegate
-
-extension ScanResultsViewController: UITableViewDataSource, UITableViewDelegate {
-    
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if tableView == measurementsTableView {
-            return measurementItems.count
-        } else {
-            return recommendationItems.count
-        }
-    }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        if tableView == measurementsTableView {
-            let cell = tableView.dequeueReusableCell(withIdentifier: "MeasurementCell", for: indexPath)
-            let item = measurementItems[indexPath.row]
-            
-            cell.textLabel?.text = item.title
-            cell.detailTextLabel?.text = item.value
-            cell.accessoryType = accessoryForConfidence(item.confidence)
-            cell.backgroundColor = backgroundColorForStatus(item.status)
-            
-            return cell
-        } else {
-            let cell = tableView.dequeueReusableCell(withIdentifier: "RecommendationCell", for: indexPath)
-            let item = recommendationItems[indexPath.row]
-            
-            cell.textLabel?.text = item.title
-            cell.detailTextLabel?.text = item.description
-            cell.textLabel?.numberOfLines = 0
-            cell.detailTextLabel?.numberOfLines = 0
-            cell.backgroundColor = backgroundColorForPriority(item.priority)
-            
-            return cell
-        }
-    }
-    
-    private func accessoryForConfidence(_ confidence: Float) -> UITableViewCell.AccessoryType {
-        return confidence > 0.8 ? .checkmark : .none
-    }
-    
-    private func backgroundColorForStatus(_ status: ValidatedMeasurement.ValidationStatus) -> UIColor {
-        switch status {
-        case .validated: return UIColor.systemGreen.withAlphaComponent(0.1)
-        case .estimated: return UIColor.systemYellow.withAlphaComponent(0.1)
-        case .interpolated: return UIColor.systemOrange.withAlphaComponent(0.1)
-        case .failed: return UIColor.systemRed.withAlphaComponent(0.1)
-        }
-    }
-    
-    private func backgroundColorForPriority(_ priority: DisplayPriority) -> UIColor {
-        switch priority {
-        case .low: return UIColor.clear
-        case .medium: return UIColor.systemYellow.withAlphaComponent(0.1)
-        case .high: return UIColor.systemOrange.withAlphaComponent(0.1)
-        }
-    }
-}
-
 // MARK: - Display Models
 
 struct MeasurementDisplayItem {
@@ -613,4 +1042,16 @@ struct RecommendationDisplayItem {
 
 enum DisplayPriority {
     case low, medium, high
+}
+
+// MARK: - SCNMaterial Extension
+
+extension SCNMaterial {
+    static func materialWithColor(_ color: UIColor) -> SCNMaterial {
+        let material = SCNMaterial()
+        material.diffuse.contents = color
+        material.specular.contents = UIColor.white
+        material.shininess = 0.1
+        return material
+    }
 }
