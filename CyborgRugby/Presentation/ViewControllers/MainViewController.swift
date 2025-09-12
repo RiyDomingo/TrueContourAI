@@ -472,7 +472,7 @@ class MainViewController: UIViewController {
             return
         }
 
-        let scanningViewController = ScrumCapScanningViewController()
+        let scanningViewController = RefactoredScrumCapScanningViewController()
         scanningViewController.delegate = self
         scanningViewController.modalPresentationStyle = .fullScreen
         present(scanningViewController, animated: true)
@@ -561,11 +561,11 @@ class MainViewController: UIViewController {
 // MARK: - ScrumCapScanningViewControllerDelegate
 
 extension MainViewController: ScrumCapScanningViewControllerDelegate {
-    func scrumCapScanningDidCancel(_ controller: ScrumCapScanningViewController) {
+    func scrumCapScanningDidCancel(_ controller: RefactoredScrumCapScanningViewController) {
         dismiss(animated: true)
     }
     
-    func scrumCapScanning(_ controller: ScrumCapScanningViewController, didComplete result: CompleteScanResult) {
+    func scrumCapScanning(_ controller: RefactoredScrumCapScanningViewController, didComplete result: CompleteScanResult) {
         // Save results
         saveScanResults(result)
         
@@ -583,7 +583,7 @@ extension MainViewController: ScrumCapScanningViewControllerDelegate {
         }
     }
     
-    func scrumCapScanning(_ controller: ScrumCapScanningViewController, didFailWithError error: Error) {
+    func scrumCapScanning(_ controller: RefactoredScrumCapScanningViewController, didFailWithError error: Error) {
         let alert = UIAlertController(
             title: "Scanning Failed",
             message: "The rugby scanning process failed: \(error.localizedDescription)\n\nPlease ensure you have good lighting and try again.",

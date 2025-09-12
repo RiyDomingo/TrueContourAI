@@ -67,5 +67,36 @@ class MeasurementCardView: UIView {
             hStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12)
         ])
     }
+    
+    // MARK: - Public Methods
+    
+    func updateValue(_ newValue: String, subtitle: String? = nil, animated: Bool = true) {
+        let updateBlock = {
+            self.valueLabel.text = newValue
+            self.subtitleLabel.text = subtitle
+            self.subtitleLabel.isHidden = (subtitle == nil)
+            self.accessibilityLabel = "\(self.titleLabel.text ?? ""): \(newValue)"
+        }
+        
+        if animated {
+            UIView.transition(with: self, duration: 0.3, options: .transitionCrossDissolve) {
+                updateBlock()
+            }
+        } else {
+            updateBlock()
+        }
+    }
+    
+    func setError(_ errorMessage: String) {
+        valueLabel.text = "--"
+        subtitleLabel.text = errorMessage
+        subtitleLabel.isHidden = false
+        subtitleLabel.textColor = .systemRed
+        accessibilityLabel = "\(titleLabel.text ?? ""): Error - \(errorMessage)"
+    }
+    
+    func clearError() {
+        subtitleLabel.textColor = .secondaryLabel
+    }
 }
 

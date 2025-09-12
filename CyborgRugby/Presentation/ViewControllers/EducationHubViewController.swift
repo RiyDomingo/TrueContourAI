@@ -22,15 +22,15 @@ class EducationHubViewController: UIViewController {
     // Content sections
     private let safetySectionView = UIView()
     private let safetyTitleLabel = UILabel()
-    private let safetyCollectionView: UICollectionView!
+    private var safetyCollectionView: UICollectionView!
     
     private let technologySectionView = UIView()
     private let technologyTitleLabel = UILabel()
-    private let technologyCollectionView: UICollectionView!
+    private var technologyCollectionView: UICollectionView!
     
     private let careSectionView = UIView()
     private let careTitleLabel = UILabel()
-    private let careCollectionView: UICollectionView!
+    private var careCollectionView: UICollectionView!
     
     // MARK: - Properties
     private let safetyContent = [
@@ -55,56 +55,21 @@ class EducationHubViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupUI()
+        setupScrollView()
+        setupHeroSection()
+        
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .horizontal
+        layout.itemSize = CGSize(width: 280, height: 120)
+        layout.sectionInset = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
+        
+        setupSafetySection(with: layout)
+        setupTechnologySection(with: layout)
+        setupCareSection(with: layout)
+        setupConstraints()
     }
     
     // MARK: - UI Setup
-    
-    private func setupUI() {
-        title = "Education Hub"
-        view.backgroundColor = .systemBackground
-        
-        // Add profile button to navigation bar
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            image: UIImage(systemName: "person.fill"),
-            style: .plain,
-            target: self,
-            action: #selector(showProfile)
-        )
-        
-        // Add refresh button to navigation bar
-        navigationItem.leftBarButtonItem = UIBarButtonItem(
-            barButtonSystemItem: .refresh,
-            target: self,
-            action: #selector(refreshContent)
-        )
-        
-        // Setup collection view flow layouts
-        let safetyLayout = UICollectionViewFlowLayout()
-        safetyLayout.scrollDirection = .horizontal
-        safetyLayout.itemSize = CGSize(width: 280, height: 180)
-        safetyLayout.sectionInset = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
-        safetyLayout.minimumInteritemSpacing = 15
-        
-        let technologyLayout = UICollectionViewFlowLayout()
-        technologyLayout.scrollDirection = .horizontal
-        technologyLayout.itemSize = CGSize(width: 280, height: 180)
-        technologyLayout.sectionInset = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
-        technologyLayout.minimumInteritemSpacing = 15
-        
-        let careLayout = UICollectionViewFlowLayout()
-        careLayout.scrollDirection = .horizontal
-        careLayout.itemSize = CGSize(width: 280, height: 180)
-        careLayout.sectionInset = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
-        careLayout.minimumInteritemSpacing = 15
-        
-        setupScrollView()
-        setupHeroSection()
-        setupSafetySection(with: safetyLayout)
-        setupTechnologySection(with: technologyLayout)
-        setupCareSection(with: careLayout)
-        setupConstraints()
-    }
     
     private func setupScrollView() {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -291,20 +256,32 @@ class EducationHubViewController: UIViewController {
             careSectionView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20)
         ])
     }
+    
+    // MARK: - Required Initializers
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+    }
+    
+    override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
+        super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
+    }
 }
 
 // MARK: - Actions
 
-@objc private func refreshContent() {
-    // In a real app, this would refresh content from a server
-    let alert = UIAlertController(title: "Content Refreshed", message: "Educational content has been updated.", preferredStyle: .alert)
-    alert.addAction(UIAlertAction(title: "OK", style: .default))
-    present(alert, animated: true)
-}
+extension EducationHubViewController {
+    @objc private func refreshContent() {
+        // In a real app, this would refresh content from a server
+        let alert = UIAlertController(title: "Content Refreshed", message: "Educational content has been updated.", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
 
-@objc private func showProfile() {
-    let profileVC = PlayerProfileViewController()
-    navigationController?.pushViewController(profileVC, animated: true)
+    @objc private func showProfile() {
+        let profileVC = PlayerProfileViewController()
+        navigationController?.pushViewController(profileVC, animated: true)
+    }
 }
 
 // MARK: - UICollectionViewDataSource
@@ -392,36 +369,41 @@ class EducationContentCell: UICollectionViewCell {
     }
     
     required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+        super.init(coder: coder)
+        setupUI()
     }
     
     private func setupUI() {
-        backgroundColor = .systemBackground
-        layer.cornerRadius = 12
-        layer.shadowColor = UIColor.black.cgColor
-        layer.shadowOffset = CGSize(width: 0, height: 2)
-        layer.shadowRadius = 8
-        layer.shadowOpacity = 0.1
-        
+        // Container view
+        containerView.backgroundColor = .systemBackground
+        containerView.layer.cornerRadius = 12
+        containerView.layer.shadowColor = UIColor.black.cgColor
+        containerView.layer.shadowOffset = CGSize(width: 0, height: 2)
+        containerView.layer.shadowRadius = 8
+        containerView.layer.shadowOpacity = 0.1
         containerView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(containerView)
         
+        // Icon image view
         iconImageView.contentMode = .scaleAspectFit
         iconImageView.tintColor = .systemGreen
         iconImageView.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(iconImageView)
         
+        // Title label
         titleLabel.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
         titleLabel.numberOfLines = 0
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(titleLabel)
         
+        // Subtitle label
         subtitleLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
         subtitleLabel.textColor = .secondaryLabel
         subtitleLabel.numberOfLines = 0
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(subtitleLabel)
         
+        // Constraints
         NSLayoutConstraint.activate([
             containerView.topAnchor.constraint(equalTo: contentView.topAnchor),
             containerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),

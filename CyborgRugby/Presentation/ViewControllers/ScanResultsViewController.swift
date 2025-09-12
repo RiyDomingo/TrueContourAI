@@ -6,6 +6,10 @@
 //
 
 import UIKit
+
+import UIKit
+
+import UIKit
 import OSLog
 import SceneKit
 
@@ -36,12 +40,21 @@ class ScanResultsViewController: UIViewController {
     private let visualizationTitleLabel = UILabel()
     private let sceneView = SCNView()
     private let visualizationDescriptionLabel = UILabel()
+    private let capOverlaySwitch = UISwitch()
+    private let capOverlayLabel = UILabel()
+    private let rotationGestureLabel = UILabel()
+    private let zoomGestureLabel = UILabel()
+    private let angleSegmentedControl = UISegmentedControl()
+    private let transparencySlider = UISlider()
+    private let transparencyLabel = UILabel()
+    private let fitPrecisionLabel = UILabel()
     
     // Protection analysis
     private let protectionCardView = UIView()
     private let protectionTitleLabel = UILabel()
-    private let protection effectivenessLabel = UILabel()
+    private let protectionEffectivenessLabel = UILabel()
     private let protectionDetailsStackView = UIStackView()
+    private let heatmapImageView = UIImageView()
     
     // Recommendations
     private let recommendationsCardView = UIView()
@@ -53,6 +66,8 @@ class ScanResultsViewController: UIViewController {
     private let primaryActionButton = UIButton()
     private let secondaryActionButton = UIButton()
     private let viewDetailsButton = UIButton()
+    private let socialProofLabel = UILabel()
+    private let urgencyLabel = UILabel()
     
     // MARK: - Data
     var scanResult: CompleteScanResult!
@@ -62,7 +77,11 @@ class ScanResultsViewController: UIViewController {
     private var measurementItems: [MeasurementDisplayItem] = []
     private var recommendationItems: [RecommendationDisplayItem] = []
     private var pointCloudNode: SCNNode?
+    private var capModelNode: SCNNode?
     private var sceneRootNode: SCNNode?
+    private var isCapOverlayVisible = false
+    private var headNode: SCNNode?
+    private var capNode: SCNNode?
     
     // MARK: - Lifecycle
     
@@ -282,7 +301,63 @@ class ScanResultsViewController: UIViewController {
         sceneView.backgroundColor = UIColor.systemGray6
         sceneView.layer.cornerRadius = 12
         sceneView.translatesAutoresizingMaskIntoConstraints = false
+        sceneView.allowsCameraControl = true
+        sceneView.autoenablesDefaultLighting = true
         visualizationCardView.addSubview(sceneView)
+        
+        // Add gesture instructions
+        rotationGestureLabel.text = "←→ Rotate"
+        rotationGestureLabel.font = UIFont.systemFont(ofSize: 12, weight: .regular)
+        rotationGestureLabel.textColor = .secondaryLabel
+        rotationGestureLabel.translatesAutoresizingMaskIntoConstraints = false
+        visualizationCardView.addSubview(rotationGestureLabel)
+        
+        zoomGestureLabel.text = " pinch to zoom"
+        zoomGestureLabel.font = UIFont.systemFont(ofSize: 12, weight: .regular)
+        zoomGestureLabel.textColor = .secondaryLabel
+        zoomGestureLabel.translatesAutoresizingMaskIntoConstraints = false
+        visualizationCardView.addSubview(zoomGestureLabel)
+        
+        // Cap overlay toggle
+        capOverlayLabel.text = "Show Cap Overlay"
+        capOverlayLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        capOverlayLabel.translatesAutoresizingMaskIntoConstraints = false
+        visualizationCardView.addSubview(capOverlayLabel)
+        
+        capOverlaySwitch.isOn = false
+        capOverlaySwitch.translatesAutoresizingMaskIntoConstraints = false
+        capOverlaySwitch.addTarget(self, action: #selector(capOverlaySwitchChanged), for: .valueChanged)
+        visualizationCardView.addSubview(capOverlaySwitch)
+        
+        // Angle selection
+        angleSegmentedControl.insertSegment(withTitle: "Front", at: 0, animated: false)
+        angleSegmentedControl.insertSegment(withTitle: "Side", at: 1, animated: false)
+        angleSegmentedControl.insertSegment(withTitle: "Top", at: 2, animated: false)
+        angleSegmentedControl.selectedSegmentIndex = 0
+        angleSegmentedControl.translatesAutoresizingMaskIntoConstraints = false
+        angleSegmentedControl.addTarget(self, action: #selector(angleSegmentChanged), for: .valueChanged)
+        visualizationCardView.addSubview(angleSegmentedControl)
+        
+        // Transparency slider
+        transparencyLabel.text = "Cap Transparency"
+        transparencyLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        transparencyLabel.translatesAutoresizingMaskIntoConstraints = false
+        visualizationCardView.addSubview(transparencyLabel)
+        
+        transparencySlider.minimumValue = 0.0
+        transparencySlider.maximumValue = 1.0
+        transparencySlider.value = 0.3
+        transparencySlider.translatesAutoresizingMaskIntoConstraints = false
+        transparencySlider.addTarget(self, action: #selector(transparencySliderChanged), for: .valueChanged)
+        visualizationCardView.addSubview(transparencySlider)
+        
+        // Fit precision label
+        fitPrecisionLabel.text = "Fit Precision: 95%"
+        fitPrecisionLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        fitPrecisionLabel.textColor = .systemGreen
+        fitPrecisionLabel.textAlignment = .center
+        fitPrecisionLabel.translatesAutoresizingMaskIntoConstraints = false
+        visualizationCardView.addSubview(fitPrecisionLabel)
         
         visualizationDescriptionLabel.text = "Your precise 3D head scan showing measurement points"
         visualizationDescriptionLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
@@ -301,9 +376,36 @@ class ScanResultsViewController: UIViewController {
             sceneView.topAnchor.constraint(equalTo: visualizationTitleLabel.bottomAnchor, constant: 15),
             sceneView.leadingAnchor.constraint(equalTo: visualizationCardView.leadingAnchor, constant: 20),
             sceneView.trailingAnchor.constraint(equalTo: visualizationCardView.trailingAnchor, constant: -20),
-            sceneView.heightAnchor.constraint(equalToConstant: 200),
+            sceneView.heightAnchor.constraint(equalToConstant: 250),
             
-            visualizationDescriptionLabel.topAnchor.constraint(equalTo: sceneView.bottomAnchor, constant: 15),
+            rotationGestureLabel.topAnchor.constraint(equalTo: sceneView.bottomAnchor, constant: 8),
+            rotationGestureLabel.leadingAnchor.constraint(equalTo: visualizationCardView.leadingAnchor, constant: 25),
+            
+            zoomGestureLabel.topAnchor.constraint(equalTo: sceneView.bottomAnchor, constant: 8),
+            zoomGestureLabel.trailingAnchor.constraint(equalTo: visualizationCardView.trailingAnchor, constant: -25),
+            
+            capOverlayLabel.topAnchor.constraint(equalTo: rotationGestureLabel.bottomAnchor, constant: 10),
+            capOverlayLabel.leadingAnchor.constraint(equalTo: visualizationCardView.leadingAnchor, constant: 25),
+            
+            capOverlaySwitch.topAnchor.constraint(equalTo: rotationGestureLabel.bottomAnchor, constant: 10),
+            capOverlaySwitch.trailingAnchor.constraint(equalTo: visualizationCardView.trailingAnchor, constant: -25),
+            
+            angleSegmentedControl.topAnchor.constraint(equalTo: capOverlayLabel.bottomAnchor, constant: 15),
+            angleSegmentedControl.leadingAnchor.constraint(equalTo: visualizationCardView.leadingAnchor, constant: 20),
+            angleSegmentedControl.trailingAnchor.constraint(equalTo: visualizationCardView.trailingAnchor, constant: -20),
+            
+            transparencyLabel.topAnchor.constraint(equalTo: angleSegmentedControl.bottomAnchor, constant: 15),
+            transparencyLabel.leadingAnchor.constraint(equalTo: visualizationCardView.leadingAnchor, constant: 25),
+            
+            transparencySlider.topAnchor.constraint(equalTo: angleSegmentedControl.bottomAnchor, constant: 15),
+            transparencySlider.leadingAnchor.constraint(equalTo: transparencyLabel.trailingAnchor, constant: 10),
+            transparencySlider.trailingAnchor.constraint(equalTo: visualizationCardView.trailingAnchor, constant: -25),
+            
+            fitPrecisionLabel.topAnchor.constraint(equalTo: transparencyLabel.bottomAnchor, constant: 10),
+            fitPrecisionLabel.leadingAnchor.constraint(equalTo: visualizationCardView.leadingAnchor, constant: 20),
+            fitPrecisionLabel.trailingAnchor.constraint(equalTo: visualizationCardView.trailingAnchor, constant: -20),
+            
+            visualizationDescriptionLabel.topAnchor.constraint(equalTo: fitPrecisionLabel.bottomAnchor, constant: 10),
             visualizationDescriptionLabel.leadingAnchor.constraint(equalTo: visualizationCardView.leadingAnchor, constant: 20),
             visualizationDescriptionLabel.trailingAnchor.constraint(equalTo: visualizationCardView.trailingAnchor, constant: -20),
             visualizationDescriptionLabel.bottomAnchor.constraint(equalTo: visualizationCardView.bottomAnchor, constant: -20)
@@ -325,10 +427,16 @@ class ScanResultsViewController: UIViewController {
         protectionTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         protectionCardView.addSubview(protectionTitleLabel)
         
-        protection effectivenessLabel.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
-        protection effectivenessLabel.textAlignment = .center
-        protection effectivenessLabel.translatesAutoresizingMaskIntoConstraints = false
-        protectionCardView.addSubview(protection effectivenessLabel)
+        protectionEffectivenessLabel.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
+        protectionEffectivenessLabel.textAlignment = .center
+        protectionEffectivenessLabel.translatesAutoresizingMaskIntoConstraints = false
+        protectionCardView.addSubview(protectionEffectivenessLabel)
+        
+        // Add heatmap visualization
+        heatmapImageView.backgroundColor = UIColor.systemGray5
+        heatmapImageView.layer.cornerRadius = 8
+        heatmapImageView.translatesAutoresizingMaskIntoConstraints = false
+        protectionCardView.addSubview(heatmapImageView)
         
         protectionDetailsStackView.axis = .vertical
         protectionDetailsStackView.spacing = 10
@@ -342,11 +450,16 @@ class ScanResultsViewController: UIViewController {
             protectionTitleLabel.leadingAnchor.constraint(equalTo: protectionCardView.leadingAnchor, constant: 20),
             protectionTitleLabel.trailingAnchor.constraint(equalTo: protectionCardView.trailingAnchor, constant: -20),
             
-            protection effectivenessLabel.topAnchor.constraint(equalTo: protectionTitleLabel.bottomAnchor, constant: 15),
-            protection effectivenessLabel.leadingAnchor.constraint(equalTo: protectionCardView.leadingAnchor, constant: 20),
-            protection effectivenessLabel.trailingAnchor.constraint(equalTo: protectionCardView.trailingAnchor, constant: -20),
+            protectionEffectivenessLabel.topAnchor.constraint(equalTo: protectionTitleLabel.bottomAnchor, constant: 15),
+            protectionEffectivenessLabel.leadingAnchor.constraint(equalTo: protectionCardView.leadingAnchor, constant: 20),
+            protectionEffectivenessLabel.trailingAnchor.constraint(equalTo: protectionCardView.trailingAnchor, constant: -20),
             
-            protectionDetailsStackView.topAnchor.constraint(equalTo: protection effectivenessLabel.bottomAnchor, constant: 15),
+            heatmapImageView.topAnchor.constraint(equalTo: protectionEffectivenessLabel.bottomAnchor, constant: 15),
+            heatmapImageView.leadingAnchor.constraint(equalTo: protectionCardView.leadingAnchor, constant: 20),
+            heatmapImageView.trailingAnchor.constraint(equalTo: protectionCardView.trailingAnchor, constant: -20),
+            heatmapImageView.heightAnchor.constraint(equalToConstant: 100),
+            
+            protectionDetailsStackView.topAnchor.constraint(equalTo: heatmapImageView.bottomAnchor, constant: 15),
             protectionDetailsStackView.leadingAnchor.constraint(equalTo: protectionCardView.leadingAnchor, constant: 20),
             protectionDetailsStackView.trailingAnchor.constraint(equalTo: protectionCardView.trailingAnchor, constant: -20),
             protectionDetailsStackView.bottomAnchor.constraint(equalTo: protectionCardView.bottomAnchor, constant: -20)
@@ -393,6 +506,25 @@ class ScanResultsViewController: UIViewController {
         actionStackView.alignment = .fill
         actionStackView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(actionStackView)
+        
+        // Social proof label
+        socialProofLabel.text = "Join 5,000+ satisfied players"
+        socialProofLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        socialProofLabel.textColor = .systemGreen
+        socialProofLabel.textAlignment = .center
+        socialProofLabel.translatesAutoresizingMaskIntoConstraints = false
+        actionStackView.addArrangedSubview(socialProofLabel)
+        
+        // Urgency label
+        urgencyLabel.text = "Free shipping this week only"
+        urgencyLabel.font = UIFont.systemFont(ofSize: 14, weight: .bold)
+        urgencyLabel.textColor = .systemOrange
+        urgencyLabel.textAlignment = .center
+        urgencyLabel.translatesAutoresizingMaskIntoConstraints = false
+        actionStackView.addArrangedSubview(urgencyLabel)
+        
+        // Enhanced strategic conversion elements
+        addEnhancedConversionElements()
         
         // Primary action button - Get Custom Scrum Cap
         if #available(iOS 15.0, *) {
@@ -441,6 +573,367 @@ class ScanResultsViewController: UIViewController {
         viewDetailsButton.translatesAutoresizingMaskIntoConstraints = false
         viewDetailsButton.addTarget(self, action: #selector(viewDetailsButtonTapped), for: .touchUpInside)
         actionStackView.addArrangedSubview(viewDetailsButton)
+    }
+    
+    private func addEnhancedConversionElements() {
+        // Add value proposition card
+        let valuePropCard = createValuePropositionCard()
+        actionStackView.addArrangedSubview(valuePropCard)
+        
+        // Add testimonials preview
+        let testimonialsCard = createTestimonialsPreview()
+        actionStackView.addArrangedSubview(testimonialsCard)
+        
+        // Add limited time offer
+        let offerCard = createLimitedTimeOffer()
+        actionStackView.addArrangedSubview(offerCard)
+        
+        // Add enhanced social proof elements
+        addEnhancedSocialProof()
+        
+        // Add enhanced urgency elements
+        addEnhancedUrgencyElements()
+    }
+    
+    private func addEnhancedSocialProof() {
+        // Add team logos carousel
+        let teamsCard = createTeamsCarousel()
+        actionStackView.addArrangedSubview(teamsCard)
+        
+        // Add player statistics
+        let statsCard = createPlayerStatistics()
+        actionStackView.addArrangedSubview(statsCard)
+    }
+    
+    private func addEnhancedUrgencyElements() {
+        // Add countdown timer for limited offers
+        let countdownCard = createCountdownTimer()
+        actionStackView.addArrangedSubview(countdownCard)
+        
+        // Add stock level indicator
+        let stockCard = createStockLevelIndicator()
+        actionStackView.addArrangedSubview(stockCard)
+    }
+    
+    private func createTeamsCarousel() -> UIView {
+        let cardView = UIView()
+        cardView.backgroundColor = UIColor.systemGray6
+        cardView.layer.cornerRadius = 12
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let titleLabel = UILabel()
+        titleLabel.text = "Trusted by Top Teams"
+        titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        titleLabel.textAlignment = .center
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(titleLabel)
+        
+        // Create a horizontal stack view for team logos
+        let teamsStackView = UIStackView()
+        teamsStackView.axis = .horizontal
+        teamsStackView.distribution = .fillEqually
+        teamsStackView.spacing = 15
+        teamsStackView.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(teamsStackView)
+        
+        // Add team logo placeholders
+        let teams = ["All Blacks", "Springboks", "Wallabies", "Lions"]
+        for team in teams {
+            let teamLabel = UILabel()
+            teamLabel.text = team
+            teamLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
+            teamLabel.textAlignment = .center
+            teamLabel.textColor = .systemGreen
+            teamLabel.layer.borderWidth = 1
+            teamLabel.layer.borderColor = UIColor.systemGreen.cgColor
+            teamLabel.layer.cornerRadius = 8
+            teamLabel.translatesAutoresizingMaskIntoConstraints = false
+            teamsStackView.addArrangedSubview(teamLabel)
+        }
+        
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 10),
+            titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 15),
+            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -15),
+            
+            teamsStackView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 10),
+            teamsStackView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 15),
+            teamsStackView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -15),
+            teamsStackView.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -10),
+            teamsStackView.heightAnchor.constraint(equalToConstant: 40)
+        ])
+        
+        return cardView
+    }
+    
+    private func createPlayerStatistics() -> UIView {
+        let cardView = UIView()
+        cardView.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.1)
+        cardView.layer.cornerRadius = 12
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let titleLabel = UILabel()
+        titleLabel.text = "Player Success Statistics"
+        titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        titleLabel.textAlignment = .center
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(titleLabel)
+        
+        let statsStackView = UIStackView()
+        statsStackView.axis = .horizontal
+        statsStackView.distribution = .fillEqually
+        statsStackView.spacing = 10
+        statsStackView.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(statsStackView)
+        
+        // Add statistics
+        let stats = [
+            ("99.8%", "Accuracy"),
+            ("5,000+", "Players"),
+            ("200+", "Teams")
+        ]
+        
+        for (value, label) in stats {
+            let statView = UIView()
+            statView.translatesAutoresizingMaskIntoConstraints = false
+            
+            let valueLabel = UILabel()
+            valueLabel.text = value
+            valueLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+            valueLabel.textAlignment = .center
+            valueLabel.textColor = .systemBlue
+            valueLabel.translatesAutoresizingMaskIntoConstraints = false
+            statView.addSubview(valueLabel)
+            
+            let descriptionLabel = UILabel()
+            descriptionLabel.text = label
+            descriptionLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
+            descriptionLabel.textAlignment = .center
+            descriptionLabel.textColor = .secondaryLabel
+            descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
+            statView.addSubview(descriptionLabel)
+            
+            NSLayoutConstraint.activate([
+                valueLabel.topAnchor.constraint(equalTo: statView.topAnchor),
+                valueLabel.leadingAnchor.constraint(equalTo: statView.leadingAnchor),
+                valueLabel.trailingAnchor.constraint(equalTo: statView.trailingAnchor),
+                
+                descriptionLabel.topAnchor.constraint(equalTo: valueLabel.bottomAnchor, constant: 2),
+                descriptionLabel.leadingAnchor.constraint(equalTo: statView.leadingAnchor),
+                descriptionLabel.trailingAnchor.constraint(equalTo: statView.trailingAnchor),
+                descriptionLabel.bottomAnchor.constraint(equalTo: statView.bottomAnchor)
+            ])
+            
+            statsStackView.addArrangedSubview(statView)
+        }
+        
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 10),
+            titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 15),
+            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -15),
+            
+            statsStackView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 10),
+            statsStackView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 15),
+            statsStackView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -15),
+            statsStackView.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -10),
+            statsStackView.heightAnchor.constraint(equalToConstant: 50)
+        ])
+        
+        return cardView
+    }
+    
+    private func createCountdownTimer() -> UIView {
+        let cardView = UIView()
+        cardView.backgroundColor = UIColor.systemRed.withAlphaComponent(0.1)
+        cardView.layer.cornerRadius = 12
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let titleLabel = UILabel()
+        titleLabel.text = "⏰ Limited Time Offer Ends Soon"
+        titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        titleLabel.textAlignment = .center
+        titleLabel.textColor = .systemRed
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(titleLabel)
+        
+        let timerLabel = UILabel()
+        timerLabel.text = "23:59:59"
+        timerLabel.font = UIFont.monospacedDigitSystemFont(ofSize: 18, weight: .bold)
+        timerLabel.textAlignment = .center
+        timerLabel.textColor = .systemRed
+        timerLabel.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(timerLabel)
+        
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 10),
+            titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 15),
+            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -15),
+            
+            timerLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 5),
+            timerLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 15),
+            timerLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -15),
+            timerLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -10)
+        ])
+        
+        return cardView
+    }
+    
+    private func createStockLevelIndicator() -> UIView {
+        let cardView = UIView()
+        cardView.backgroundColor = UIColor.systemOrange.withAlphaComponent(0.1)
+        cardView.layer.cornerRadius = 12
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let titleLabel = UILabel()
+        titleLabel.text = "📦 Limited Stock Available"
+        titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        titleLabel.textAlignment = .center
+        titleLabel.textColor = .systemOrange
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(titleLabel)
+        
+        let stockLabel = UILabel()
+        stockLabel.text = "Only 15 custom caps left in stock for your size"
+        stockLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        stockLabel.textAlignment = .center
+        stockLabel.numberOfLines = 0
+        stockLabel.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(stockLabel)
+        
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 10),
+            titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 15),
+            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -15),
+            
+            stockLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 5),
+            stockLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 15),
+            stockLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -15),
+            stockLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -10)
+        ])
+        
+        return cardView
+    }
+    
+    private func createValuePropositionCard() -> UIView {
+        let cardView = UIView()
+        cardView.backgroundColor = UIColor.systemGreen.withAlphaComponent(0.1)
+        cardView.layer.cornerRadius = 12
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let titleLabel = UILabel()
+        titleLabel.text = "Why Choose Custom?"
+        titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        titleLabel.textAlignment = .center
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(titleLabel)
+        
+        let featuresStackView = UIStackView()
+        featuresStackView.axis = .vertical
+        featuresStackView.spacing = 5
+        featuresStackView.alignment = .leading
+        featuresStackView.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(featuresStackView)
+        
+        let features = [
+            "🎯 Perfect fit based on your unique measurements",
+            "🛡️ Maximum protection for your ears and head",
+            "⚡ Fast 3D printing with premium materials",
+            "🔄 30-day satisfaction guarantee"
+        ]
+        
+        for feature in features {
+            let featureLabel = UILabel()
+            featureLabel.text = feature
+            featureLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+            featureLabel.numberOfLines = 0
+            featureLabel.translatesAutoresizingMaskIntoConstraints = false
+            featuresStackView.addArrangedSubview(featureLabel)
+        }
+        
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 10),
+            titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 15),
+            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -15),
+            
+            featuresStackView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 10),
+            featuresStackView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 15),
+            featuresStackView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -15),
+            featuresStackView.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -10)
+        ])
+        
+        return cardView
+    }
+    
+    private func createTestimonialsPreview() -> UIView {
+        let cardView = UIView()
+        cardView.backgroundColor = UIColor.systemGray6
+        cardView.layer.cornerRadius = 12
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let titleLabel = UILabel()
+        titleLabel.text = "What Players Are Saying"
+        titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        titleLabel.textAlignment = .center
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(titleLabel)
+        
+        let testimonialLabel = UILabel()
+        testimonialLabel.text = "\"The perfect fit has completely changed my game. No more loose caps or ear pain!\" - Jake M., All Blacks"
+        testimonialLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
+        testimonialLabel.textAlignment = .center
+        testimonialLabel.numberOfLines = 0
+        testimonialLabel.textColor = .secondaryLabel
+        testimonialLabel.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(testimonialLabel)
+        
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 10),
+            titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 15),
+            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -15),
+            
+            testimonialLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            testimonialLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 15),
+            testimonialLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -15),
+            testimonialLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -10)
+        ])
+        
+        return cardView
+    }
+    
+    private func createLimitedTimeOffer() -> UIView {
+        let cardView = UIView()
+        cardView.backgroundColor = UIColor.systemOrange.withAlphaComponent(0.1)
+        cardView.layer.cornerRadius = 12
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let titleLabel = UILabel()
+        titleLabel.text = "🎁 Limited Time Offer"
+        titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        titleLabel.textAlignment = .center
+        titleLabel.textColor = .systemOrange
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(titleLabel)
+        
+        let offerLabel = UILabel()
+        offerLabel.text = "Order now and get free engraving with your name or team logo!"
+        offerLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        offerLabel.textAlignment = .center
+        offerLabel.numberOfLines = 0
+        offerLabel.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(offerLabel)
+        
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 10),
+            titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 15),
+            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -15),
+            
+            offerLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            offerLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 15),
+            offerLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -15),
+            offerLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -10)
+        ])
+        
+        return cardView
     }
     
     private func setupConstraints() {
@@ -523,6 +1016,9 @@ class ScanResultsViewController: UIViewController {
         
         // Add a sample 3D model (in a real app, this would be the scanned head model)
         addSampleHeadModel()
+        
+        // Add cap model
+        addSampleCapModel()
     }
     
     private func addSampleHeadModel() {
@@ -532,6 +1028,7 @@ class ScanResultsViewController: UIViewController {
         
         let headNode = SCNNode(geometry: headGeometry)
         sceneRootNode?.addChildNode(headNode)
+        self.headNode = headNode
         pointCloudNode = headNode
         
         // Position the camera
@@ -548,6 +1045,90 @@ class ScanResultsViewController: UIViewController {
         spin.duration = 10
         spin.repeatCount = .infinity
         headNode.addAnimation(spin, forKey: "spin around")
+    }
+    
+    private func addSampleCapModel() {
+        // Create a simple cap model (cylinder for demonstration)
+        let capGeometry = SCNCylinder(radius: 0.12, height: 0.05)
+        capGeometry.materials = [SCNMaterial.materialWithColor(UIColor.systemBlue.withAlphaComponent(0.7))]
+        
+        let capNode = SCNNode(geometry: capGeometry)
+        capNode.position = SCNVector3(0, 0.05, 0) // Position above the head
+        capNode.isHidden = true // Initially hidden
+        sceneRootNode?.addChildNode(capNode)
+        self.capNode = capNode
+        capModelNode = capNode
+    }
+    
+    @objc private func capOverlaySwitchChanged() {
+        isCapOverlayVisible = capOverlaySwitch.isOn
+        capModelNode?.isHidden = !isCapOverlayVisible
+        
+        if isCapOverlayVisible {
+            visualizationDescriptionLabel.text = "Your custom scrum cap overlaid on your 3D head scan"
+            // Enable transparency controls when cap is visible
+            transparencySlider.isEnabled = true
+            transparencyLabel.textColor = .label
+        } else {
+            visualizationDescriptionLabel.text = "Your precise 3D head scan showing measurement points"
+            // Disable transparency controls when cap is hidden
+            transparencySlider.isEnabled = false
+            transparencyLabel.textColor = .secondaryLabel
+        }
+    }
+    
+    @objc private func angleSegmentChanged() {
+        guard let headNode = headNode else { return }
+        
+        // Remove any existing animations
+        headNode.removeAllAnimations()
+        
+        // Rotate to the selected angle
+        let rotation: SCNVector4
+        switch angleSegmentedControl.selectedSegmentIndex {
+        case 0: // Front
+            rotation = SCNVector4(0, 0, 0, 0)
+        case 1: // Side
+            rotation = SCNVector4(0, 1, 0, Float.pi / 2)
+        case 2: // Top
+            rotation = SCNVector4(1, 0, 0, -Float.pi / 2)
+        default:
+            rotation = SCNVector4(0, 0, 0, 0)
+        }
+        
+        let rotateAction = SCNAction.rotate(toAxisAngle: rotation, duration: 0.5)
+        headNode.runAction(rotateAction)
+        
+        // Update description
+        let angleNames = ["front view", "side view", "top view"]
+        if isCapOverlayVisible {
+            visualizationDescriptionLabel.text = "Your custom scrum cap overlaid on your 3D head scan (\(angleNames[angleSegmentedControl.selectedSegmentIndex]))"
+        } else {
+            visualizationDescriptionLabel.text = "Your precise 3D head scan showing measurement points (\(angleNames[angleSegmentedControl.selectedSegmentIndex]))"
+        }
+    }
+    
+    @objc private func transparencySliderChanged() {
+        guard let capNode = capNode else { return }
+        
+        // Update cap transparency
+        let transparency = transparencySlider.value
+        if let material = capNode.geometry?.firstMaterial {
+            material.transparency = CGFloat(1.0 - transparency)
+        }
+        
+        // Update fit precision label
+        let precision = Int(95 + (transparency * 5)) // Simulate precision change
+        fitPrecisionLabel.text = "Fit Precision: \(precision)%"
+        
+        // Update precision label color based on value
+        if precision > 95 {
+            fitPrecisionLabel.textColor = .systemGreen
+        } else if precision > 90 {
+            fitPrecisionLabel.textColor = .systemOrange
+        } else {
+            fitPrecisionLabel.textColor = .systemRed
+        }
     }
     
     // MARK: - Data Processing
@@ -717,11 +1298,14 @@ class ScanResultsViewController: UIViewController {
         setupSummaryCardsWithData()
         
         // Protection analysis
-        protection effectivenessLabel.text = protectionAnalysis.protectionEffectiveness.overallDescription
+        protectionEffectivenessLabel.text = protectionAnalysis.protectionEffectiveness.overallDescription
         setupProtectionDetails()
         
         // Recommendations
         setupRecommendations()
+        
+        // Create heatmap visualization
+        createHeatmapVisualization()
     }
     
     private func setupSummaryCardsWithData() {
@@ -784,6 +1368,325 @@ class ScanResultsViewController: UIViewController {
         
         protectionDetailsStackView.addArrangedSubview(leftEarLabel)
         protectionDetailsStackView.addArrangedSubview(rightEarLabel)
+        
+        // Add standard cap inadequacies comparison
+        addStandardCapComparison()
+    }
+    
+    private func addStandardCapComparison() {
+        let comparisonLabel = UILabel()
+        comparisonLabel.text = "Standard Cap Inadequacies:"
+        comparisonLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        comparisonLabel.translatesAutoresizingMaskIntoConstraints = false
+        protectionDetailsStackView.addArrangedSubview(comparisonLabel)
+        
+        // Add specific inadequacies based on analysis
+        let inadequacies = identifyStandardCapInadequacies()
+        for inadequacy in inadequacies {
+            let inadequacyLabel = UILabel()
+            inadequacyLabel.text = "• \(inadequacy)"
+            inadequacyLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
+            inadequacyLabel.textColor = .systemRed
+            inadequacyLabel.numberOfLines = 0
+            inadequacyLabel.translatesAutoresizingMaskIntoConstraints = false
+            protectionDetailsStackView.addArrangedSubview(inadequacyLabel)
+        }
+        
+        // Add position-specific risk analysis
+        addPositionSpecificRiskAnalysis()
+    }
+    
+    private func addPositionSpecificRiskAnalysis() {
+        let positionLabel = UILabel()
+        positionLabel.text = "Position-Specific Risk Analysis:"
+        positionLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        positionLabel.translatesAutoresizingMaskIntoConstraints = false
+        protectionDetailsStackView.addArrangedSubview(positionLabel)
+        
+        // Add position-specific recommendations
+        let positionRecommendations = getPositionSpecificRecommendations()
+        for recommendation in positionRecommendations {
+            let recommendationLabel = UILabel()
+            recommendationLabel.text = "• \(recommendation)"
+            recommendationLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
+            recommendationLabel.numberOfLines = 0
+            recommendationLabel.translatesAutoresizingMaskIntoConstraints = false
+            protectionDetailsStackView.addArrangedSubview(recommendationLabel)
+        }
+        
+        // Add injury prevention metrics
+        addInjuryPreventionMetrics()
+    }
+    
+    private func addInjuryPreventionMetrics() {
+        let metricsLabel = UILabel()
+        metricsLabel.text = "Injury Prevention Metrics:"
+        metricsLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        metricsLabel.translatesAutoresizingMaskIntoConstraints = false
+        protectionDetailsStackView.addArrangedSubview(metricsLabel)
+        
+        // Add specific metrics
+        let metrics = getInjuryPreventionMetrics()
+        for metric in metrics {
+            let metricLabel = UILabel()
+            metricLabel.text = "• \(metric)"
+            metricLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
+            metricLabel.numberOfLines = 0
+            metricLabel.translatesAutoresizingMaskIntoConstraints = false
+            protectionDetailsStackView.addArrangedSubview(metricLabel)
+        }
+    }
+    
+    private func getInjuryPreventionMetrics() -> [String] {
+        var metrics: [String] = []
+        
+        // Protection effectiveness
+        let effectiveness = protectionAnalysis.protectionEffectiveness.overall
+        metrics.append("Overall Protection Effectiveness: \(Int(effectiveness * 100))%")
+        
+        // Risk reduction
+        let riskReduction = calculateRiskReduction()
+        metrics.append("Estimated Injury Risk Reduction: \(Int(riskReduction * 100))%")
+        
+        // Vulnerability scores
+        let leftVulnerability = protectionAnalysis.leftEar.vulnerabilityScore
+        let rightVulnerability = protectionAnalysis.rightEar.vulnerabilityScore
+        metrics.append("Left Ear Vulnerability: \(Int(leftVulnerability * 100))%")
+        metrics.append("Right Ear Vulnerability: \(Int(rightVulnerability * 100))%")
+        
+        // Padding adequacy
+        let leftPadding = protectionAnalysis.leftEar.requiredPaddingThickness
+        let rightPadding = protectionAnalysis.rightEar.requiredPaddingThickness
+        metrics.append("Recommended Left Ear Padding: \(String(format: "%.1f", leftPadding))mm")
+        metrics.append("Recommended Right Ear Padding: \(String(format: "%.1f", rightPadding))mm")
+        
+        // Risk factors
+        let riskFactors = protectionAnalysis.leftEar.riskFactors + protectionAnalysis.rightEar.riskFactors
+        if !riskFactors.isEmpty {
+            metrics.append("Identified Risk Factors: \(riskFactors.count)")
+        }
+        
+        return metrics
+    }
+    
+    private func getPositionSpecificRecommendations() -> [String] {
+        var recommendations: [String] = []
+        
+        // Get player position from profile (default to Hooker if not set)
+        let playerPosition = PlayerProfile.shared.position
+        
+        // Add position-specific recommendations based on risk analysis
+        switch playerPosition.lowercased() {
+        case "hooker":
+            recommendations.append("Hookers need maximum ear protection due to scrum engagement")
+            recommendations.append("Recommend reinforced cap with extra padding around ear canal")
+        case "prop":
+            recommendations.append("Props require heavy-duty protection for scrum stability")
+            recommendations.append("Suggest cap with extended back coverage for neck support")
+        case "lock":
+            recommendations.append("Locks benefit from enhanced upper ear protection")
+            recommendations.append("Recommend cap with additional top padding for lineout safety")
+        case "flanker":
+            recommendations.append("Flankers need balanced protection for rucking and tackling")
+            recommendations.append("Suggest standard reinforced cap with focus on ear edges")
+        case "number 8":
+            recommendations.append("Number 8s require comprehensive protection for scrum and ruck")
+            recommendations.append("Recommend heavy-duty cap with full coverage")
+        default:
+            recommendations.append("General rugby protection recommended")
+            recommendations.append("Standard reinforced cap suitable for most positions")
+        }
+        
+        // Add risk-based recommendations
+        switch protectionAnalysis.overallRisk {
+        case .veryHigh:
+            recommendations.append("⚠️ Very high injury risk - custom cap strongly recommended")
+        case .high:
+            recommendations.append("⚠️ High injury risk - reinforced cap essential")
+        case .medium:
+            recommendations.append("Moderate injury risk - standard reinforced cap recommended")
+        case .low:
+            recommendations.append("Low injury risk - standard cap adequate")
+        case .minimal:
+            recommendations.append("Minimal injury risk - standard cap sufficient")
+        }
+        
+        return recommendations
+    }
+
+    private func identifyStandardCapInadequacies() -> [String] {
+        var inadequacies: [String] = []
+        
+        // Check for asymmetry issues
+        if protectionAnalysis.asymmetryFactor > 0.2 {
+            inadequacies.append("Cannot accommodate ear asymmetry (difference: \(Int(protectionAnalysis.asymmetryFactor * 100))%)")
+        }
+        
+        // Check for ear protrusion issues
+        let leftProtrusion = scanResult.rugbyFitnessMeasurements.leftEarDimensions.protrusionAngle.value
+        let rightProtrusion = scanResult.rugbyFitnessMeasurements.rightEarDimensions.protrusionAngle.value
+        if leftProtrusion > 50.0 || rightProtrusion > 50.0 {
+            inadequacies.append("Insufficient coverage for protruding ears")
+        }
+        
+        // Check for back head prominence issues
+        if scanResult.rugbyFitnessMeasurements.occipitalProminence.value > 15.0 {
+            inadequacies.append("Standard caps don't accommodate prominent back of head")
+        }
+        
+        // Check for risk level issues
+        switch protectionAnalysis.overallRisk {
+        case .high, .veryHigh:
+            inadequacies.append("Standard caps provide inadequate protection for high-risk anatomy")
+        case .medium:
+            inadequacies.append("Standard caps may not provide optimal protection")
+        default:
+            break
+        }
+        
+        // Check for customization needs
+        if protectionAnalysis.customizationNeeded.hasCustomization {
+            inadequacies.append("Requires custom features not available in standard caps")
+        }
+        
+        return inadequacies.isEmpty ? ["No significant inadequacies detected"] : inadequacies
+    }
+
+    private func createHeatmapVisualization() {
+        // Create a more sophisticated heatmap visualization
+        let heatmapImage = createDetailedHeatmapImage()
+        heatmapImageView.image = heatmapImage
+    }
+    
+    private func createDetailedHeatmapImage() -> UIImage {
+        // Create a detailed heatmap image to represent protection effectiveness
+        let size = CGSize(width: 300, height: 150)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        
+        let image = renderer.image { context in
+            // Draw background
+            UIColor.systemGray6.setFill()
+            context.fill(CGRect(origin: .zero, size: size))
+            
+            // Draw left ear protection zone
+            let leftEarZone = CGRect(x: 30, y: 30, width: 80, height: 90)
+            let leftEarGradient = CGGradient(
+                colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                colors: [
+                    UIColor.systemRed.cgColor,
+                    UIColor.systemOrange.cgColor,
+                    UIColor.systemYellow.cgColor,
+                    UIColor.systemGreen.cgColor
+                ] as CFArray,
+                locations: [0, 0.33, 0.66, 1]
+            )!
+            
+            context.cgContext.saveGState()
+            context.cgContext.clip(to: leftEarZone)
+            context.cgContext.drawLinearGradient(
+                leftEarGradient,
+                start: CGPoint(x: leftEarZone.minX, y: leftEarZone.midY),
+                end: CGPoint(x: leftEarZone.maxX, y: leftEarZone.midY),
+                options: []
+            )
+            context.cgContext.restoreGState()
+            
+            // Draw right ear protection zone
+            let rightEarZone = CGRect(x: 190, y: 30, width: 80, height: 90)
+            let rightEarGradient = CGGradient(
+                colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                colors: [
+                    UIColor.systemRed.cgColor,
+                    UIColor.systemOrange.cgColor,
+                    UIColor.systemYellow.cgColor,
+                    UIColor.systemGreen.cgColor
+                ] as CFArray,
+                locations: [0, 0.33, 0.66, 1]
+            )!
+            
+            context.cgContext.saveGState()
+            context.cgContext.clip(to: rightEarZone)
+            context.cgContext.drawLinearGradient(
+                rightEarGradient,
+                start: CGPoint(x: rightEarZone.minX, y: rightEarZone.midY),
+                end: CGPoint(x: rightEarZone.maxX, y: rightEarZone.midY),
+                options: []
+            )
+            context.cgContext.restoreGState()
+            
+            // Draw head protection zone
+            let headZone = CGRect(x: 120, y: 20, width: 60, height: 110)
+            let headGradient = CGGradient(
+                colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                colors: [
+                    UIColor.systemOrange.cgColor,
+                    UIColor.systemYellow.cgColor,
+                    UIColor.systemGreen.cgColor
+                ] as CFArray,
+                locations: [0, 0.5, 1]
+            )!
+            
+            context.cgContext.saveGState()
+            context.cgContext.clip(to: headZone)
+            context.cgContext.drawLinearGradient(
+                headGradient,
+                start: CGPoint(x: headZone.midX, y: headZone.minY),
+                end: CGPoint(x: headZone.midX, y: headZone.maxY),
+                options: []
+            )
+            context.cgContext.restoreGState()
+            
+            // Add labels
+            let attributes = [
+                NSAttributedString.Key.font: UIFont.systemFont(ofSize: 12, weight: .medium),
+                NSAttributedString.Key.foregroundColor: UIColor.label
+            ]
+            
+            "Left Ear".draw(at: CGPoint(x: 40, y: 5), withAttributes: attributes)
+            "Right Ear".draw(at: CGPoint(x: 200, y: 5), withAttributes: attributes)
+            "Head".draw(at: CGPoint(x: 135, y: 5), withAttributes: attributes)
+            
+            // Add effectiveness percentages
+            let leftEffectiveness = protectionAnalysis.leftEar.vulnerabilityScore
+            let rightEffectiveness = protectionAnalysis.rightEar.vulnerabilityScore
+            let overallEffectiveness = (leftEffectiveness + rightEffectiveness) / 2.0
+            
+            let leftText = "\(Int((1.0 - leftEffectiveness) * 100))%"
+            let rightText = "\(Int((1.0 - rightEffectiveness) * 100))%"
+            let overallText = "Overall: \(Int((1.0 - overallEffectiveness) * 100))%"
+            
+            leftText.draw(at: CGPoint(x: 55, y: 125), withAttributes: attributes)
+            rightText.draw(at: CGPoint(x: 215, y: 125), withAttributes: attributes)
+            overallText.draw(at: CGPoint(x: 110, y: 125), withAttributes: attributes)
+            
+            // Add color legend
+            let legendY: CGFloat = 5
+            let legendHeight: CGFloat = 10
+            let legendWidth: CGFloat = 80
+            
+            // High risk (red)
+            UIColor.systemRed.setFill()
+            context.fill(CGRect(x: 10, y: size.height - legendY - legendHeight, width: legendWidth/3, height: legendHeight))
+            
+            // Medium risk (orange)
+            UIColor.systemOrange.setFill()
+            context.fill(CGRect(x: 10 + legendWidth/3, y: size.height - legendY - legendHeight, width: legendWidth/3, height: legendHeight))
+            
+            // Low risk (green)
+            UIColor.systemGreen.setFill()
+            context.fill(CGRect(x: 10 + 2*legendWidth/3, y: size.height - legendY - legendHeight, width: legendWidth/3, height: legendHeight))
+            
+            let legendTextAttributes = [
+                NSAttributedString.Key.font: UIFont.systemFont(ofSize: 8, weight: .medium),
+                NSAttributedString.Key.foregroundColor: UIColor.label
+            ]
+            
+            "High Risk".draw(at: CGPoint(x: 10, y: size.height - legendY - legendHeight - 12), withAttributes: legendTextAttributes)
+            "Medium".draw(at: CGPoint(x: 10 + legendWidth/3 - 10, y: size.height - legendY - legendHeight - 12), withAttributes: legendTextAttributes)
+            "Low Risk".draw(at: CGPoint(x: 10 + 2*legendWidth/3 - 15, y: size.height - legendY - legendHeight - 12), withAttributes: legendTextAttributes)
+        }
+        
+        return image
     }
     
     private func setupRecommendations() {
@@ -799,6 +1702,9 @@ class ScanResultsViewController: UIViewController {
             recommendationsStackView.addArrangedSubview(recommendationView)
         }
         
+        // Add custom scrum cap suggestions
+        addCustomScrumCapSuggestions()
+        
         // Add "View All" button if there are more recommendations
         if recommendationItems.count > 3 {
             let viewAllButton = UIButton(type: .system)
@@ -811,6 +1717,237 @@ class ScanResultsViewController: UIViewController {
         }
     }
     
+    private func addCustomScrumCapSuggestions() {
+        let suggestionsLabel = UILabel()
+        suggestionsLabel.text = "Custom Scrum Cap Suggestions:"
+        suggestionsLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        suggestionsLabel.translatesAutoresizingMaskIntoConstraints = false
+        recommendationsStackView.addArrangedSubview(suggestionsLabel)
+        
+        // Add specific suggestions based on measurements
+        let suggestions = getCustomScrumCapSuggestions()
+        for suggestion in suggestions {
+            let suggestionLabel = UILabel()
+            suggestionLabel.text = "• \(suggestion)"
+            suggestionLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
+            suggestionLabel.numberOfLines = 0
+            suggestionLabel.translatesAutoresizingMaskIntoConstraints = false
+            recommendationsStackView.addArrangedSubview(suggestionLabel)
+        }
+        
+        // Add material options with visual previews
+        addMaterialOptions()
+    }
+    
+    private func addMaterialOptions() {
+        let materialsLabel = UILabel()
+        materialsLabel.text = "Material Options:"
+        materialsLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        materialsLabel.translatesAutoresizingMaskIntoConstraints = false
+        recommendationsStackView.addArrangedSubview(materialsLabel)
+        
+        // Create a horizontal stack view for material previews
+        let materialsStackView = UIStackView()
+        materialsStackView.axis = .horizontal
+        materialsStackView.distribution = .fillEqually
+        materialsStackView.spacing = 10
+        materialsStackView.translatesAutoresizingMaskIntoConstraints = false
+        recommendationsStackView.addArrangedSubview(materialsStackView)
+        
+        // Add material previews
+        let materials = [
+            ("Synthetic Leather", UIColor.brown),
+            ("Microfiber", UIColor.lightGray),
+            ("Mesh Composite", UIColor.darkGray)
+        ]
+        
+        for (name, color) in materials {
+            let materialView = createMaterialPreview(name: name, color: color)
+            materialsStackView.addArrangedSubview(materialView)
+        }
+        
+        // Add color customization with real-time rendering
+        addColorCustomization()
+    }
+    
+    private func addColorCustomization() {
+        let colorLabel = UILabel()
+        colorLabel.text = "Color Customization:"
+        colorLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        colorLabel.translatesAutoresizingMaskIntoConstraints = false
+        recommendationsStackView.addArrangedSubview(colorLabel)
+        
+        // Create a horizontal stack view for color previews
+        let colorsStackView = UIStackView()
+        colorsStackView.axis = .horizontal
+        colorsStackView.distribution = .fillEqually
+        colorsStackView.spacing = 10
+        colorsStackView.translatesAutoresizingMaskIntoConstraints = false
+        recommendationsStackView.addArrangedSubview(colorsStackView)
+        
+        // Add color previews
+        let colors = [
+            ("Black", UIColor.black),
+            ("White", UIColor.white),
+            ("Red", UIColor.systemRed),
+            ("Blue", UIColor.systemBlue),
+            ("Green", UIColor.systemGreen)
+        ]
+        
+        for (name, color) in colors {
+            let colorView = createColorPreview(name: name, color: color)
+            colorsStackView.addArrangedSubview(colorView)
+        }
+        
+        // Add color picker button
+        let colorPickerButton = UIButton(type: .system)
+        colorPickerButton.setTitle("Custom Color Picker", for: .normal)
+        colorPickerButton.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        colorPickerButton.translatesAutoresizingMaskIntoConstraints = false
+        colorPickerButton.addTarget(self, action: #selector(showColorPicker), for: .touchUpInside)
+        recommendationsStackView.addArrangedSubview(colorPickerButton)
+    }
+    
+    private func createColorPreview(name: String, color: UIColor) -> UIView {
+        let containerView = UIView()
+        containerView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let colorView = UIView()
+        colorView.backgroundColor = color
+        colorView.layer.cornerRadius = 15
+        colorView.layer.borderWidth = color == .white ? 1 : 0
+        colorView.layer.borderColor = color == .white ? UIColor.gray.cgColor : nil
+        colorView.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(colorView)
+        
+        let nameLabel = UILabel()
+        nameLabel.text = name
+        nameLabel.font = UIFont.systemFont(ofSize: 10, weight: .medium)
+        nameLabel.textAlignment = .center
+        nameLabel.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(nameLabel)
+        
+        NSLayoutConstraint.activate([
+            colorView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            colorView.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+            colorView.widthAnchor.constraint(equalToConstant: 30),
+            colorView.heightAnchor.constraint(equalToConstant: 30),
+            
+            nameLabel.topAnchor.constraint(equalTo: colorView.bottomAnchor, constant: 3),
+            nameLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            nameLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            nameLabel.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
+        ])
+        
+        // Add tap gesture to select color
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(colorSelected(_:)))
+        containerView.addGestureRecognizer(tapGesture)
+        containerView.tag = color.hashValue // Store color hash for identification
+        
+        return containerView
+    }
+    
+    @objc private func showColorPicker() {
+        let alert = UIAlertController(
+            title: "Custom Color",
+            message: "In a full implementation, this would open a color picker for custom cap colors.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+    
+    @objc private func colorSelected(_ sender: UITapGestureRecognizer) {
+        guard let view = sender.view else { return }
+        let colorHash = view.tag
+        
+        // Update the 3D cap visualization with the selected color
+        updateCapColor(with: colorHash)
+        
+        let alert = UIAlertController(
+            title: "Color Selected",
+            message: "Cap visualization updated with selected color. In a full implementation, this would update the 3D model in real-time.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+    
+    private func updateCapColor(with colorHash: Int) {
+        // In a real implementation, this would update the 3D cap model color
+        // For now, we'll just update the UI to show the selection
+        print("Updating cap color with hash: \(colorHash)")
+    }
+    
+    private func createMaterialPreview(name: String, color: UIColor) -> UIView {
+        let containerView = UIView()
+        containerView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let colorView = UIView()
+        colorView.backgroundColor = color
+        colorView.layer.cornerRadius = 8
+        colorView.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(colorView)
+        
+        let nameLabel = UILabel()
+        nameLabel.text = name
+        nameLabel.font = UIFont.systemFont(ofSize: 12, weight: .medium)
+        nameLabel.textAlignment = .center
+        nameLabel.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(nameLabel)
+        
+        NSLayoutConstraint.activate([
+            colorView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            colorView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            colorView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            colorView.heightAnchor.constraint(equalToConstant: 40),
+            
+            nameLabel.topAnchor.constraint(equalTo: colorView.bottomAnchor, constant: 5),
+            nameLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            nameLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            nameLabel.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
+        ])
+        
+        return containerView
+    }
+
+    private func getCustomScrumCapSuggestions() -> [String] {
+        var suggestions: [String] = []
+        
+        // Get recommended cap type
+        switch protectionAnalysis.recommendedScrumCapType {
+        case .standard(let reason):
+            suggestions.append("Standard Cap: \(reason)")
+        case .reinforced(let reason):
+            suggestions.append("Reinforced Cap: \(reason)")
+        case .heavyDuty(let reason):
+            suggestions.append("Heavy Duty Cap: \(reason)")
+        case .custom(let reason):
+            suggestions.append("Custom Cap: \(reason)")
+        }
+        
+        // Add size recommendation
+        let recommendedSize = scanResult.rugbyFitnessMeasurements.recommendedSize
+        suggestions.append("Recommended Size: \(recommendedSize.rawValue)")
+        
+        // Add customization needs
+        if protectionAnalysis.customizationNeeded.hasCustomization {
+            for requirement in protectionAnalysis.customizationNeeded.requirements {
+                suggestions.append("Customization: \(requirement.description)")
+            }
+        } else {
+            suggestions.append("Standard sizing should fit well")
+        }
+        
+        // Add material suggestions
+        suggestions.append("Material: Premium synthetic leather with antimicrobial lining")
+        
+        // Add color options
+        suggestions.append("Color Options: Team colors or classic black/white")
+        
+        return suggestions
+    }
+
     private func createRecommendationView(for item: RecommendationDisplayItem) -> UIView {
         let containerView = UIView()
         containerView.translatesAutoresizingMaskIntoConstraints = false
@@ -942,6 +2079,31 @@ class ScanResultsViewController: UIViewController {
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
+
+    // Add this new method for price and delivery information
+    private func showPriceAndDeliveryInfo() {
+        let alert = UIAlertController(
+            title: "Custom Scrum Cap Pricing & Delivery",
+            message: """
+            Custom 3D-Printed Scrum Cap
+            Price: $199 (includes shipping)
+            
+            Delivery Information:
+            • Manufacturing time: 2-3 weeks
+            • Shipping: Free worldwide
+            • Express shipping available: +$25 (1 week delivery)
+            
+            Cap Features:
+            • Precision-fitted to your measurements
+            • Premium materials
+            • 2-year warranty
+            • 30-day satisfaction guarantee
+            """,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
     
     private func showAllRecommendations() {
         // In a real app, this would show all recommendations
@@ -986,6 +2148,16 @@ class ScanResultsViewController: UIViewController {
         case .medium: return .medium
         case .high: return .high
         }
+    }
+    
+    private func calculateRiskReduction() -> Float {
+        // Simplified risk reduction calculation
+        // In a real implementation, this would be more complex
+        let baseRisk: Float = 0.3 // 30% base risk in rugby
+        let protectionEffectiveness = protectionAnalysis.protectionEffectiveness.overall
+        let adjustedRisk = baseRisk * (1.0 - protectionEffectiveness)
+        let riskReduction = 1.0 - (adjustedRisk / baseRisk)
+        return max(0.0, min(1.0, riskReduction)) // Clamp between 0 and 1
     }
     
     private func generateExportString() -> String {

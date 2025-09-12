@@ -41,7 +41,8 @@ class PlayerProfileViewController: UIViewController {
     // MARK: - Properties
     private let achievementManager = AchievementManager.shared
     private let playerProfile = PlayerProfile.shared
-    private var scanHistory: [ScanHistoryItem] = []
+    private let scanHistoryManager = ScanHistoryManager.shared
+    private var scanHistory: [ScanHistoryManager.ScanHistoryItem] = []
     
     // MARK: - Lifecycle
     
@@ -341,12 +342,8 @@ class PlayerProfileViewController: UIViewController {
     }
     
     private func loadScanHistory() {
-        // In a real app, this would load from persistent storage
-        scanHistory = [
-            ScanHistoryItem(date: Date(), quality: 0.95, duration: 120),
-            ScanHistoryItem(date: Date().addingTimeInterval(-86400), quality: 0.87, duration: 150),
-            ScanHistoryItem(date: Date().addingTimeInterval(-172800), quality: 0.92, duration: 135)
-        ]
+        scanHistory = scanHistoryManager.loadScanHistory()
+        historyTableView.reloadData()
     }
     
     private func updateStats() {
@@ -459,10 +456,4 @@ extension PlayerProfileViewController: UITableViewDelegate {
     }
 }
 
-// MARK: - Data Models
-
-struct ScanHistoryItem {
-    let date: Date
-    let quality: Float
-    let duration: Int
-}
+// Data models are now handled by ScanHistoryManager

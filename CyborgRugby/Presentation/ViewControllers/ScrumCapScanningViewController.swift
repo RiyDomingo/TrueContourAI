@@ -18,6 +18,7 @@ import SceneKit
 // Add this import for haptic feedback
 import AudioToolbox
 
+@MainActor
 class ScrumCapScanningViewController: UIViewController {
     
     // MARK: - Delegate
@@ -93,7 +94,7 @@ class ScrumCapScanningViewController: UIViewController {
     private let metalLayer = CAMetalLayer()
     private var latestViewMatrix = matrix_identity_float4x4
     private var pointCloudNode: SCNNode?
-    private var scene rootNode: SCNNode?
+    private var sceneRootNode: SCNNode?
     
     // MARK: - Lifecycle
     
@@ -117,7 +118,7 @@ class ScrumCapScanningViewController: UIViewController {
             startMotionTracking()
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { granted in
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     if granted { self.cameraManager.startCapture(); self.startMotionTracking() }
                     else { self.showCameraPermissionAlert() }
                 }
@@ -516,7 +517,7 @@ class ScrumCapScanningViewController: UIViewController {
         // Start perfect pose timer
         startPerfectPoseTimer()
         
-        print("🏉 Started scanning pose (gated): \(currentPose.displayName)")
+        print(" Rugby Started scanning pose (gated): \(currentPose.displayName)")
     }
     
     private func stopCurrentPoseScanning() {
@@ -559,7 +560,7 @@ class ScrumCapScanningViewController: UIViewController {
             let pointCloud = self.reconstructionManager?.buildPointCloud()
             self.reconstructionManager?.reset()
             
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 // Update 3D visualization with the point cloud
                 if let pointCloud = pointCloud {
                     self.updatePointCloudVisualization(pointCloud)
@@ -603,7 +604,7 @@ class ScrumCapScanningViewController: UIViewController {
                     }
                 }
                 self.statusHintLabel.isHidden = true
-                print("🏉 Completed scanning pose: \(pose.displayName)")
+                print(" Rugby Completed scanning pose: \(pose.displayName)")
                 // Move to next pose or finish
                 self.moveToNextPose()
             }
@@ -611,7 +612,7 @@ class ScrumCapScanningViewController: UIViewController {
     }
     
     private func skipCurrentPose() {
-        print("🏉 Skipped pose: \(currentPose.displayName)")
+        print(" Rugby Skipped pose: \(currentPose.displayName)")
         
         if isScanning {
             stopCurrentPoseScanning()
@@ -639,7 +640,7 @@ class ScrumCapScanningViewController: UIViewController {
     }
     
     private func completeAllScanning() {
-        print("🏉 All poses completed! Processing measurements...")
+        print(" Rugby All poses completed! Processing measurements...")
         
         // Voice coaching
         voiceCoach.speak(.scanningComplete)
@@ -734,7 +735,9 @@ class ScrumCapScanningViewController: UIViewController {
         updateTimerLabel()
         
         scanningTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            self?.updateTimerLabel()
+            Task { @MainActor in
+                self?.updateTimerLabel()
+            }
         }
     }
     
@@ -814,7 +817,8 @@ class ScrumCapScanningViewController: UIViewController {
         achievementBannerView.isHidden = false
         
         // Hide after 3 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
             self.achievementBannerView.isHidden = true
         }
     }
@@ -826,14 +830,16 @@ class ScrumCapScanningViewController: UIViewController {
         isPerfectPose = false
         
         perfectPoseTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self, self.isScanning, self.consecutiveValidCount >= 5 else { return }
-            
-            if !self.isPerfectPose {
-                self.isPerfectPose = true
-                // Voice coaching for perfect position
-                self.voiceCoach.speak(.goodPosition)
-                // Haptic feedback
-                self.provideHapticFeedback(.success)
+            Task { @MainActor in
+                guard let self = self, self.isScanning, self.consecutiveValidCount >= 5 else { return }
+                
+                if !self.isPerfectPose {
+                    self.isPerfectPose = true
+                    // Voice coaching for perfect position
+                    self.voiceCoach.speak(.goodPosition)
+                    // Haptic feedback
+                    self.provideHapticFeedback(.success)
+                }
             }
         }
     }
@@ -946,7 +952,7 @@ class ScrumCapScanningViewController: UIViewController {
         Overall Confidence: \(String(format: "%.0f", measurements.overallConfidence * 100))%
         """
         
-        let alert = UIAlertController(title: "🏉 Scrum Cap Results", message: message, preferredStyle: .alert)
+        let alert = UIAlertController(title: " Rugby Scrum Cap Results", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Awesome!", style: .default))
         present(alert, animated: true)
     }
@@ -1021,51 +1027,53 @@ class ScrumCapScanningViewController: UIViewController {
 
 extension ScrumCapScanningViewController: CameraManagerDelegate {
     
-    func cameraManager(_ manager: CameraManager, didOutput pixelBuffer: CVPixelBuffer) {
+    nonisolated func cameraManager(_ manager: CameraManager, didOutput pixelBuffer: CVPixelBuffer) {
         
         // For MVP, simplified implementation
         // Process the pixel buffer for pose validation
-        Task {
+        Task { @MainActor in
             let validationResult = await poseValidator.validatePose(currentPose, in: pixelBuffer)
-            DispatchQueue.main.async {
-                self.updateValidationFeedback(validationResult)
-            }
+            self.updateValidationFeedback(validationResult)
         }
         
-        // Pass to multi-angle scan manager
-        multiAngleScanManager.processPixelBuffer(pixelBuffer)
-
-        // Keep last color buffer for profile poses for optional ML-based ear estimates
-        switch currentPose {
-        case .leftProfile:
-            lastLeftProfilePixelBuffer = pixelBuffer
-        case .rightProfile:
-            lastRightProfilePixelBuffer = pixelBuffer
-        default:
-            break
+        // Pass to multi-angle scan manager and update pose buffers on main actor
+        Task { @MainActor in
+            multiAngleScanManager.processPixelBuffer(pixelBuffer)
+            
+            // Keep last color buffer for profile poses for optional ML-based ear estimates
+            switch currentPose {
+            case .leftProfile:
+                lastLeftProfilePixelBuffer = pixelBuffer
+            case .rightProfile:
+                lastRightProfilePixelBuffer = pixelBuffer
+            default:
+                break
+            }
         }
     }
     
-    func cameraManager(_ manager: CameraManager, didFailWithError error: Error) {
-        DispatchQueue.main.async {
+    nonisolated func cameraManager(_ manager: CameraManager, didFailWithError error: Error) {
+        Task { @MainActor in
             self.poseInstructionLabel.textColor = .systemRed
             self.poseInstructionLabel.text = "⚠️ Camera error: \(error.localizedDescription)"
         }
     }
     
     // New: synchronized color + depth frames for reconstruction
-    func cameraManager(_ manager: CameraManager,
+    nonisolated func cameraManager(_ manager: CameraManager,
                        didOutput colorBuffer: CVPixelBuffer,
                        depthBuffer: CVPixelBuffer,
                        calibrationData: AVCameraCalibrationData) {
-        guard isScanning else { return }
-        reconstructionManager?.accumulate(depthBuffer: depthBuffer,
-                                          colorBuffer: colorBuffer,
-                                          calibrationData: calibrationData)
+        Task { @MainActor in
+            guard isScanning else { return }
+            reconstructionManager?.accumulate(depthBuffer: depthBuffer,
+                                              colorBuffer: colorBuffer,
+                                              calibrationData: calibrationData)
+        }
     }
     
     private func updateValidationFeedback(_ validation: PoseValidationResult) {
-        DispatchQueue.main.async {
+        Task { @MainActor in
             if validation.isValid {
                 self.poseInstructionLabel.textColor = .systemGreen
                 if validation.confidence > 0.8 {
@@ -1083,7 +1091,9 @@ extension ScrumCapScanningViewController: CameraManagerDelegate {
                 if validation.confidence < 0.3 {
                     adviceText = "Lighting looks low. Move to a brighter area or face a light source."
                     // Voice coaching for lighting issue
-                    self.voiceCoach.speak(.lightingIssue)
+                    Task { @MainActor in
+                        self.voiceCoach.speak(.lightingIssue)
+                    }
                 } else {
                     switch self.currentPose {
                     case .leftProfile: adviceText = "Turn a bit more to the left and hold steady."
@@ -1092,7 +1102,9 @@ extension ScrumCapScanningViewController: CameraManagerDelegate {
                     default: adviceText = "Hold steady. Sit comfortably and keep your head still."
                     }
                     // Voice coaching for position adjustment
-                    self.voiceCoach.speak(.adjustPosition(adviceText))
+                    Task { @MainActor in
+                        self.voiceCoach.speak(.adjustPosition(adviceText))
+                    }
                 }
                 self.poseInstructionLabel.text = "⚠️ \(validation.feedback)\n\(adviceText)"
                 self.consecutiveValidCount = 0
@@ -1104,11 +1116,13 @@ extension ScrumCapScanningViewController: CameraManagerDelegate {
 
 // MARK: - SCReconstructionManagerDelegate
 extension ScrumCapScanningViewController: SCReconstructionManagerDelegate {
-    func reconstructionManager(_ manager: SCReconstructionManager,
+    nonisolated func reconstructionManager(_ manager: SCReconstructionManager,
                                didProcessWith metadata: SCAssimilatedFrameMetadata,
                                statistics: SCReconstructionManagerStatistics) {
-        latestViewMatrix = metadata.viewMatrix
-        DispatchQueue.main.async {
+        Task { @MainActor in
+            latestViewMatrix = metadata.viewMatrix
+        }
+        Task { @MainActor in
             let progress = min(Float(statistics.succeededCount) / 100.0, 1.0)
             self.updateScanningProgress(progress)
             // Track assimilated frames for gating
@@ -1118,10 +1132,10 @@ extension ScrumCapScanningViewController: SCReconstructionManagerDelegate {
         }
     }
     
-    func reconstructionManager(_ manager: SCReconstructionManager,
+    nonisolated func reconstructionManager(_ manager: SCReconstructionManager,
                                didEncounterAPIError error: Error) {
         AppLog.scan.error("Reconstruction error: \(String(describing: error))")
-        DispatchQueue.main.async {
+        Task { @MainActor in
             self.poseInstructionLabel.textColor = .systemRed
             self.poseInstructionLabel.text = "⚠️ Scanning error - please try again"
         }
@@ -1167,36 +1181,46 @@ extension ScrumCapScanningViewController: SCReconstructionManagerDelegate {
 
 extension ScrumCapScanningViewController: MultiAngleScanManagerDelegate {
     
-    func scanManager(_ manager: MultiAngleScanManager, didStartPose pose: HeadScanningPose) {
+    nonisolated func scanManager(_ manager: MultiAngleScanManager, didStartPose pose: HeadScanningPose) {
         AppLog.scan.info("Started pose: \(pose.displayName)")
-        currentPose = pose
-        updateUIForPose(pose)
+        Task { @MainActor in
+            currentPose = pose
+            updateUIForPose(pose)
+        }
     }
     
-    func scanManager(_ manager: MultiAngleScanManager, didCompletePose pose: HeadScanningPose, withResult result: ScanResult) {
+    nonisolated func scanManager(_ manager: MultiAngleScanManager, didCompletePose pose: HeadScanningPose, withResult result: ScanResult) {
         AppLog.scan.info("Completed pose: \(pose.displayName)")
-        let h = UINotificationFeedbackGenerator()
-        h.notificationOccurred(.success)
-        completedPoses.insert(pose)
+        Task { @MainActor in
+            let h = UINotificationFeedbackGenerator()
+            h.notificationOccurred(.success)
+            completedPoses.insert(pose)
+        }
     }
     
-    func scanManager(_ manager: MultiAngleScanManager, didFailPose pose: HeadScanningPose, withError error: Error) {
+    nonisolated func scanManager(_ manager: MultiAngleScanManager, didFailPose pose: HeadScanningPose, withError error: Error) {
         AppLog.scan.error("Failed pose: \(pose.displayName) - \(String(describing: error))")
-        let h = UINotificationFeedbackGenerator()
-        h.notificationOccurred(.warning)
+        Task { @MainActor in
+            let h = UINotificationFeedbackGenerator()
+            h.notificationOccurred(.warning)
+        }
     }
     
-    func scanManager(_ manager: MultiAngleScanManager, didUpdateProgress progress: Float) {
+    nonisolated func scanManager(_ manager: MultiAngleScanManager, didUpdateProgress progress: Float) {
         // Update progress UI if needed
     }
     
-    func scanManager(_ manager: MultiAngleScanManager, didFinishAllScans finalResult: CompleteScanResult) {
-        print("🏉 All poses completed!")
-        showScanResults(finalResult.rugbyFitnessMeasurements)
+    nonisolated func scanManager(_ manager: MultiAngleScanManager, didFinishAllScans finalResult: CompleteScanResult) {
+        print(" Rugby All poses completed!")
+        Task { @MainActor in
+            showScanResults(finalResult.rugbyFitnessMeasurements)
+        }
     }
     
-    func scanManager(_ manager: MultiAngleScanManager, poseValidationUpdate result: PoseValidationResult, for pose: HeadScanningPose) {
-        updateValidationFeedback(result)
+    nonisolated func scanManager(_ manager: MultiAngleScanManager, poseValidationUpdate result: PoseValidationResult, for pose: HeadScanningPose) {
+        Task { @MainActor in
+            updateValidationFeedback(result)
+        }
     }
 }
 // 
@@ -1316,7 +1340,7 @@ private extension ScrumCapScanningViewController {
 
         return ScrumCapMeasurements(
             headCircumference: ValidatedMeasurement(value: headCircCM, confidence: 0.85, validationStatus: .validated, alternativeValues: [], measurementSource: .directScan(poses: Array(scans.keys))),
-            earToEarOverTop: ValidatedMeasurement(value: headCircUMference, confidence: 0.6, validationStatus: .estimated, alternativeValues: [], measurementSource: .statisticalEstimation(basedOn: ["slice perimeter"])) ,
+            earToEarOverTop: ValidatedMeasurement(value: headCircCM, confidence: 0.6, validationStatus: .estimated, alternativeValues: [], measurementSource: .statisticalEstimation(basedOn: ["slice perimeter"])) ,
             foreheadToNeckBase: ValidatedMeasurement(value: depthMM, confidence: 0.6, validationStatus: .estimated, alternativeValues: [], measurementSource: .directScan(poses: Array(scans.keys))) ,
             leftEarDimensions: leftEar,
             rightEarDimensions: rightEar,
@@ -1327,17 +1351,5 @@ private extension ScrumCapScanningViewController {
             jawLineToEar: ValidatedMeasurement(value: 100.0, confidence: 0.3, validationStatus: .estimated, alternativeValues: [], measurementSource: .statisticalEstimation(basedOn: ["defaults"])) ,
             chinToEarDistance: ValidatedMeasurement(value: 110.0, confidence: 0.3, validationStatus: .estimated, alternativeValues: [], measurementSource: .statisticalEstimation(basedOn: ["defaults"]))
         )
-    }
-}
-
-// MARK: - SCNMaterial Extension
-
-extension SCNMaterial {
-    static func materialWithColor(_ color: UIColor) -> SCNMaterial {
-        let material = SCNMaterial()
-        material.diffuse.contents = color
-        material.specular.contents = UIColor.white
-        material.shininess = 0.1
-        return material
     }
 }

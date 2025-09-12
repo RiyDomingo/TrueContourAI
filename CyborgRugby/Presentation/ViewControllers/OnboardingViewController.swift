@@ -16,8 +16,8 @@ class OnboardingViewController: UIViewController {
     private let nextButton = UIButton()
     private let skipButton = UIButton()
     
-    // MARK: - Properties
-    private let onboardingPages = [
+    // MARK: - Properties  
+    private lazy var onboardingPages = [
         OnboardingPage(
             title: "🏉 Welcome to CyborgRugby",
             subtitle: "Professional 3D scanning for perfect scrum cap fit",
@@ -43,6 +43,8 @@ class OnboardingViewController: UIViewController {
             description: "Track your scanning progress, unlock achievements, and view your player profile with statistics and history."
         )
     ]
+    
+    private var pageViews: [UIView] = []
     
     private var currentPage = 0 {
         didSet {
@@ -88,18 +90,24 @@ class OnboardingViewController: UIViewController {
         contentView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.addSubview(contentView)
         
-        // Create onboarding pages
+        // Create onboarding pages with memory optimization
+        var previousPageView: UIView?
+        pageViews.reserveCapacity(onboardingPages.count)
+        
         for (index, page) in onboardingPages.enumerated() {
             let pageView = createPageView(for: page, at: index)
             pageView.translatesAutoresizingMaskIntoConstraints = false
             contentView.addSubview(pageView)
+            pageViews.append(pageView)
             
             NSLayoutConstraint.activate([
                 pageView.topAnchor.constraint(equalTo: contentView.topAnchor),
-                pageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: CGFloat(index) * view.bounds.width),
-                pageView.widthAnchor.constraint(equalTo: view.widthAnchor),
+                pageView.leadingAnchor.constraint(equalTo: index == 0 ? contentView.leadingAnchor : previousPageView!.trailingAnchor),
+                pageView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
                 pageView.heightAnchor.constraint(equalTo: contentView.heightAnchor)
             ])
+            
+            previousPageView = pageView
         }
     }
     
@@ -222,8 +230,10 @@ class OnboardingViewController: UIViewController {
             skipButton.centerYAnchor.constraint(equalTo: nextButton.centerYAnchor)
         ])
         
-        // Set content size
-        contentView.widthAnchor.constraint(equalToConstant: view.bounds.width * CGFloat(onboardingPages.count)).isActive = true
+        // Set content size dynamically
+        if let lastPageView = contentView.subviews.last {
+            contentView.trailingAnchor.constraint(equalTo: lastPageView.trailingAnchor).isActive = true
+        }
     }
     
     // MARK: - UI Updates
@@ -250,7 +260,7 @@ class OnboardingViewController: UIViewController {
     }
     
     private func scrollToPage(_ page: Int) {
-        let xOffset = view.bounds.width * CGFloat(page)
+        let xOffset = scrollView.bounds.width * CGFloat(page)
         scrollView.setContentOffset(CGPoint(x: xOffset, y: 0), animated: true)
     }
     
@@ -280,6 +290,7 @@ class OnboardingViewController: UIViewController {
 extension OnboardingViewController: UIScrollViewDelegate {
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         let pageWidth = scrollView.bounds.width
+        guard pageWidth > 0 else { return }
         let currentPage = Int(scrollView.contentOffset.x / pageWidth)
         self.currentPage = currentPage
     }
