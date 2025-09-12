@@ -9,6 +9,7 @@ import Foundation
 import AVFoundation
 import StandardCyborgFusion
 
+@MainActor
 protocol MultiAngleScanManagerDelegate: AnyObject {
     func scanManager(_ manager: MultiAngleScanManager, didStartPose pose: HeadScanningPose)
     func scanManager(_ manager: MultiAngleScanManager, didCompletePose pose: HeadScanningPose, withResult result: ScanResult)
@@ -60,8 +61,10 @@ class MultiAngleScanManager {
         isScanning = true
         currentPoseIndex = 0
         scanResults.removeAll()
-        delegate?.scanManager(self, didStartPose: requiredPoses[currentPoseIndex])
-        delegate?.scanManager(self, didUpdateProgress: progress)
+        Task { @MainActor in
+            delegate?.scanManager(self, didStartPose: requiredPoses[currentPoseIndex])
+            delegate?.scanManager(self, didUpdateProgress: progress)
+        }
     }
     
     func stopScanning() {
@@ -112,8 +115,10 @@ class MultiAngleScanManager {
             return
         }
         
-        delegate?.scanManager(self, didStartPose: pose)
-        delegate?.scanManager(self, didUpdateProgress: progress)
+        Task { @MainActor in
+            delegate?.scanManager(self, didStartPose: pose)
+            delegate?.scanManager(self, didUpdateProgress: progress)
+        }
     }
     
     private func validateCurrentPose() { /* Controller handles gating */ }
@@ -142,7 +147,9 @@ class MultiAngleScanManager {
         )
         
         scanResults[pose] = scanResult
-        delegate?.scanManager(self, didCompletePose: pose, withResult: scanResult)
+        Task { @MainActor in
+            delegate?.scanManager(self, didCompletePose: pose, withResult: scanResult)
+        }
         
         moveToNextPose()
     }

@@ -10,7 +10,9 @@ import Foundation
 class AchievementManager {
     static let shared = AchievementManager()
     
-    private init() {}
+    private init() {
+        loadAchievements()
+    }
     
     // Define achievements
     enum Achievement: String, CaseIterable {
@@ -55,19 +57,28 @@ class AchievementManager {
         }
     }
     
-    // Track user achievements
+    // Track user achievements with persistence and thread safety
     private var unlockedAchievements: Set<Achievement> = []
+    private let userDefaultsKey = "UnlockedAchievements"
+    private let queue = DispatchQueue(label: "AchievementManager.queue", attributes: .concurrent)
     
     func unlockAchievement(_ achievement: Achievement) -> Bool {
-        if !unlockedAchievements.contains(achievement) {
-            unlockedAchievements.insert(achievement)
-            return true
+        return queue.sync(flags: .barrier) {
+            if !unlockedAchievements.contains(achievement) {
+                unlockedAchievements.insert(achievement)
+                DispatchQueue.main.async {
+                    self.saveAchievements()
+                }
+                return true
+            }
+            return false
         }
-        return false
     }
     
     func isUnlocked(_ achievement: Achievement) -> Bool {
-        return unlockedAchievements.contains(achievement)
+        return queue.sync {
+            return unlockedAchievements.contains(achievement)
+        }
     }
     
     func getAllAchievements() -> [Achievement] {
@@ -75,10 +86,32 @@ class AchievementManager {
     }
     
     func getUnlockedAchievements() -> [Achievement] {
-        return Array(unlockedAchievements)
+        return queue.sync {
+            return Array(unlockedAchievements)
+        }
     }
     
     func getLockedAchievements() -> [Achievement] {
-        return Achievement.allCases.filter { !unlockedAchievements.contains($0) }
+        return queue.sync {
+            return Achievement.allCases.filter { !unlockedAchievements.contains($0) }
+        }
+    }
+    
+    // MARK: - Private Methods
+    
+    private func loadAchievements() {
+        if let achievementStrings = UserDefaults.standard.array(forKey: userDefaultsKey) as? [String] {
+            unlockedAchievements = Set(achievementStrings.compactMap { Achievement(rawValue: $0) })
+        }
+    }
+    
+    private func saveAchievements() {
+        let achievementStrings = unlockedAchievements.map { $0.rawValue }
+        UserDefaults.standard.set(achievementStrings, forKey: userDefaultsKey)
+    }
+    
+    func resetAchievements() {
+        unlockedAchievements.removeAll()
+        UserDefaults.standard.removeObject(forKey: userDefaultsKey)
     }
 }

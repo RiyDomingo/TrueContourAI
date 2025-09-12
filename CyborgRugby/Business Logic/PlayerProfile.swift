@@ -12,30 +12,51 @@ class PlayerProfile {
     
     private init() {}
     
-    // Player information
+    // Player information with validation
     var name: String {
         get { return UserDefaults.standard.string(forKey: "PlayerName") ?? "Player Name" }
-        set { UserDefaults.standard.set(newValue, forKey: "PlayerName") }
+        set { 
+            let trimmedValue = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmedValue.isEmpty && trimmedValue.count <= 50 {
+                UserDefaults.standard.set(trimmedValue, forKey: "PlayerName")
+            }
+        }
     }
     
     var position: String {
         get { return UserDefaults.standard.string(forKey: "PlayerPosition") ?? "Hooker" }
-        set { UserDefaults.standard.set(newValue, forKey: "PlayerPosition") }
+        set { 
+            let trimmedValue = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmedValue.isEmpty && trimmedValue.count <= 30 {
+                UserDefaults.standard.set(trimmedValue, forKey: "PlayerPosition")
+            }
+        }
     }
     
     var team: String {
         get { return UserDefaults.standard.string(forKey: "PlayerTeam") ?? "Crusaders" }
-        set { UserDefaults.standard.set(newValue, forKey: "PlayerTeam") }
+        set { 
+            let trimmedValue = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmedValue.isEmpty && trimmedValue.count <= 50 {
+                UserDefaults.standard.set(trimmedValue, forKey: "PlayerTeam")
+            }
+        }
     }
     
     var scanCount: Int {
         get { return UserDefaults.standard.integer(forKey: "ScanCount") }
-        set { UserDefaults.standard.set(newValue, forKey: "ScanCount") }
+        set { 
+            let validatedValue = max(0, newValue) // Ensure non-negative
+            UserDefaults.standard.set(validatedValue, forKey: "ScanCount") 
+        }
     }
     
     var totalScanTime: Int {
         get { return UserDefaults.standard.integer(forKey: "TotalScanTime") }
-        set { UserDefaults.standard.set(newValue, forKey: "TotalScanTime") }
+        set { 
+            let validatedValue = max(0, newValue) // Ensure non-negative
+            UserDefaults.standard.set(validatedValue, forKey: "TotalScanTime") 
+        }
     }
     
     // Methods to update profile
@@ -44,7 +65,9 @@ class PlayerProfile {
     }
     
     func addScanTime(_ seconds: Int) {
-        totalScanTime += seconds
+        if seconds > 0 {
+            totalScanTime += seconds
+        }
     }
     
     func resetProfile() {

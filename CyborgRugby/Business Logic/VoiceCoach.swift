@@ -7,8 +7,23 @@
 
 import AVFoundation
 
-class VoiceCoach {
+@MainActor
+protocol VoiceCoachDelegate: AnyObject {
+    func voiceCoachDidStartSpeaking(_ coach: VoiceCoach, message: VoiceCoach.CoachingMessage)
+    func voiceCoachDidFinishSpeaking(_ coach: VoiceCoach, message: VoiceCoach.CoachingMessage)
+    func voiceCoachEncounteredError(_ coach: VoiceCoach, error: Error)
+}
+
+@MainActor
+class VoiceCoach: NSObject {
     private let synthesizer = AVSpeechSynthesizer()
+    weak var delegate: VoiceCoachDelegate?
+    private var currentMessage: CoachingMessage?
+    
+    override init() {
+        super.init()
+        synthesizer.delegate = self
+    }
     
     enum CoachingMessage {
         case startScanning
@@ -43,6 +58,8 @@ class VoiceCoach {
     }
     
     func speak(_ message: CoachingMessage, language: String = "en-US") {
+        currentMessage = message
+        
         let utterance = AVSpeechUtterance(string: message.text)
         utterance.voice = AVSpeechSynthesisVoice(language: language)
         utterance.rate = 0.5
@@ -53,12 +70,33 @@ class VoiceCoach {
             synthesizer.stopSpeaking(at: .immediate)
         }
         
+        delegate?.voiceCoachDidStartSpeaking(self, message: message)
         synthesizer.speak(utterance)
     }
     
     func stopSpeaking() {
         if synthesizer.isSpeaking {
             synthesizer.stopSpeaking(at: .immediate)
+        }
+        currentMessage = nil
+    }
+}
+
+// MARK: - AVSpeechSynthesizerDelegate
+
+extension VoiceCoach: AVSpeechSynthesizerDelegate {
+    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        Task { @MainActor in
+            if let message = currentMessage {
+                delegate?.voiceCoachDidFinishSpeaking(self, message: message)
+            }
+            currentMessage = nil
+        }
+    }
+    
+    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        Task { @MainActor in
+            currentMessage = nil
         }
     }
 }

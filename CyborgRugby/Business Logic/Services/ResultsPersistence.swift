@@ -28,11 +28,21 @@ struct ResultsPersistence {
 
     static func appSupportURL() -> URL {
         let fm = FileManager.default
-        let base = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        guard let base = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            AppLog.persistence.error("Could not access application support directory")
+            // Fallback to documents directory
+            return fm.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("CyborgRugby", isDirectory: true)
+        }
+        
         let dir = base.appendingPathComponent("CyborgRugby", isDirectory: true)
         if !fm.fileExists(atPath: dir.path) {
-            do { try fm.createDirectory(at: dir, withIntermediateDirectories: true) } catch {
+            do { 
+                try fm.createDirectory(at: dir, withIntermediateDirectories: true) 
+                AppLog.persistence.info("Created app support directory: \(dir.path)")
+            } catch {
                 AppLog.persistence.error("Failed to create app support dir: \(String(describing: error))")
+                // Don't fail silently - this is a critical error
+                fatalError("Unable to create required application directory: \(error)")
             }
         }
         return dir

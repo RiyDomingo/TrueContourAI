@@ -177,7 +177,7 @@ private extension MeasurementCalculator {
         var centersY: [Float] = []
         for (_, r) in scans { if let c = r.pointCloud { centersY.append(c.centerOfMass().y) } }
         guard !centersY.isEmpty else { return nil }
-        let centerY = centersY.reduce(0, +) / Float(centersY.count)
+        let centerY: Float = centersY.reduce(0.0, +) / Float(centersY.count)
 
         var minX = Float.greatestFiniteMagnitude
         var maxX = -Float.greatestFiniteMagnitude
@@ -244,8 +244,8 @@ private extension MeasurementCalculator {
     }
 
     static func fusedAggregate(scans: [HeadScanningPose: ScanResult]) -> FusedAggregate? {
-        // Center from reference cloud to avoid bias from sparsity
-        guard let fused = RugbyHeadScanFusion.estimateTransforms(scans) else { return nil }
+        // Verify transforms can be estimated before proceeding
+        guard RugbyHeadScanFusion.estimateTransforms(scans) != nil else { return nil }
         var minX = Float.greatestFiniteMagnitude
         var minY = Float.greatestFiniteMagnitude
         var minZ = Float.greatestFiniteMagnitude
