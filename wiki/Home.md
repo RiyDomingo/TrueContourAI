@@ -16,6 +16,7 @@ StandardCyborgCocoa is an open-source iOS SDK that enables real-time 3D scanning
 - **Metal-Accelerated Processing** - GPU-optimized rendering and computation
 - **Swift Package Manager** - Modern dependency management
 - **Cross-platform Support** - iOS 16+ and macOS 12+
+- **Required Dependency Handling** - Clear dependency requirements with proper integration
 
 ## Quick Links
 
@@ -52,6 +53,19 @@ The repository contains several key components:
 - **iOS Device**: iPhone X or later, iPad Pro (2018) or later
 - **Camera**: TrueDepth camera system required
 - **OS**: iOS 16.0+ or macOS 12.0+
+
+## Recent Improvements
+
+### Enhanced Dependency Management
+- Improved handling of required dependencies like ZipArchive
+- Direct imports for better compatibility across environments
+- Clear error messages when dependencies are missing
+- Updated documentation with solutions for common dependency issues
+
+### Better Documentation
+- Updated troubleshooting guides with solutions for common dependency issues
+- Enhanced known issues documentation with workarounds
+- Improved development guidelines for handling required dependencies
 
 ## License
 

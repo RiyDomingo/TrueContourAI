@@ -8,7 +8,14 @@
 #import <CoreImage/CoreImage.h>
 #import <MetalKit/MetalKit.h>
 #import <ModelIO/ModelIO.h>
-#import <ZipArchive.h>
+
+// Only import ZipArchive if it's available
+#if __has_include(<SSZipArchive/SSZipArchive.h>)
+#import <SSZipArchive/SSZipArchive.h>
+#define HAS_ZIPARCHIVE 1
+#else
+#define HAS_ZIPARCHIVE 0
+#endif
 
 #import <standard_cyborg/math/Vec3.hpp>
 #import <standard_cyborg/math/Vec4.hpp>
@@ -163,7 +170,17 @@ using namespace standard_cyborg;
     // write .jpeg
     [self writeTextureToJPEGAtPath:tmpJpegPath];
     
+#if HAS_ZIPARCHIVE
+    // ZipArchive is available - create the zip file
+    NSLog(@"Creating ZIP file at: %@", objZipPath);
     [SSZipArchive createZipFileAtPath:objZipPath withContentsOfDirectory:zipDirectory];
+    NSLog(@"ZIP file creation completed successfully");
+#else
+    // ZipArchive is NOT available - cannot create zip file
+    // Log this for debugging purposes
+    NSLog(@"ZipArchive not available - OBJ zip functionality disabled");
+    return false;
+#endif
     
     return true;
 }

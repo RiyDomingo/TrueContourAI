@@ -15,10 +15,10 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/ZipArchive/ZipArchive.git", from: "2.6.0"),
-        .package(path: "../scsdk"),
-        .package(path: "../CppDependencies/json"),
-        .package(path: "../CppDependencies/PoissonRecon"),
+        .package(name: "scsdk", path: "../scsdk"),
+        .package(name: "json", path: "../CppDependencies/json"),
+        .package(name: "PoissonRecon", path: "../CppDependencies/PoissonRecon"),
+        .package(name: "ZipArchive", url: "https://github.com/ZipArchive/ZipArchive.git", from: "2.4.0"),
     ],
     targets: [
         .target(
@@ -27,7 +27,7 @@ let package = Package(
                 "json",
                 "scsdk",
                 "PoissonRecon",
-                "ZipArchive",
+                .product(name: "ZipArchive", package: "ZipArchive"),
             ],
             path: "Sources",
             // resources: [
@@ -49,6 +49,12 @@ let package = Package(
                 .headerSearchPath("StandardCyborgFusion/MetalDepthProcessor"),
                 .headerSearchPath("StandardCyborgFusion/Private"),
                 .headerSearchPath("include/StandardCyborgFusion"),
+            ],
+            linkerSettings: [
+                .linkedLibrary("z"),
+                .linkedFramework("Foundation"),
+                .linkedFramework("UIKit"),
+                .linkedFramework("Security"), // ZipArchive may need Security framework
             ]
         ),
         .testTarget(

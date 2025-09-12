@@ -146,17 +146,17 @@ Color Buffer → Texture Mapping → Color Assignment → Textured Mesh
 
 ### Swift Package Dependencies
 
-| Package | Purpose | License |
-|---------|---------|---------|
-| **Eigen** | Linear algebra operations | MPL2 |
-| **nanoflann** | K-d tree for nearest neighbor | BSD |
-| **happly** | PLY file I/O | MIT |
-| **json** (nlohmann) | JSON parsing | MIT |
-| **PoissonRecon** | Surface reconstruction | BSD |
-| **SparseICP** | Iterative Closest Point | BSD |
-| **tinygltf** | glTF file support | MIT |
-| **ZipArchive** | Archive handling | MIT |
-| **libigl** | Geometry processing | MPL2 |
+| Package | Purpose | License | Optional |
+|---------|---------|---------|----------|
+| **Eigen** | Linear algebra operations | MPL2 | ❌ No |
+| **nanoflann** | K-d tree for nearest neighbor | BSD | ❌ No |
+| **happly** | PLY file I/O | MIT | ❌ No |
+| **json** (nlohmann) | JSON parsing | MIT | ❌ No |
+| **PoissonRecon** | Surface reconstruction | BSD | ❌ No |
+| **SparseICP** | Iterative Closest Point | BSD | ❌ No |
+| **tinygltf** | glTF file support | MIT | ❌ No |
+| **ZipArchive** | Archive handling | MIT | ❌ No |
+| **libigl** | Geometry processing | MPL2 | ❌ No |
 
 ### System Frameworks
 
@@ -223,7 +223,7 @@ The architecture includes thermal state monitoring:
 
 ### Output Formats
 - **PLY** - Point clouds with custom metadata
-- **OBJ** - Mesh geometry
+- **OBJ** - Mesh geometry (requires ZipArchive for zipped exports)
 - **USDZ** - AR-compatible format
 - **JSON** - Metadata and scene graphs
 

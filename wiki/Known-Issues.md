@@ -101,6 +101,41 @@ SPM dependency resolution fails intermittently with C++ packages in Xcode 15.0-1
 - Use manual dependency management if needed
 - Clear SPM cache frequently during development
 
+#### ZipArchive Dependency Integration Issues
+**Affected Versions:** All versions  
+**Status:** Workaround Available  
+
+**Description:**  
+The ZipArchive dependency may not be properly recognized by Xcode in some development environments, showing as "README" instead of "Package" in the Package Dependencies panel. This can cause import errors in Objective-C++ files that use ZipArchive functionality.
+
+**Note:** ZipArchive is now a required dependency for StandardCyborgFusion. Applications that do not properly integrate ZipArchive will fail to build or run correctly.
+
+**Symptoms:**
+- 'SSZipArchive/SSZipArchive.h' file not found errors
+- ZipArchive showing as "README" in Xcode Package Dependencies
+- Build failures in files that use ZipArchive functionality
+
+**Workarounds:**
+1. **Update Package.swift configuration:**
+   ```swift
+   // In Package.swift, ensure ZipArchive is properly configured:
+   .package(name: "ZipArchive", url: "https://github.com/ZipArchive/ZipArchive.git", from: "2.4.0")
+   ```
+
+2. **Use direct imports in source files:**
+   ```objc
+   // In Objective-C++ files, use direct import:
+   #import <SSZipArchive/SSZipArchive.h>
+   
+   // Use ZipArchive functionality directly
+   [SSZipArchive createZipFileAtPath:objZipPath withContentsOfDirectory:zipDirectory];
+   ```
+
+3. **Reset package caches:**
+   - File → Packages → Reset Package Caches
+   - Product → Clean Build Folder
+   - Restart Xcode
+
 ### File I/O Issues
 
 #### Large PLY File Export Timeout
@@ -212,6 +247,7 @@ override func viewDidLayoutSubviews() {
 - [ ] Streaming PLY export for large files
 - [ ] Metal command buffer timeout fixes
 - [ ] macOS Catalyst ML model support
+- [x] Improved ZipArchive integration (completed)
 
 ### Future Releases
 - [ ] Advanced noise reduction algorithms
@@ -264,6 +300,7 @@ Please tag issues with appropriate labels:
 | Metal timeouts | ✅ Partial | Medium | Medium |
 | iOS 17 interruptions | ✅ Yes | High | Fixed |
 | Xcode 15 SPM | ✅ Yes | Medium | Fixed |
+| ZipArchive integration | ✅ Yes | High | High |
 | PLY export timeout | ✅ Yes | Low | Medium |
 | ML model failures | ✅ Yes | Medium | Low |
 | Landmark accuracy | ✅ Partial | Low | Low |

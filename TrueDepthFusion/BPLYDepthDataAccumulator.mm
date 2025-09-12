@@ -15,7 +15,7 @@
 #import <StandardCyborgFusion/PointCloudIO.hpp>
 #import <StandardCyborgFusion/SCOfflineReconstructionManager.h>
 #import <StandardCyborgFusion/StandardCyborgFusion.h>
-#import <ZipArchive.h>
+#import <SSZipArchive/SSZipArchive.h>
 
 using namespace standard_cyborg;
 

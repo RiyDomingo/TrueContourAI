@@ -8,6 +8,7 @@
 import Foundation
 import Metal
 import MetalKit
+import CoreVideo
 
 class ScanningViewRenderer: NSObject {
     private let device: MTLDevice
@@ -41,5 +42,11 @@ class ScanningViewRenderer: NSObject {
         }
         
         commandBuffer.commit()
+    }
+    
+    func updateFrame(_ pixelBuffer: CVPixelBuffer) {
+        // Update the renderer with new frame data
+        // In production, this would process the frame for visualization
+        // For now, this is a placeholder implementation
     }
 }

@@ -113,7 +113,7 @@ class CustomScanningRenderer: DefaultScanningViewRenderer {
 
 Create custom point cloud processors:
 
-```swift
+``swift
 extension SCPointCloud {
     func customFilter(threshold: Float) -> SCPointCloud {
         // Implement custom filtering logic
@@ -518,6 +518,56 @@ class PointCloudStreamer {
     }
 }
 ```
+
+### Handling Dependencies
+
+StandardCyborgCocoa requires several dependencies to function properly. All dependencies are managed through Swift Package Manager and are required for the framework to work correctly.
+
+For Objective-C++ files that use dependencies, direct imports should be used:
+
+``objc
+// Objective-C++ files - Direct import since ZipArchive is required
+#import <SSZipArchive/SSZipArchive.h>
+
+// Use the dependency directly
+[SSZipArchive createZipFileAtPath:objZipPath withContentsOfDirectory:zipDirectory];
+```
+
+For Swift files, direct imports should be used:
+
+```swift
+// Swift files - Direct import since ZipArchive is required
+import SSZipArchive
+
+func createZipFile() {
+    // Use ZipArchive functionality directly
+}
+```
+
+This approach ensures that:
+1. All required dependencies are available at compile time
+2. The code fails fast if dependencies are missing
+3. Developers get clear error messages when dependencies are not properly configured
+
+## Framework Dependencies
+
+### Managing Required Dependencies
+
+StandardCyborgCocoa includes several required dependencies that must be available in all environments:
+
+| Dependency | Purpose | Required |
+|------------|---------|----------|
+| **ZipArchive** | Archive handling for OBJ exports | ❌ Yes |
+| **Eigen** | Linear algebra operations | ❌ Yes |
+| **nanoflann** | K-d tree for nearest neighbor | ❌ Yes |
+| **happly** | PLY file I/O | ❌ Yes |
+| **json** (nlohmann) | JSON parsing | ❌ Yes |
+
+When adding new dependencies:
+1. Ensure they are required for core functionality
+2. Add them directly to Package.swift
+3. Import them directly in source files
+4. Document the dependency in the wiki
 
 ---
 

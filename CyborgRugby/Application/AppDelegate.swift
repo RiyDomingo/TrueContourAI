@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import AVFoundation
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -27,12 +28,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         #if targetEnvironment(simulator)
         print("⚠️ Running on Simulator - TrueDepth camera not available")
         #else
-        // Basic device check for TrueDepth support
-        let device = UIDevice.current.model
-        if device.contains("iPhone") {
-            print("📱 iPhone detected - checking for TrueDepth support...")
-        } else if device.contains("iPad") {
-            print("📱 iPad detected - checking for TrueDepth support...")
+        // Check for actual TrueDepth camera capability
+        
+        let deviceTypes: [AVCaptureDevice.DeviceType] = [.builtInTrueDepthCamera]
+        let discoverySession = AVCaptureDevice.DiscoverySession(
+            deviceTypes: deviceTypes,
+            mediaType: .video,
+            position: .front
+        )
+        
+        let device = UIDevice.current
+        if !discoverySession.devices.isEmpty {
+            print("✅ TrueDepth camera available on \(device.model)")
+            print("📊 iOS \(device.systemVersion) - Scanning supported")
+        } else {
+            print("❌ TrueDepth camera not available on \(device.model)")
+            print("⚠️ 3D scanning functionality will be limited")
         }
         #endif
     }

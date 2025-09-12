@@ -73,6 +73,58 @@ Before diving into specific issues, verify these basic requirements:
    ls -la StandardCyborgFusion/Sources/StandardCyborgFusion/Models/
    ```
 
+#### Issue: ZipArchive dependency not found
+
+**Symptoms:**
+- 'SSZipArchive/SSZipArchive.h' file not found errors
+- ZipArchive showing as "README" instead of "Package" in Xcode Package Dependencies
+- Build failures in files that use ZipArchive functionality
+
+**Note:** ZipArchive is a required dependency for StandardCyborgFusion. Applications that do not properly integrate ZipArchive will fail to build or run correctly.
+
+**Solutions:**
+
+1. **Update Package.swift configuration:**
+   ```swift
+   // In Package.swift, ensure ZipArchive is properly configured:
+   dependencies: [
+       .package(name: "ZipArchive", url: "https://github.com/ZipArchive/ZipArchive.git", from: "2.4.0"),
+   ]
+   
+   targets: [
+       .target(
+           name: "StandardCyborgFusion",
+           dependencies: [
+               // ... other dependencies
+               .product(name: "ZipArchive", package: "ZipArchive"),
+           ]
+       )
+   ]
+   ```
+
+2. **Reset package caches:**
+   ```bash
+   # Clean SPM cache
+   rm -rf ~/Library/Developer/Xcode/DerivedData
+   rm -rf .build
+   
+   # Reset package dependencies in Xcode
+   # File → Packages → Reset Package Caches
+   ```
+
+3. **Use direct imports in source files:**
+   ```objc
+   // In Objective-C++ files, use direct import:
+   #import <SSZipArchive/SSZipArchive.h>
+   
+   // Use ZipArchive functionality directly
+   [SSZipArchive createZipFileAtPath:objZipPath withContentsOfDirectory:zipDirectory];
+   ```
+
+4. **Verify framework linking:**
+   - Check that the Security framework is linked (ZipArchive may require it)
+   - Ensure proper header search paths are configured
+
 ### Runtime Issues
 
 #### Issue: "Hardware not supported" error

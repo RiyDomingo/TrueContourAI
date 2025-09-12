@@ -10,7 +10,7 @@
 #import <StandardCyborgFusion/StandardCyborgFusion.h>
 #import <standard_cyborg/sc3d/ColorImage.hpp>
 #import <UIKit/UIKit.h>
-#import <ZipArchive.h>
+#import <SSZipArchive/SSZipArchive.h>
 
 #import "Scan.h"
 
