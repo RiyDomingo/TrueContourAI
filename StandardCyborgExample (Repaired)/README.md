@@ -1,4 +1,4 @@
-# StandardCyborgExample App
+# TrueContourAI App
 
 This simple app demonstrates how to integrate our SDK for 3D scanning and meshing.
 
@@ -9,20 +9,35 @@ This simple app demonstrates how to integrate our SDK for 3D scanning and meshin
 </p>
 
 ## Getting Started
-This repo depends on Standard Cyborg's Cocoapods: StandardCyborgFusion and StandardCyborgUI. You'll need to have [Cocoapods](https://cocoapods.org/) set up first. You'll also need to have Git and Xcode installed. As well as a device with TrueDepth/FaceID camera.
+This repo uses Swift Package Manager for dependencies (StandardCyborgFusion and StandardCyborgUI). You'll need Xcode and Git installed, plus a device with a TrueDepth/FaceID camera.
 
 
 ```
 # clone the repo
 git clone git@github.com:StandardCyborg/StandardCyborgCocoa.git
-cd StandardCyborgCocoa/StandardCyborgExample
+cd StandardCyborgCocoa/TrueContourAI
 
-# install pods
-pod install
+# open the project
+open TrueContourAI.xcodeproj
 
-# open the workspace
-open StandardCyborgExample.xcworkspace
-
+# Xcode will resolve SwiftPM packages on first open.
 # Build and run on your device. Running on the simulator won't work.
 ```
 
+## Dependencies
+- SwiftPM local packages: `StandardCyborgFusion`, `StandardCyborgUI`
+- SwiftPM remote package: `ZipArchive` (declared by `StandardCyborgFusion`)
+
+## App Flow
+- Home: start a head scan, open recent scans, or share the scans folder.
+- Scan: follow on-screen prompts to capture a full head scan.
+- Preview: rotate the model, verify ear landmarks, and save the scan.
+- Settings: export options, scan duration, and storage management.
+
+## Architecture
+- See `ARCHITECTURE.md` for component responsibilities and flow overview.
+
+## Tests
+- Open `TrueContourAI.xcodeproj`
+- Select scheme `TrueContourAITests`
+- Run tests with `⌘U`
