@@ -1,4 +1,0 @@
-module nanoflann {
-umbrella "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CppDependencies/nanoflann/include"
-export *
-}

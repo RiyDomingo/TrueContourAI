@@ -1,4 +1,0 @@
-module PoissonRecon {
-umbrella "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CppDependencies/PoissonRecon/Sources/include"
-export *
-}

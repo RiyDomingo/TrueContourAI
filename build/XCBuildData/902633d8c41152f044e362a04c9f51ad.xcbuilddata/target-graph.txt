@@ -1,2 +1,0 @@
-Target dependency graph (1 target)
-Target 'CyborgRugby' in project 'CyborgRugby' (no dependencies)

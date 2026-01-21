@@ -1,4 +1,0 @@
-module tinygltf {
-umbrella "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CppDependencies/tinygltf/include"
-export *
-}

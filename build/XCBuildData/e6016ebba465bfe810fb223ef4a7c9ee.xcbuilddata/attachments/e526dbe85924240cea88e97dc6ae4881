@@ -1,4 +1,0 @@
-module stb {
-umbrella "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CppDependencies/stb/include"
-export *
-}

@@ -1,4 +1,0 @@
-module happly {
-umbrella header "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CppDependencies/happly/include/happly.h"
-export *
-}

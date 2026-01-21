@@ -1,4 +1,0 @@
-module StandardCyborgUI {
-header "StandardCyborgUI-Swift.h"
-export *
-}

@@ -1,4 +1,0 @@
-module Eigen {
-umbrella "/Users/riyaddomingo/Desktop/Claude Code Projects/StandardCyborgCocoa-master/CppDependencies/Eigen/include"
-export *
-}
