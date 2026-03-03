@@ -1,0 +1,71 @@
+import XCTest
+import UIKit
+@testable import TrueContourAI
+
+final class ScanPreviewCoordinatorTests: XCTestCase {
+
+    private final class TestPresenter: UIViewController {
+        var lastPresented: UIViewController?
+
+        override func present(_ viewControllerToPresent: UIViewController, animated: Bool, completion: (() -> Void)? = nil) {
+            lastPresented = viewControllerToPresent
+            completion?()
+        }
+    }
+
+    private var tempDir: URL!
+    private var defaults: UserDefaults!
+    private var suiteName: String!
+
+    override func setUp() {
+        super.setUp()
+        tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        suiteName = "ScanPreviewCoordinatorTests.\(UUID().uuidString)"
+        defaults = UserDefaults(suiteName: suiteName)
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    override func tearDown() {
+        if let tempDir {
+            try? FileManager.default.removeItem(at: tempDir)
+        }
+        if let suiteName {
+            defaults.removePersistentDomain(forName: suiteName)
+        }
+        tempDir = nil
+        defaults = nil
+        suiteName = nil
+        super.tearDown()
+    }
+
+    func testPresentExistingScanMissingScenePresentsAlert() {
+        let presenter = TestPresenter()
+        let scanService = ScanService(scansRootURL: tempDir, defaults: defaults)
+        let settingsStore = SettingsStore(defaults: defaults)
+        let flowState = ScanFlowState()
+        let coordinator = ScanPreviewCoordinator(
+            presenter: presenter,
+            scanService: scanService,
+            settingsStore: settingsStore,
+            scanFlowState: flowState,
+            onToast: nil
+        )
+
+        let scanFolder = tempDir.appendingPathComponent("scan-missing-scene", isDirectory: true)
+        try? FileManager.default.createDirectory(at: scanFolder, withIntermediateDirectories: true)
+        let item = ScanService.ScanItem(
+            folderURL: scanFolder,
+            displayName: "scan-missing-scene",
+            date: Date(),
+            thumbnailURL: nil,
+            sceneGLTFURL: nil
+        )
+
+        coordinator.presentExistingScan(item)
+
+        let alert = presenter.lastPresented as? UIAlertController
+        XCTAssertNotNil(alert)
+        XCTAssertEqual(alert?.title, L("scan.preview.missingScene.title"))
+    }
+}

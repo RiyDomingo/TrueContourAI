@@ -1,0 +1,37 @@
+name: iOS Build
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - 'codex/**'
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Resolve packages
+        working-directory: TrueContourAI
+        run: xcodebuild -resolvePackageDependencies -project TrueContourAI.xcodeproj
+
+      - name: Build app
+        working-directory: TrueContourAI
+        run: xcodebuild build -project TrueContourAI.xcodeproj -scheme TrueContourAI -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO
+
+      - name: Build unit tests
+        working-directory: TrueContourAI
+        run: xcodebuild build -project TrueContourAI.xcodeproj -scheme TrueContourAITests -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO
+
+      - name: Build UI tests
+        working-directory: TrueContourAI
+        run: xcodebuild build -project TrueContourAI.xcodeproj -scheme TrueContourAIUITests -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO

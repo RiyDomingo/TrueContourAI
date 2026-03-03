@@ -18,16 +18,30 @@ let package = Package(
         .package(name: "scsdk", path: "../scsdk"),
         .package(name: "json", path: "../CppDependencies/json"),
         .package(name: "PoissonRecon", path: "../CppDependencies/PoissonRecon"),
-        .package(name: "ZipArchive", url: "https://github.com/ZipArchive/ZipArchive.git", from: "2.4.0"),
+        .package(url: "https://github.com/ZipArchive/ZipArchive.git", from: "2.4.0"),
+        .package(name: "SparseICP", path: "../CppDependencies/SparseICP"),
+        .package(name: "Eigen", path: "../CppDependencies/Eigen"),
+        .package(name: "nanoflann", path: "../CppDependencies/nanoflann"),
+        .package(name: "stb", path: "../CppDependencies/stb"),
+        .package(name: "happly", path: "../CppDependencies/happly"),
+        .package(name: "tinygltf", path: "../CppDependencies/tinygltf"),
+        .package(name: "StandardCyborgUI", path: "../StandardCyborgUI"),
     ],
     targets: [
         .target(
             name: "StandardCyborgFusion",
             dependencies: [
-                "json",
-                "scsdk",
-                "PoissonRecon",
+                .product(name: "json", package: "json"),
+                .product(name: "scsdk", package: "scsdk"),
+                .product(name: "PoissonRecon", package: "PoissonRecon"),
                 .product(name: "ZipArchive", package: "ZipArchive"),
+                .product(name: "SparseICP", package: "SparseICP"),
+                "Eigen",
+                "nanoflann",
+                "stb",
+                "happly",
+                "tinygltf",
+                "StandardCyborgUI",
             ],
             path: "Sources",
             // resources: [
@@ -86,3 +100,4 @@ let package = Package(
     swiftLanguageModes: [.v5],
     cxxLanguageStandard: .cxx17
 )
+

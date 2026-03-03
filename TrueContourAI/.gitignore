@@ -1,0 +1,8 @@
+.DS_Store
+build/
+DerivedData/
+**/.DS_Store
+**/.build/
+*.xcresult
+.deriveddata-ui-rerun/
+.deriveddata-*/
