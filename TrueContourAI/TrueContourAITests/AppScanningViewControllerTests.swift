@@ -78,7 +78,7 @@ final class AppScanningViewControllerTests: XCTestCase {
         vc.debug_setAutoFinishForProgress(seconds: 0, remaining: 0)
         vc.debug_setAssimilatedFramesForProgress(12)
         vc.debug_updateCaptureProgress()
-        XCTAssertTrue(vc.debug_progressLabelText()?.contains("Capture progress:") == true)
+        XCTAssertEqual(vc.debug_progressLabelText(), L("scanning.progress.capturing"))
     }
 
     func testCountdownVisibilityIsIndependentFromActiveGuidance() {
@@ -253,6 +253,20 @@ final class AppScanningViewControllerTests: XCTestCase {
         XCTAssertEqual(delegate.scanCount, 1)
         XCTAssertEqual(camera.stopSessionCount, 1)
         XCTAssertEqual(haptics.finishCount, 1)
+    }
+
+    func testScanSheetProfileCompactsOnSmallHeight() {
+        let profile = AppScanningViewController.debug_scanSheetProfile(height: 680, isPad: false)
+        XCTAssertEqual(profile.collapsed, 168)
+        XCTAssertEqual(profile.half, 236)
+        XCTAssertEqual(profile.full, 300)
+    }
+
+    func testScanSheetProfileUsesLargerPresetOnPad() {
+        let profile = AppScanningViewController.debug_scanSheetProfile(height: 1024, isPad: true)
+        XCTAssertEqual(profile.collapsed, 180)
+        XCTAssertEqual(profile.half, 250)
+        XCTAssertEqual(profile.full, 320)
     }
 
     private func makeController(

@@ -79,6 +79,21 @@ final class AccessibilitySmokeTests: XCTestCase {
         XCTAssertTrue(coordinatorOn.debug_addFitControlsIfDeveloperMode(hostView: hostView))
         XCTAssertTrue(coordinatorOn.debug_hasFitBrowSlider())
     }
+
+    func testPreviewSheetProfileCompactsOnSmallHeight() {
+        let p = PreviewOverlayUIController.debug_sheetProfile(height: 680, isPad: false)
+        XCTAssertEqual(p.collapsed, 80)
+        XCTAssertEqual(p.half, 112)
+        XCTAssertEqual(p.full, 144)
+    }
+
+    func testPreviewSheetStaysCollapsedWhenDeveloperModeEnabled() {
+        let overlay = PreviewOverlayUIController()
+        let host = UIView(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        overlay.debug_installSheet(on: host)
+        overlay.setDeveloperModeEnabled(true)
+        XCTAssertEqual(overlay.debug_currentSnapPoint(), .collapsed)
+    }
 }
 
 private extension UIView {

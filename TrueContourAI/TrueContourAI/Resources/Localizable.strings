@@ -255,6 +255,9 @@
 "scan.preview.fit.export" = "Export Fit Pack";
 "scan.preview.fit.tools" = "Developer Tools";
 "scan.preview.fit.tools.hide" = "Hide Tools";
+"scan.preview.tab.summary" = "Summary";
+"scan.preview.tab.developer" = "Developer";
+"scan.preview.sheet.title" = "Preview Controls";
 "scan.preview.fit.results.title" = "Fit Check Results";
 "scan.preview.fit.results.pending" = "Run Fit Model Check to compute fit metrics.";
 "scan.preview.fit.brow.advanced" = "Advanced: Adjust brow plane";

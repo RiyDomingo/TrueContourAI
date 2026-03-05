@@ -105,6 +105,7 @@ final class ScanCoordinator {
         scanningVC.delegate = delegate
         scanningVC.generatesTexturedMeshes = true
         scanningVC.requiresManualFinish = true
+        scanningVC.developerModeEnabled = settingsStore.developerModeEnabled
         scanningVC.maxDepthResolution = suggestedDepthResolution(for: processingConfig)
         scanningVC.texturedMeshColorBufferSaveInterval = suggestedColorBufferInterval(for: processingConfig)
         scanningVC.modalPresentationStyle = .fullScreen

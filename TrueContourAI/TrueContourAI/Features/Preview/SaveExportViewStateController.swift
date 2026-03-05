@@ -3,18 +3,10 @@ import StandardCyborgUI
 
 final class SaveExportViewStateController: SaveExportUIStateAdapting {
     private weak var previewVC: ScenePreviewViewController?
-    private weak var meshingStatusLabel: UILabel?
-    private weak var meshingActivityIndicator: UIActivityIndicatorView?
     private weak var savingOverlayView: UIView?
 
-    func configure(
-        previewVC: ScenePreviewViewController,
-        meshingStatusLabel: UILabel?,
-        meshingActivityIndicator: UIActivityIndicatorView?
-    ) {
+    func configure(previewVC: ScenePreviewViewController) {
         self.previewVC = previewVC
-        self.meshingStatusLabel = meshingStatusLabel
-        self.meshingActivityIndicator = meshingActivityIndicator
     }
 
     func setButtonsEnabled(_ isEnabled: Bool) {
@@ -26,15 +18,11 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
     }
 
     func setMeshingStatusText(_ text: String) {
-        meshingStatusLabel?.text = text
+        _ = text
     }
 
     func setMeshingSpinnerActive(_ isActive: Bool) {
-        if isActive {
-            meshingActivityIndicator?.startAnimating()
-        } else {
-            meshingActivityIndicator?.stopAnimating()
-        }
+        _ = isActive
     }
 
     func showSavingToast() {
@@ -122,8 +110,6 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
 
     func clear() {
         previewVC = nil
-        meshingStatusLabel = nil
-        meshingActivityIndicator = nil
         savingOverlayView?.removeFromSuperview()
         savingOverlayView = nil
     }

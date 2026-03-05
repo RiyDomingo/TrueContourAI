@@ -116,15 +116,6 @@ final class SettingsViewController: UITableViewController {
                     )
                 ),
                 Row(
-                    title: L("settings.developerMode.title"),
-                    subtitle: L("settings.developerMode.subtitle"),
-                    kind: .toggle(
-                        isOn: { [store] in store.developerModeEnabled },
-                        setOn: { [store] value in store.developerModeEnabled = value },
-                        identifier: "settings.developerModeEnabled"
-                    )
-                ),
-                Row(
                     title: L("settings.ear.hint.title"),
                     subtitle: L("settings.ear.hint.subtitle"),
                     kind: .toggle(
@@ -159,6 +150,15 @@ final class SettingsViewController: UITableViewController {
                     title: L("settings.advanced.warning.title"),
                     subtitle: L("settings.advanced.warning.subtitle"),
                     kind: .info
+                ),
+                Row(
+                    title: L("settings.developerMode.title"),
+                    subtitle: L("settings.developerMode.subtitle"),
+                    kind: .toggle(
+                        isOn: { [store] in store.developerModeEnabled },
+                        setOn: { [store] value in store.developerModeEnabled = value },
+                        identifier: "settings.developerModeEnabled"
+                    )
                 ),
                 Row(
                     title: L("settings.advanced.qualityGate.title"),

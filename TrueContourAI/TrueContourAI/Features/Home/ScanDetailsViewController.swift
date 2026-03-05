@@ -21,7 +21,7 @@ final class ScanDetailsViewController: UIViewController {
         let stack = UIStackView()
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.axis = .vertical
-        stack.spacing = 12
+        stack.spacing = DesignSystem.Spacing.s
         return stack
     }()
 
@@ -137,33 +137,66 @@ final class ScanDetailsViewController: UIViewController {
     }
 
     private func addSection(title: String) {
+        let card = UIView()
+        card.translatesAutoresizingMaskIntoConstraints = false
+        DesignSystem.applyCardSurface(card, floating: false)
         let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
         label.numberOfLines = 0
         label.textColor = DesignSystem.Colors.textSecondary
         label.font = DesignSystem.Typography.bodyEmphasis()
         label.adjustsFontForContentSizeCategory = true
         label.text = title
-        stackView.addArrangedSubview(label)
+        card.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.topAnchor.constraint(equalTo: card.topAnchor, constant: DesignSystem.Spacing.s),
+            label.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: DesignSystem.Spacing.m),
+            label.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -DesignSystem.Spacing.m),
+            label.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -DesignSystem.Spacing.s)
+        ])
+        stackView.addArrangedSubview(card)
     }
 
     private func addMetric(label: String, value: String) {
+        let card = UIView()
+        card.translatesAutoresizingMaskIntoConstraints = false
+        DesignSystem.applyCardSurface(card, floating: false)
         let metricLabel = UILabel()
+        metricLabel.translatesAutoresizingMaskIntoConstraints = false
         metricLabel.numberOfLines = 0
         metricLabel.textColor = DesignSystem.Colors.textPrimary
         metricLabel.font = DesignSystem.Typography.body()
         metricLabel.adjustsFontForContentSizeCategory = true
         metricLabel.text = "\(label): \(value)"
-        stackView.addArrangedSubview(metricLabel)
+        card.addSubview(metricLabel)
+        NSLayoutConstraint.activate([
+            metricLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: DesignSystem.Spacing.s),
+            metricLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: DesignSystem.Spacing.m),
+            metricLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -DesignSystem.Spacing.m),
+            metricLabel.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -DesignSystem.Spacing.s)
+        ])
+        stackView.addArrangedSubview(card)
     }
 
     private func addBody(_ text: String) {
+        let card = UIView()
+        card.translatesAutoresizingMaskIntoConstraints = false
+        DesignSystem.applyCardSurface(card, floating: false)
         let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
         label.numberOfLines = 0
         label.textColor = DesignSystem.Colors.textPrimary
         label.font = DesignSystem.Typography.body()
         label.adjustsFontForContentSizeCategory = true
         label.text = text
-        stackView.addArrangedSubview(label)
+        card.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.topAnchor.constraint(equalTo: card.topAnchor, constant: DesignSystem.Spacing.s),
+            label.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: DesignSystem.Spacing.m),
+            label.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -DesignSystem.Spacing.m),
+            label.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -DesignSystem.Spacing.s)
+        ])
+        stackView.addArrangedSubview(card)
     }
 
     @objc private func closeTapped() {

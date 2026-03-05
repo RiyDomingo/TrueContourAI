@@ -1,17 +1,21 @@
 import UIKit
 
 final class PreviewOverlayUIController {
-    private struct OverlayLayoutProfile {
-        let bottomControlsInset: CGFloat
-        let measurementsBottomInset: CGFloat
-        let panelMaxWidth: CGFloat
-        let panelMaxHeightMultiplier: CGFloat
+    private struct SheetProfile {
+        let bottomInset: CGFloat
+        let collapsed: CGFloat
+        let half: CGFloat
+        let full: CGFloat
     }
-
     private enum FitPanelVisibilityState {
         case actionsOnly
         case resultsCollapsed
         case resultsWithAdvanced
+    }
+
+    private enum PreviewSheetSection: Int {
+        case summary = 0
+        case developer = 1
     }
 
     private(set) weak var verifyEarButton: UIButton?
@@ -31,31 +35,34 @@ final class PreviewOverlayUIController {
     private(set) weak var fitContainerView: UIView?
     private(set) weak var fitPanelScrollView: UIScrollView?
     private(set) weak var hostView: UIView?
-    private var fitPanelVisibilityState: FitPanelVisibilityState = .actionsOnly
 
-    private static func layoutProfile(for hostView: UIView) -> OverlayLayoutProfile {
-        let compactHeight = hostView.bounds.height > 0 ? hostView.bounds.height < 760 : false
-        let compactTraits = hostView.traitCollection.verticalSizeClass == .compact
-        if compactHeight || compactTraits {
-            return OverlayLayoutProfile(
-                bottomControlsInset: 72,
-                measurementsBottomInset: 118,
-                panelMaxWidth: 264,
-                panelMaxHeightMultiplier: 0.30
-            )
+    private let bottomSheet = BottomSheetController()
+    private let statusRow = StatusRowView()
+    private let summaryStack = UIStackView()
+    private let developerStack = UIStackView()
+    private let contentStack = UIStackView()
+    private let sheetTabControl = UISegmentedControl(items: [L("scan.preview.tab.summary"), L("scan.preview.tab.developer")])
+    private let sheetTitleLabel = UILabel()
+    private var fitPanelVisibilityState: FitPanelVisibilityState = .actionsOnly
+    private var developerMode = false
+
+    private func sheetProfile(for hostView: UIView) -> SheetProfile {
+        Self.sheetProfile(forHeight: hostView.bounds.height, isPad: hostView.traitCollection.userInterfaceIdiom == .pad)
+    }
+
+    private static func sheetProfile(forHeight h: CGFloat, isPad: Bool) -> SheetProfile {
+        if isPad || h >= 900 {
+            return SheetProfile(bottomInset: 66, collapsed: 86, half: 132, full: 178)
         }
-        return OverlayLayoutProfile(
-            bottomControlsInset: 84,
-            measurementsBottomInset: 132,
-            panelMaxWidth: 300,
-            panelMaxHeightMultiplier: 0.35
-        )
+        if h <= 700 {
+            return SheetProfile(bottomInset: 58, collapsed: 80, half: 112, full: 144)
+        }
+        return SheetProfile(bottomInset: 62, collapsed: 84, half: 120, full: 156)
     }
 
     func addVerifyEarUI(to hostView: UIView, showHint: Bool) -> UIButton {
+        ensureSheet(on: hostView)
         if let existing = verifyEarButton { return existing }
-        self.hostView = hostView
-        let profile = Self.layoutProfile(for: hostView)
 
         let button = UIButton(type: .system)
         DesignSystem.applyButton(button, title: L("scan.preview.verify"), style: .secondary, size: .regular)
@@ -63,6 +70,29 @@ final class PreviewOverlayUIController {
         button.accessibilityLabel = L("scan.preview.accessibility.verify.label")
         button.accessibilityHint = L("scan.preview.accessibility.verify.hint")
         button.accessibilityIdentifier = "verifyEarButton"
+
+        let spinner = UIActivityIndicatorView(style: .medium)
+        spinner.translatesAutoresizingMaskIntoConstraints = false
+        spinner.color = DesignSystem.Colors.textPrimary
+        spinner.hidesWhenStopped = true
+
+        let buttonWrap = UIView()
+        buttonWrap.translatesAutoresizingMaskIntoConstraints = false
+        buttonWrap.addSubview(button)
+        buttonWrap.addSubview(spinner)
+
+        NSLayoutConstraint.activate([
+            button.topAnchor.constraint(equalTo: buttonWrap.topAnchor),
+            button.leadingAnchor.constraint(equalTo: buttonWrap.leadingAnchor),
+            button.bottomAnchor.constraint(equalTo: buttonWrap.bottomAnchor),
+            spinner.leadingAnchor.constraint(equalTo: button.trailingAnchor, constant: 8),
+            spinner.centerYAnchor.constraint(equalTo: button.centerYAnchor),
+            spinner.trailingAnchor.constraint(lessThanOrEqualTo: buttonWrap.trailingAnchor)
+        ])
+
+        developerStack.insertArrangedSubview(buttonWrap, at: 0)
+        verifyEarButton = button
+        verifyEarActivityIndicator = spinner
 
         let badge = UIImageView()
         badge.translatesAutoresizingMaskIntoConstraints = false
@@ -76,55 +106,18 @@ final class PreviewOverlayUIController {
         badge.isAccessibilityElement = true
         badge.accessibilityLabel = L("scan.preview.accessibility.badge")
         badge.accessibilityTraits = .image
-        button.layer.zPosition = 999
-        badge.layer.zPosition = 999
-
-        let spinner = UIActivityIndicatorView(style: .medium)
-        spinner.translatesAutoresizingMaskIntoConstraints = false
-        spinner.color = DesignSystem.Colors.textPrimary
-        spinner.hidesWhenStopped = true
-
-        hostView.addSubview(button)
         hostView.addSubview(badge)
-        hostView.addSubview(spinner)
-
-        let badgeSize: CGFloat
-        if hostView.traitCollection.verticalSizeClass == .compact
-            || hostView.traitCollection.preferredContentSizeCategory.isAccessibilityCategory {
-            badgeSize = 84
-        } else {
-            badgeSize = 112
-        }
-
-        let badgeTopOffset: CGFloat = 12
-
         NSLayoutConstraint.activate([
-            button.leadingAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.leadingAnchor, constant: 12),
-            button.bottomAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.bottomAnchor, constant: -profile.bottomControlsInset),
-
             badge.trailingAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.trailingAnchor, constant: -12),
-            badge.topAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.topAnchor, constant: badgeTopOffset),
-            badge.widthAnchor.constraint(equalToConstant: badgeSize),
-            badge.heightAnchor.constraint(equalToConstant: badgeSize),
-
-            spinner.centerYAnchor.constraint(equalTo: button.centerYAnchor),
-            spinner.leadingAnchor.constraint(equalTo: button.trailingAnchor, constant: 8)
+            badge.topAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.topAnchor, constant: 12),
+            badge.widthAnchor.constraint(equalToConstant: 92),
+            badge.heightAnchor.constraint(equalToConstant: 92)
         ])
-
-        verifyEarButton = button
         earOverlayBadge = badge
-        verifyEarActivityIndicator = spinner
 
         if showHint {
-            addVerifyEarHint(to: hostView, near: button)
+            addVerifyEarHint(to: hostView, near: bottomSheet.containerView)
         }
-
-        DispatchQueue.main.async { [weak hostView] in
-            guard let view = hostView else { return }
-            view.bringSubviewToFront(button)
-            view.bringSubviewToFront(badge)
-        }
-
         return button
     }
 
@@ -148,59 +141,48 @@ final class PreviewOverlayUIController {
         verifyEarHintLabel = nil
     }
 
-    func addScanQualityLabel(to hostView: UIView, quality: ScanQuality, anchor: UIView?) {
-        if scanQualityLabel != nil { return }
+    func addScanQualityLabel(to hostView: UIView, quality: ScanQuality, anchor _: UIView?) {
+        ensureSheet(on: hostView)
+        scanQualityLabel?.removeFromSuperview()
+        scanQualityHintLabel?.removeFromSuperview()
 
-        let label = UILabel()
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.textColor = DesignSystem.Colors.textPrimary
-        label.font = DesignSystem.Typography.caption()
-        label.adjustsFontForContentSizeCategory = true
-        label.textAlignment = .center
-        label.text = quality.title
-        label.backgroundColor = quality.color.withAlphaComponent(0.9)
-        label.layer.cornerRadius = DesignSystem.CornerRadius.medium
-        label.layer.masksToBounds = true
-        label.accessibilityLabel = String(format: L("scan.preview.accessibility.quality"), quality.title)
-        label.accessibilityIdentifier = "scanQualityLabel"
+        let qualityChip = UILabel()
+        qualityChip.translatesAutoresizingMaskIntoConstraints = false
+        qualityChip.text = "  \(quality.title)  "
+        qualityChip.accessibilityIdentifier = "scanQualityLabel"
+        qualityChip.accessibilityLabel = String(format: L("scan.preview.accessibility.quality"), quality.title)
+        qualityChip.textAlignment = .center
+        qualityChip.font = DesignSystem.Typography.caption()
+        qualityChip.adjustsFontForContentSizeCategory = true
+        qualityChip.layer.cornerRadius = DesignSystem.CornerRadius.small
+        qualityChip.layer.masksToBounds = true
+        qualityChip.backgroundColor = quality.color.withAlphaComponent(0.9)
+        qualityChip.textColor = .white
 
-        hostView.addSubview(label)
-        let topAnchor = anchor?.bottomAnchor ?? hostView.safeAreaLayoutGuide.topAnchor
-        let topConstant: CGFloat = (anchor == nil) ? 12 : 8
-        NSLayoutConstraint.activate([
-            label.topAnchor.constraint(equalTo: topAnchor, constant: topConstant),
-            label.centerXAnchor.constraint(equalTo: hostView.centerXAnchor),
-            label.heightAnchor.constraint(greaterThanOrEqualToConstant: 28)
-        ])
+        let qualityHint = UILabel()
+        qualityHint.translatesAutoresizingMaskIntoConstraints = false
+        qualityHint.numberOfLines = 2
+        qualityHint.textColor = DesignSystem.Colors.textSecondary
+        qualityHint.font = DesignSystem.Typography.caption()
+        qualityHint.adjustsFontForContentSizeCategory = true
+        qualityHint.text = quality.tip
+        qualityHint.accessibilityLabel = String(format: L("scan.preview.accessibility.qualityTip"), quality.tip)
 
-        scanQualityLabel = label
-        addScanQualityHint(to: hostView, quality: quality, anchor: label)
+        summaryStack.insertArrangedSubview(qualityChip, at: 0)
+        summaryStack.insertArrangedSubview(qualityHint, at: 1)
+        scanQualityLabel = qualityChip
+        scanQualityHintLabel = qualityHint
     }
 
     func clear() {
-        verifyEarButton?.removeFromSuperview()
-        earOverlayBadge?.removeFromSuperview()
-        verifyEarActivityIndicator?.removeFromSuperview()
-        fitCheckButton?.removeFromSuperview()
-        fitExportButton?.removeFromSuperview()
-        fitResultsCardLabel?.removeFromSuperview()
-        fitBrowSlider?.removeFromSuperview()
-        fitBrowSliderLabel?.removeFromSuperview()
-        fitBrowAdvancedButton?.removeFromSuperview()
-        fitPanelToggleButton?.removeFromSuperview()
-        fitContainerView?.removeFromSuperview()
-        fitPanelScrollView?.removeFromSuperview()
-        removeVerifyHint()
-        scanQualityLabel?.removeFromSuperview()
-        scanQualityLabel = nil
-        scanQualityHintLabel?.removeFromSuperview()
-        scanQualityHintLabel = nil
-        derivedMeasurementsLabel?.removeFromSuperview()
-        derivedMeasurementsLabel = nil
-        hostView = nil
+        verifyEarHintLabel?.removeFromSuperview()
         verifyEarButton = nil
+        earOverlayBadge?.removeFromSuperview()
         earOverlayBadge = nil
         verifyEarActivityIndicator = nil
+        scanQualityLabel = nil
+        scanQualityHintLabel = nil
+        derivedMeasurementsLabel = nil
         fitCheckButton = nil
         fitExportButton = nil
         fitResultsCardLabel = nil
@@ -211,66 +193,57 @@ final class PreviewOverlayUIController {
         fitContainerView = nil
         fitPanelScrollView = nil
         fitPanelVisibilityState = .actionsOnly
+
+        statusRow.removeFromSuperview()
+        summaryStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        developerStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        sheetTabControl.removeFromSuperview()
+        sheetTitleLabel.removeFromSuperview()
+        contentStack.removeFromSuperview()
+        bottomSheet.containerView.removeFromSuperview()
+        hostView = nil
     }
 
     func addFitModelUI(to hostView: UIView) -> (check: UIButton, export: UIButton, resultsCard: UILabel, browSlider: UISlider) {
-        if let check = fitCheckButton, let export = fitExportButton, let card = fitResultsCardLabel, let slider = fitBrowSlider {
+        ensureSheet(on: hostView)
+
+        if let check = fitCheckButton,
+           let export = fitExportButton,
+           let card = fitResultsCardLabel,
+           let slider = fitBrowSlider {
             return (check, export, card, slider)
         }
-        self.hostView = hostView
-        let profile = Self.layoutProfile(for: hostView)
+
+        let panelToggle = UIButton(type: .system)
+        DesignSystem.applyButton(panelToggle, title: L("scan.preview.fit.tools"), style: .secondary, size: .regular)
+        panelToggle.accessibilityIdentifier = "fitModelPanelToggleButton"
 
         let container = UIView()
         container.translatesAutoresizingMaskIntoConstraints = false
-        container.backgroundColor = DesignSystem.Colors.overlayCard
-        container.layer.cornerRadius = DesignSystem.CornerRadius.medium
-        container.layer.masksToBounds = true
-        container.accessibilityIdentifier = "fitModelControlsContainer"
+        DesignSystem.applyCardSurface(container, floating: false)
         container.isHidden = true
 
         let scrollView = UIScrollView()
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.showsVerticalScrollIndicator = true
-        scrollView.alwaysBounceVertical = true
-        scrollView.accessibilityIdentifier = "fitModelPanelScrollView"
 
         let contentView = UIView()
         contentView.translatesAutoresizingMaskIntoConstraints = false
 
-        let panelToggleButton: UIButton
-        if let existing = fitPanelToggleButton {
-            panelToggleButton = existing
-        } else {
-            let button = UIButton(type: .system)
-            DesignSystem.applyButton(button, title: L("scan.preview.fit.tools"), style: .secondary, size: .regular)
-            button.accessibilityIdentifier = "fitModelPanelToggleButton"
-            button.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
-            hostView.addSubview(button)
-            NSLayoutConstraint.activate([
-                button.trailingAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.trailingAnchor, constant: -12),
-                button.bottomAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.bottomAnchor, constant: -profile.bottomControlsInset)
-            ])
-            fitPanelToggleButton = button
-            panelToggleButton = button
-        }
-
         let checkButton = UIButton(type: .system)
         DesignSystem.applyButton(checkButton, title: L("scan.preview.fit.check"), style: .secondary, size: .regular)
         checkButton.accessibilityIdentifier = "fitModelCheckButton"
-        checkButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
 
         let exportButton = UIButton(type: .system)
         DesignSystem.applyButton(exportButton, title: L("scan.preview.fit.export"), style: .secondary, size: .regular)
         exportButton.accessibilityIdentifier = "fitModelExportButton"
-        exportButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
 
         let card = UILabel()
         card.translatesAutoresizingMaskIntoConstraints = false
-        card.numberOfLines = 0
+        card.numberOfLines = 6
         card.textAlignment = .left
         card.font = DesignSystem.Typography.caption()
         card.textColor = DesignSystem.Colors.textPrimary
-        card.backgroundColor = UIColor.clear
         card.text = "\(L("scan.preview.fit.results.title"))\n\(L("scan.preview.fit.results.pending"))"
         card.accessibilityIdentifier = "fitModelResultsCard"
         card.isHidden = true
@@ -286,7 +259,7 @@ final class PreviewOverlayUIController {
 
         let browLabel = UILabel()
         browLabel.translatesAutoresizingMaskIntoConstraints = false
-        browLabel.numberOfLines = 2
+        browLabel.numberOfLines = 1
         browLabel.textAlignment = .left
         browLabel.font = DesignSystem.Typography.caption()
         browLabel.textColor = DesignSystem.Colors.textSecondary
@@ -302,59 +275,54 @@ final class PreviewOverlayUIController {
         browSlider.accessibilityIdentifier = "fitModelBrowSlider"
         browSlider.isHidden = true
 
-        let actionsRow = UIStackView(arrangedSubviews: [checkButton, exportButton])
-        actionsRow.translatesAutoresizingMaskIntoConstraints = false
-        actionsRow.axis = .vertical
-        actionsRow.spacing = 8
-        actionsRow.distribution = .fill
+        let actions = UIStackView(arrangedSubviews: [checkButton, exportButton])
+        actions.translatesAutoresizingMaskIntoConstraints = false
+        actions.axis = .vertical
+        actions.spacing = DesignSystem.Spacing.xs
 
-        hostView.addSubview(container)
+        developerStack.addArrangedSubview(panelToggle)
+        developerStack.addArrangedSubview(container)
         container.addSubview(scrollView)
         scrollView.addSubview(contentView)
-        contentView.addSubview(actionsRow)
+        contentView.addSubview(actions)
         contentView.addSubview(card)
         contentView.addSubview(advancedButton)
         contentView.addSubview(browLabel)
         contentView.addSubview(browSlider)
-        NSLayoutConstraint.activate([
-            // Keep the center viewport clear: diagnostics stay in the right-bottom quadrant.
-            container.leadingAnchor.constraint(greaterThanOrEqualTo: hostView.centerXAnchor, constant: 8),
-            container.trailingAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.trailingAnchor, constant: -12),
-            container.bottomAnchor.constraint(equalTo: panelToggleButton.topAnchor, constant: -8),
-            container.widthAnchor.constraint(lessThanOrEqualToConstant: profile.panelMaxWidth),
-            container.heightAnchor.constraint(lessThanOrEqualTo: hostView.heightAnchor, multiplier: profile.panelMaxHeightMultiplier),
-            container.topAnchor.constraint(greaterThanOrEqualTo: hostView.safeAreaLayoutGuide.topAnchor, constant: 12),
 
+        NSLayoutConstraint.activate([
+            container.heightAnchor.constraint(lessThanOrEqualToConstant: 280),
+
+            scrollView.topAnchor.constraint(equalTo: container.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            scrollView.topAnchor.constraint(equalTo: container.topAnchor),
             scrollView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
 
+            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
             contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
             contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
-            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
             contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
             contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
 
-            actionsRow.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
-            actionsRow.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10),
-            actionsRow.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
+            actions.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
+            actions.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
+            actions.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10),
 
-            card.leadingAnchor.constraint(equalTo: actionsRow.leadingAnchor),
-            card.trailingAnchor.constraint(equalTo: actionsRow.trailingAnchor),
-            card.topAnchor.constraint(equalTo: actionsRow.bottomAnchor, constant: 8),
+            card.topAnchor.constraint(equalTo: actions.bottomAnchor, constant: 8),
+            card.leadingAnchor.constraint(equalTo: actions.leadingAnchor),
+            card.trailingAnchor.constraint(equalTo: actions.trailingAnchor),
 
-            advancedButton.leadingAnchor.constraint(equalTo: actionsRow.leadingAnchor),
             advancedButton.topAnchor.constraint(equalTo: card.bottomAnchor, constant: 8),
-            advancedButton.trailingAnchor.constraint(equalTo: actionsRow.trailingAnchor),
+            advancedButton.leadingAnchor.constraint(equalTo: actions.leadingAnchor),
+            advancedButton.trailingAnchor.constraint(equalTo: actions.trailingAnchor),
 
-            browLabel.leadingAnchor.constraint(equalTo: actionsRow.leadingAnchor),
             browLabel.topAnchor.constraint(equalTo: advancedButton.bottomAnchor, constant: 8),
-            browLabel.trailingAnchor.constraint(equalTo: actionsRow.trailingAnchor),
+            browLabel.leadingAnchor.constraint(equalTo: actions.leadingAnchor),
+            browLabel.trailingAnchor.constraint(equalTo: actions.trailingAnchor),
 
-            browSlider.leadingAnchor.constraint(equalTo: actionsRow.leadingAnchor),
             browSlider.topAnchor.constraint(equalTo: browLabel.bottomAnchor, constant: 4),
-            browSlider.trailingAnchor.constraint(equalTo: actionsRow.trailingAnchor),
+            browSlider.leadingAnchor.constraint(equalTo: actions.leadingAnchor),
+            browSlider.trailingAnchor.constraint(equalTo: actions.trailingAnchor),
             browSlider.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10)
         ])
 
@@ -364,6 +332,7 @@ final class PreviewOverlayUIController {
         fitBrowSlider = browSlider
         fitBrowSliderLabel = browLabel
         fitBrowAdvancedButton = advancedButton
+        fitPanelToggleButton = panelToggle
         fitContainerView = container
         fitPanelScrollView = scrollView
         applyFitPanelVisibility(.actionsOnly)
@@ -388,11 +357,7 @@ final class PreviewOverlayUIController {
 
     func setBrowControlsVisible(_ visible: Bool) {
         guard fitPanelVisibilityState != .actionsOnly else { return }
-        if visible {
-            applyFitPanelVisibility(.resultsWithAdvanced)
-        } else {
-            applyFitPanelVisibility(.resultsCollapsed)
-        }
+        applyFitPanelVisibility(visible ? .resultsWithAdvanced : .resultsCollapsed)
     }
 
     func resetFitPanelToActionsOnly() {
@@ -418,6 +383,13 @@ final class PreviewOverlayUIController {
         fitPanelToggleButton?.isHidden = !available
     }
 
+    func setMeshingStatus(_ text: String, percent: Int?, spinning: Bool) {
+        if statusRow.superview == nil {
+            summaryStack.insertArrangedSubview(statusRow, at: 0)
+        }
+        statusRow.setStatus(text: text, percent: percent, spinning: spinning)
+    }
+
     func addOrUpdateDerivedMeasurements(
         to hostView: UIView,
         circumferenceMm: Float,
@@ -425,7 +397,7 @@ final class PreviewOverlayUIController {
         depthMm: Float,
         confidence: Float
     ) {
-        let profile = Self.layoutProfile(for: hostView)
+        ensureSheet(on: hostView)
         let text = String(
             format: L("scan.preview.measurements.format"),
             Int(round(circumferenceMm)),
@@ -445,28 +417,83 @@ final class PreviewOverlayUIController {
         label.textColor = DesignSystem.Colors.textPrimary
         label.font = DesignSystem.Typography.caption()
         label.adjustsFontForContentSizeCategory = true
-        label.textAlignment = .center
+        label.textAlignment = .left
         label.numberOfLines = 2
         label.text = text
-        label.backgroundColor = DesignSystem.Colors.overlayCard
-        label.layer.cornerRadius = DesignSystem.CornerRadius.medium
-        label.layer.masksToBounds = true
         label.accessibilityLabel = text
         label.accessibilityIdentifier = "derivedMeasurementsLabel"
-
-        hostView.addSubview(label)
-        NSLayoutConstraint.activate([
-            label.bottomAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.bottomAnchor, constant: -profile.measurementsBottomInset),
-            label.centerXAnchor.constraint(equalTo: hostView.centerXAnchor),
-            label.topAnchor.constraint(greaterThanOrEqualTo: hostView.safeAreaLayoutGuide.topAnchor, constant: 12),
-            label.leadingAnchor.constraint(greaterThanOrEqualTo: hostView.leadingAnchor, constant: 20),
-            label.trailingAnchor.constraint(lessThanOrEqualTo: hostView.trailingAnchor, constant: -20)
-        ])
-
+        summaryStack.addArrangedSubview(label)
         derivedMeasurementsLabel = label
     }
 
-    // MARK: - Private
+    private func ensureSheet(on hostView: UIView) {
+        if self.hostView === hostView { return }
+        self.hostView = hostView
+
+        let profile = sheetProfile(for: hostView)
+        bottomSheet.install(in: hostView, bottomInset: profile.bottomInset)
+        bottomSheet.setSnapHeights(collapsed: profile.collapsed, half: profile.half, full: profile.full)
+        bottomSheet.setSnapPoint(.collapsed, animated: false)
+
+        contentStack.translatesAutoresizingMaskIntoConstraints = false
+        contentStack.axis = .vertical
+        contentStack.spacing = DesignSystem.Spacing.xs
+
+        sheetTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        sheetTitleLabel.text = L("scan.preview.sheet.title")
+        sheetTitleLabel.textColor = DesignSystem.Colors.textPrimary
+        sheetTitleLabel.font = DesignSystem.Typography.bodyEmphasis()
+        sheetTitleLabel.adjustsFontForContentSizeCategory = true
+
+        sheetTabControl.translatesAutoresizingMaskIntoConstraints = false
+        sheetTabControl.selectedSegmentIndex = 0
+        sheetTabControl.accessibilityIdentifier = "previewSheetTabControl"
+        sheetTabControl.addTarget(self, action: #selector(sheetTabChanged(_:)), for: .valueChanged)
+
+        summaryStack.translatesAutoresizingMaskIntoConstraints = false
+        summaryStack.axis = .vertical
+        summaryStack.spacing = 6
+
+        developerStack.translatesAutoresizingMaskIntoConstraints = false
+        developerStack.axis = .vertical
+        developerStack.spacing = 6
+        developerStack.isHidden = true
+
+        bottomSheet.contentView.addSubview(contentStack)
+        contentStack.addArrangedSubview(sheetTabControl)
+        contentStack.addArrangedSubview(summaryStack)
+        contentStack.addArrangedSubview(developerStack)
+
+        NSLayoutConstraint.activate([
+            contentStack.topAnchor.constraint(equalTo: bottomSheet.contentView.topAnchor),
+            contentStack.leadingAnchor.constraint(equalTo: bottomSheet.contentView.leadingAnchor),
+            contentStack.trailingAnchor.constraint(equalTo: bottomSheet.contentView.trailingAnchor),
+            contentStack.bottomAnchor.constraint(equalTo: bottomSheet.contentView.bottomAnchor)
+        ])
+
+        setDeveloperModeEnabled(developerMode)
+    }
+
+    @objc private func sheetTabChanged(_ control: UISegmentedControl) {
+        guard let section = PreviewSheetSection(rawValue: control.selectedSegmentIndex) else { return }
+        summaryStack.isHidden = (section != .summary)
+        developerStack.isHidden = (section != .developer)
+    }
+
+    func setDeveloperModeEnabled(_ enabled: Bool) {
+        developerMode = enabled
+        sheetTabControl.isHidden = !enabled
+        if let hostView {
+            let profile = sheetProfile(for: hostView)
+            bottomSheet.setSnapHeights(collapsed: profile.collapsed, half: profile.half, full: profile.full)
+        }
+        if !enabled {
+            sheetTabControl.selectedSegmentIndex = PreviewSheetSection.summary.rawValue
+            summaryStack.isHidden = false
+            developerStack.isHidden = true
+        }
+        bottomSheet.setSnapPoint(.collapsed, animated: false)
+    }
 
     private func addVerifyEarHint(to hostView: UIView, near anchor: UIView) {
         if verifyEarHintLabel != nil { return }
@@ -495,10 +522,6 @@ final class PreviewOverlayUIController {
     }
 
     private func applyFitPanelVisibility(_ state: FitPanelVisibilityState) {
-        // Visibility matrix (single source of truth):
-        // actionsOnly         => show check/export only
-        // resultsCollapsed    => show results + advanced toggle
-        // resultsWithAdvanced => show results + advanced toggle + brow controls
         fitPanelVisibilityState = state
         switch state {
         case .actionsOnly:
@@ -519,27 +542,18 @@ final class PreviewOverlayUIController {
         }
     }
 
-    private func addScanQualityHint(to hostView: UIView, quality: ScanQuality, anchor: UIView) {
-        if scanQualityHintLabel != nil { return }
-
-        let hint = UILabel()
-        hint.translatesAutoresizingMaskIntoConstraints = false
-        hint.textColor = DesignSystem.Colors.textSecondary
-        hint.font = DesignSystem.Typography.caption()
-        hint.adjustsFontForContentSizeCategory = true
-        hint.numberOfLines = 2
-        hint.textAlignment = .center
-        hint.text = quality.tip
-        hint.accessibilityLabel = String(format: L("scan.preview.accessibility.qualityTip"), quality.tip)
-
-        hostView.addSubview(hint)
-        NSLayoutConstraint.activate([
-            hint.topAnchor.constraint(equalTo: anchor.bottomAnchor, constant: 6),
-            hint.centerXAnchor.constraint(equalTo: anchor.centerXAnchor),
-            hint.leadingAnchor.constraint(greaterThanOrEqualTo: hostView.leadingAnchor, constant: 24),
-            hint.trailingAnchor.constraint(lessThanOrEqualTo: hostView.trailingAnchor, constant: -24)
-        ])
-
-        scanQualityHintLabel = hint
+#if DEBUG
+    static func debug_sheetProfile(height: CGFloat, isPad: Bool) -> (bottomInset: CGFloat, collapsed: CGFloat, half: CGFloat, full: CGFloat) {
+        let p = sheetProfile(forHeight: height, isPad: isPad)
+        return (p.bottomInset, p.collapsed, p.half, p.full)
     }
+
+    func debug_installSheet(on hostView: UIView) {
+        ensureSheet(on: hostView)
+    }
+
+    func debug_currentSnapPoint() -> BottomSheetSnapPoint {
+        bottomSheet.currentSnapPoint
+    }
+#endif
 }

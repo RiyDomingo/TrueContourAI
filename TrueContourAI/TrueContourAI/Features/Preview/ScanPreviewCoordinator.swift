@@ -21,9 +21,7 @@ extension ScanService: ScanExporting {}
 
 protocol SaveExportUIStateAdapting {
     func configure(
-        previewVC: ScenePreviewViewController,
-        meshingStatusLabel: UILabel?,
-        meshingActivityIndicator: UIActivityIndicatorView?
+        previewVC: ScenePreviewViewController
     )
     func setButtonsEnabled(_ isEnabled: Bool)
     func setMeshingStatusText(_ text: String)
@@ -69,9 +67,6 @@ final class ScanPreviewCoordinator {
     private var previewContainerVC: PreviewContainerViewController?
     private weak var activePreviewVC: UIViewController?
 
-    private weak var meshingStatusLabel: UILabel?
-    private weak var meshingActivityIndicator: UIActivityIndicatorView?
-    private weak var meshingProgressIndicator: UIProgressView?
     private let saveExportViewState: SaveExportUIStateAdapting
     private let previewOverlayUI = PreviewOverlayUIController()
     private let alertPresenter = PreviewAlertPresenter()
@@ -305,22 +300,19 @@ final class ScanPreviewCoordinator {
         previewViewModel.setMeshForExport(nil)
         vc.rightButton.isEnabled = false
         DesignSystem.updateButtonEnabled(vc.rightButton, style: .primary)
-        addMeshingStatusLabel(to: vc)
         startMeshingTimeout(in: vc, sessionID: previewSessionID)
-        saveExportViewState.configure(
-            previewVC: vc,
-            meshingStatusLabel: meshingStatusLabel,
-            meshingActivityIndicator: meshingActivityIndicator
-        )
+        saveExportViewState.configure(previewVC: vc)
         vc.onMeshingProgressUpdated = { [weak self] progress in
             DispatchQueue.main.async {
                 guard let self, self.isCurrentPreviewSession(previewSessionID) else { return }
                 let clamped = max(0, min(1, progress))
-                let percent = clamped * 100
-                self.meshingProgressIndicator?.isHidden = false
-                self.meshingProgressIndicator?.setProgress(clamped, animated: true)
-                self.saveExportViewState.setMeshingStatusText(
-                    String(format: L("scan.preview.meshing.progressFormat"), percent)
+                let percent = Int((clamped * 100).rounded())
+                let statusText = String(format: L("scan.preview.meshing.progressFormat"), clamped * 100)
+                self.saveExportViewState.setMeshingStatusText(statusText)
+                self.previewOverlayUI.setMeshingStatus(
+                    statusText,
+                    percent: percent,
+                    spinning: true
                 )
             }
         }
@@ -334,8 +326,7 @@ final class ScanPreviewCoordinator {
                 vc?.rightButton.alpha = 1.0
                 self.saveExportViewState.setMeshingStatusText(L("scan.preview.readyToSave"))
                 self.saveExportViewState.setMeshingSpinnerActive(false)
-                self.meshingProgressIndicator?.setProgress(1, animated: true)
-                self.meshingProgressIndicator?.isHidden = true
+                self.previewOverlayUI.setMeshingStatus(L("scan.preview.readyToSave"), percent: nil, spinning: false)
                 self.previewOverlayUI.setFitToolsAvailable(true)
                 self.cancelMeshingTimeout()
                 Log.scan.info("Mesh ready for export")
@@ -369,6 +360,7 @@ final class ScanPreviewCoordinator {
             presenter.present(container, animated: true) { [weak self] in
                 guard let self, self.isCurrentPreviewSession(previewSessionID) else { return }
                 self.addVerifyEarUI(to: vc)
+                self.previewOverlayUI.setMeshingStatus(L("scan.preview.meshing"), percent: nil, spinning: true)
                 self.configureFitModelUIIfNeeded(previewVC: vc)
                 if let quality = self.previewViewModel.scanQuality {
                     self.addScanQualityLabel(to: vc, quality: quality)
@@ -744,6 +736,7 @@ final class ScanPreviewCoordinator {
     private func addVerifyEarUI(to previewVC: ScenePreviewViewController) {
         guard let hostView = previewContainerVC?.overlayView ?? previewVC.view else { return }
         previewContainerVC?.bringOverlayToFront()
+        previewOverlayUI.setDeveloperModeEnabled(settingsStore.developerModeEnabled)
         let button = previewOverlayUI.addVerifyEarUI(to: hostView, showHint: settingsStore.showVerifyEarHint)
         button.addTarget(self, action: #selector(verifyEarTapped), for: .touchUpInside)
     }
@@ -912,58 +905,6 @@ final class ScanPreviewCoordinator {
         }
     }
 
-    private func addMeshingStatusLabel(to previewVC: ScenePreviewViewController) {
-        if meshingStatusLabel != nil { return }
-        guard let hostView = previewVC.view else { return }
-
-        let label = UILabel()
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.textColor = DesignSystem.Colors.textSecondary
-        label.font = DesignSystem.Typography.caption()
-        label.adjustsFontForContentSizeCategory = true
-        label.text = L("scan.preview.meshing")
-        label.accessibilityLabel = L("scan.preview.meshing.accessibility")
-        label.accessibilityIdentifier = "meshingStatusLabel"
-
-        let spinner = UIActivityIndicatorView(style: .medium)
-        spinner.translatesAutoresizingMaskIntoConstraints = false
-        spinner.color = DesignSystem.Colors.textPrimary
-        spinner.hidesWhenStopped = true
-
-        let progress = UIProgressView(progressViewStyle: .default)
-        progress.translatesAutoresizingMaskIntoConstraints = false
-        progress.trackTintColor = UIColor.white.withAlphaComponent(0.28)
-        progress.progressTintColor = DesignSystem.Colors.actionPrimary
-        progress.progress = 0
-        progress.isHidden = false
-        progress.accessibilityIdentifier = "previewMeshingProgressView"
-
-        hostView.addSubview(label)
-        hostView.addSubview(spinner)
-        hostView.addSubview(progress)
-        NSLayoutConstraint.activate([
-            label.bottomAnchor.constraint(equalTo: previewVC.rightButton.topAnchor, constant: -8),
-            label.trailingAnchor.constraint(equalTo: previewVC.rightButton.trailingAnchor),
-
-            spinner.centerYAnchor.constraint(equalTo: label.centerYAnchor),
-            spinner.leadingAnchor.constraint(equalTo: label.trailingAnchor, constant: 6),
-
-            progress.leadingAnchor.constraint(equalTo: previewVC.rightButton.leadingAnchor),
-            progress.trailingAnchor.constraint(equalTo: previewVC.rightButton.trailingAnchor),
-            progress.bottomAnchor.constraint(equalTo: label.topAnchor, constant: -8)
-        ])
-
-        meshingStatusLabel = label
-        meshingActivityIndicator = spinner
-        meshingProgressIndicator = progress
-        saveExportViewState.setMeshingSpinnerActive(true)
-        saveExportViewState.configure(
-            previewVC: previewVC,
-            meshingStatusLabel: label,
-            meshingActivityIndicator: spinner
-        )
-    }
-
     private func startMeshingTimeout(in previewVC: ScenePreviewViewController, sessionID: UUID) {
         cancelMeshingTimeout()
         didShowMeshingTimeoutAlert = false
@@ -1012,12 +953,6 @@ final class ScanPreviewCoordinator {
         }
         fitEarPickTapGesture = nil
         isPreviewMeshingActive = false
-        meshingStatusLabel?.removeFromSuperview()
-        meshingStatusLabel = nil
-        meshingActivityIndicator?.removeFromSuperview()
-        meshingActivityIndicator = nil
-        meshingProgressIndicator?.removeFromSuperview()
-        meshingProgressIndicator = nil
         saveExportViewState.clear()
         cancelMeshingTimeout()
         didShowMeshingTimeoutAlert = false

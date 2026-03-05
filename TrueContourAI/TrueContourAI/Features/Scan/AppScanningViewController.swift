@@ -135,11 +135,19 @@ protocol AppScanningViewControllerDelegate: AnyObject {
 
 final class AppScanningViewController: UIViewController, CameraManagerDelegate, SCReconstructionManagerDelegate {
     private enum Layout {
-        static let horizontalInset: CGFloat = 12
-        static let bottomInstructionInset: CGFloat = 16
         static let topStatusInset: CGFloat = 10
         static let instructionToProgressSpacing: CGFloat = 8
         static let statusToFocusHintSpacing: CGFloat = 6
+        static let sheetBottomInset: CGFloat = 10
+        static let sheetCollapsedHeight: CGFloat = 170
+        static let sheetHalfHeight: CGFloat = 260
+        static let sheetFullHeight: CGFloat = 360
+    }
+
+    private struct ScanSheetProfile {
+        let collapsed: CGFloat
+        let half: CGFloat
+        let full: CGFloat
     }
 
     enum ScanningTerminationReason {
@@ -151,6 +159,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     var onRealtimeGuidance: ((String) -> Void)?
     var autoFinishSeconds: Int = 0
     var requiresManualFinish: Bool = false
+    var developerModeEnabled = false
     var maxDepthResolution: Int = 320 {
         didSet {
             if isViewLoaded && oldValue != maxDepthResolution {
@@ -262,16 +271,17 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     private let countdownLabel = UILabel()
     private let dismissButton = UIButton(type: .system)
     private let shutterButton = ShutterButton()
+    private let bottomSheet = BottomSheetController()
+    private let sheetStack = UIStackView()
+    private let shutterContainer = UIView()
 
     private let promptLabel: UILabel = {
         let label = UILabel()
-        label.numberOfLines = 2
+        label.numberOfLines = 3
         label.textAlignment = .center
-        label.font = DesignSystem.Typography.button()
+        label.font = DesignSystem.Typography.bodyEmphasis()
         label.textColor = DesignSystem.Colors.textPrimary
-        label.backgroundColor = DesignSystem.Colors.overlayCard
-        label.layer.cornerRadius = DesignSystem.CornerRadius.medium
-        label.layer.masksToBounds = true
+        label.backgroundColor = .clear
         label.adjustsFontForContentSizeCategory = true
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = L("scanning.prompt.initial")
@@ -303,7 +313,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         label.textColor = DesignSystem.Colors.textSecondary
         label.adjustsFontForContentSizeCategory = true
         label.text = L("scanning.focusHint")
-        label.alpha = 0
+        label.alpha = 1
         return label
     }()
 
@@ -313,6 +323,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         label.textAlignment = .center
         label.font = DesignSystem.Typography.caption()
         label.textColor = DesignSystem.Colors.textPrimary
+        label.numberOfLines = 2
         label.adjustsFontForContentSizeCategory = true
         label.text = L("scanning.progress.capturing")
         label.isHidden = true
@@ -329,6 +340,19 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         progressView.isHidden = true
         progressView.accessibilityIdentifier = "scanCaptureProgressView"
         return progressView
+    }()
+
+    private let developerDiagnosticsLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.textColor = DesignSystem.Colors.textSecondary
+        label.font = DesignSystem.Typography.caption()
+        label.adjustsFontForContentSizeCategory = true
+        label.numberOfLines = 2
+        label.textAlignment = .left
+        label.isHidden = true
+        label.accessibilityIdentifier = "scanDeveloperDiagnosticsLabel"
+        return label
     }()
 
     private let autoFinishLabel: UILabel = {
@@ -395,6 +419,20 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     private let goodTrackingFrameInterval = 40
     private let goodTrackingMinimumRepeatInterval: TimeInterval = 4.0
 
+    private func scanSheetProfile() -> ScanSheetProfile {
+        Self.scanSheetProfile(forHeight: view.bounds.height, isPad: traitCollection.userInterfaceIdiom == .pad)
+    }
+
+    private static func scanSheetProfile(forHeight h: CGFloat, isPad: Bool) -> ScanSheetProfile {
+        if isPad || h >= 900 {
+            return ScanSheetProfile(collapsed: 180, half: 250, full: 320)
+        }
+        if h <= 700 {
+            return ScanSheetProfile(collapsed: 168, half: 236, full: 300)
+        }
+        return ScanSheetProfile(collapsed: Layout.sheetCollapsedHeight, half: Layout.sheetHalfHeight, full: Layout.sheetFullHeight)
+    }
+
     init(
         reconstructionManagerFactory: @escaping (MTLDevice, MTLCommandQueue, Int32) -> ReconstructionManaging = {
             SCReconstructionManagerAdapter(device: $0, commandQueue: $1, maxThreadCount: $2)
@@ -422,14 +460,28 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         metalContainerView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(metalContainerView)
         view.addSubview(countdownLabel)
-        view.addSubview(promptLabel)
         view.addSubview(guidanceStatusChip)
-        view.addSubview(progressLabel)
-        view.addSubview(captureProgressView)
-        view.addSubview(focusHintLabel)
-        view.addSubview(autoFinishLabel)
         view.addSubview(dismissButton)
-        view.addSubview(shutterButton)
+        bottomSheet.install(in: view, bottomInset: Layout.sheetBottomInset)
+        sheetStack.translatesAutoresizingMaskIntoConstraints = false
+        sheetStack.axis = .vertical
+        sheetStack.spacing = DesignSystem.Spacing.s
+        sheetStack.alignment = .fill
+        bottomSheet.contentView.addSubview(sheetStack)
+        sheetStack.addArrangedSubview(promptLabel)
+        sheetStack.addArrangedSubview(progressLabel)
+        sheetStack.addArrangedSubview(autoFinishLabel)
+        sheetStack.addArrangedSubview(developerDiagnosticsLabel)
+        shutterContainer.translatesAutoresizingMaskIntoConstraints = false
+        shutterContainer.addSubview(shutterButton)
+        sheetStack.addArrangedSubview(shutterContainer)
+
+        bottomSheet.setSnapHeights(
+            collapsed: scanSheetProfile().collapsed,
+            half: scanSheetProfile().half,
+            full: developerModeEnabled ? scanSheetProfile().full : scanSheetProfile().half
+        )
+        bottomSheet.setSnapPoint(.collapsed, animated: false)
 
         NSLayoutConstraint.activate([
             metalContainerView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -437,31 +489,23 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
             metalContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             metalContainerView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            promptLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Layout.horizontalInset),
-            promptLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -Layout.horizontalInset),
-            promptLabel.bottomAnchor.constraint(equalTo: shutterButton.topAnchor, constant: -Layout.bottomInstructionInset),
-
             guidanceStatusChip.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             guidanceStatusChip.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: Layout.topStatusInset),
             guidanceStatusChip.heightAnchor.constraint(greaterThanOrEqualToConstant: 24),
-            guidanceStatusChip.leadingAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Layout.horizontalInset),
-            guidanceStatusChip.trailingAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -Layout.horizontalInset),
+            guidanceStatusChip.leadingAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 12),
+            guidanceStatusChip.trailingAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -12),
 
-            progressLabel.leadingAnchor.constraint(equalTo: promptLabel.leadingAnchor),
-            progressLabel.trailingAnchor.constraint(equalTo: promptLabel.trailingAnchor),
-            progressLabel.bottomAnchor.constraint(equalTo: promptLabel.topAnchor, constant: -Layout.instructionToProgressSpacing),
-
-            captureProgressView.leadingAnchor.constraint(equalTo: progressLabel.leadingAnchor),
-            captureProgressView.trailingAnchor.constraint(equalTo: progressLabel.trailingAnchor),
-            captureProgressView.bottomAnchor.constraint(equalTo: progressLabel.topAnchor, constant: -8),
-
-            focusHintLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            focusHintLabel.topAnchor.constraint(equalTo: guidanceStatusChip.bottomAnchor, constant: Layout.statusToFocusHintSpacing),
-
-            autoFinishLabel.leadingAnchor.constraint(equalTo: progressLabel.leadingAnchor),
-            autoFinishLabel.trailingAnchor.constraint(equalTo: progressLabel.trailingAnchor),
-            autoFinishLabel.bottomAnchor.constraint(equalTo: captureProgressView.topAnchor, constant: -8)
+            sheetStack.topAnchor.constraint(equalTo: bottomSheet.contentView.topAnchor),
+            sheetStack.leadingAnchor.constraint(equalTo: bottomSheet.contentView.leadingAnchor),
+            sheetStack.trailingAnchor.constraint(equalTo: bottomSheet.contentView.trailingAnchor),
+            sheetStack.bottomAnchor.constraint(equalTo: bottomSheet.contentView.bottomAnchor),
+            shutterContainer.heightAnchor.constraint(equalToConstant: 92),
+            shutterButton.centerXAnchor.constraint(equalTo: shutterContainer.centerXAnchor),
+            shutterButton.centerYAnchor.constraint(equalTo: shutterContainer.centerYAnchor)
         ])
+        promptLabel.setContentCompressionResistancePriority(.required, for: .vertical)
+        progressLabel.setContentCompressionResistancePriority(.required, for: .vertical)
+        autoFinishLabel.setContentCompressionResistancePriority(.required, for: .vertical)
 
         countdownLabel.translatesAutoresizingMaskIntoConstraints = false
         countdownLabel.textColor = .white
@@ -487,12 +531,8 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         shutterButton.addTarget(self, action: #selector(shutterTapped(_:)), for: .touchUpInside)
         shutterButton.accessibilityIdentifier = "scanShutterButton"
         shutterButton.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            shutterButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            shutterButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -10),
-            shutterButton.widthAnchor.constraint(equalToConstant: 84),
-            shutterButton.heightAnchor.constraint(equalTo: shutterButton.widthAnchor)
-        ])
+        shutterButton.widthAnchor.constraint(equalToConstant: 84).isActive = true
+        shutterButton.heightAnchor.constraint(equalTo: shutterButton.widthAnchor).isActive = true
 
         metalLayer.isOpaque = true
         metalLayer.device = metalDevice
@@ -551,6 +591,13 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         metalLayer.drawableSize = CGSize(width: metalLayer.frame.width * scale,
                                          height: metalLayer.frame.height * scale)
         CATransaction.commit()
+        let profile = scanSheetProfile()
+        let maxFull = max(profile.half, min(profile.full, view.bounds.height * 0.42))
+        bottomSheet.setSnapHeights(
+            collapsed: profile.collapsed,
+            half: profile.half,
+            full: developerModeEnabled ? maxFull : profile.half
+        )
     }
 
     @objc private func dismissTapped() {
@@ -877,13 +924,12 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         if autoFinishSeconds > 0 {
             let elapsed = max(0, autoFinishSeconds - autoFinishRemaining)
             let progress = min(max(Float(elapsed) / Float(autoFinishSeconds), 0), 1)
-            captureProgressView.setProgress(progress, animated: true)
             progressLabel.text = String(format: L("scanning.progress.timeFormat"), elapsed, autoFinishSeconds)
+            developerDiagnosticsLabel.text = String(format: "Frames: %d · Progress: %d%%", assimilatedFrameIndex, Int(round(progress * 100)))
         } else {
             let progress = min(max(Float(assimilatedFrameIndex) / Float(minSucceededFramesForCompletion), 0), 1)
-            captureProgressView.setProgress(progress, animated: true)
-            let percent = Int(round(progress * 100))
-            progressLabel.text = String(format: L("scanning.progress.capturePercentFormat"), percent)
+            progressLabel.text = L("scanning.progress.capturing")
+            developerDiagnosticsLabel.text = String(format: "Frames: %d · Progress: %d%%", assimilatedFrameIndex, Int(round(progress * 100)))
         }
     }
 
@@ -933,6 +979,15 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         guidanceStatusChip.isHidden = visibility.statusHidden
         autoFinishLabel.isHidden = visibility.autoFinishHidden
         focusHintLabel.isHidden = visibility.focusHintHidden
+        developerDiagnosticsLabel.isHidden = !(developerModeEnabled && bottomSheet.currentSnapPoint == .full && state == .scanning)
+        switch currentHUDState {
+        case .idlePrompts:
+            bottomSheet.setSnapPoint(.collapsed, animated: true)
+        case .countdown:
+            bottomSheet.setSnapPoint(.collapsed, animated: true)
+        case .capturing, .warning, .critical:
+            bottomSheet.setSnapPoint(.half, animated: true)
+        }
     }
 
     private func hudVisibility(for state: HUDState) -> HUDVisibility {
@@ -965,7 +1020,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
                 progressHidden: false,
                 progressBarHidden: true,
                 statusHidden: false,
-                autoFinishHidden: true,
+                autoFinishHidden: autoFinishSeconds <= 0,
                 focusHintHidden: true
             )
         }
@@ -1108,6 +1163,11 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     }
 
 #if DEBUG
+    static func debug_scanSheetProfile(height: CGFloat, isPad: Bool) -> (collapsed: CGFloat, half: CGFloat, full: CGFloat) {
+        let p = scanSheetProfile(forHeight: height, isPad: isPad)
+        return (p.collapsed, p.half, p.full)
+    }
+
     func debug_setStateScanning() {
         state = .scanning
     }

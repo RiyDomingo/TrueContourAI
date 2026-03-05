@@ -90,8 +90,8 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         let countdown = app.staticTexts["scanCountdownLabel"]
         XCTAssertTrue(waitForElement(countdown, timeout: 3.0), "Expected countdown label after starting scan")
 
-        let progress = app.progressIndicators["scanCaptureProgressView"]
-        XCTAssertTrue(waitForElement(progress, timeout: 10.0), "Expected visible capture progress during scan")
+        let progress = app.staticTexts["scanProgressLabel"]
+        XCTAssertTrue(waitForElement(progress, timeout: 10.0), "Expected visible capture progress text during scan")
 
         let statusChip = app.staticTexts["scanGuidanceStatusChip"]
         XCTAssertTrue(
