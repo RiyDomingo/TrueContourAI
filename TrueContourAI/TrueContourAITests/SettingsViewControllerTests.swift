@@ -92,7 +92,7 @@ final class SettingsViewControllerTests: XCTestCase {
         XCTAssertEqual(vc.numberOfSections(in: table), 4)
 
         XCTAssertEqual(vc.tableView(table, titleForHeaderInSection: 0), L("settings.section.general"))
-        XCTAssertEqual(vc.tableView(table, numberOfRowsInSection: 0), 3)
+        XCTAssertEqual(vc.tableView(table, numberOfRowsInSection: 0), 4)
 
         XCTAssertEqual(vc.tableView(table, titleForHeaderInSection: 1), L("settings.section.export"))
         XCTAssertEqual(vc.tableView(table, numberOfRowsInSection: 1), 2)

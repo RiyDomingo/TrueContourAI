@@ -78,7 +78,7 @@ final class AppScanningViewControllerTests: XCTestCase {
         vc.debug_setAutoFinishForProgress(seconds: 0, remaining: 0)
         vc.debug_setAssimilatedFramesForProgress(12)
         vc.debug_updateCaptureProgress()
-        XCTAssertTrue(vc.debug_progressLabelText()?.contains("12") == true)
+        XCTAssertTrue(vc.debug_progressLabelText()?.contains("Capture progress:") == true)
     }
 
     func testCountdownVisibilityIsIndependentFromActiveGuidance() {
@@ -98,7 +98,7 @@ final class AppScanningViewControllerTests: XCTestCase {
         XCTAssertTrue(vc.debug_countdownHidden())
         XCTAssertTrue(vc.debug_emitGuidance(named: "goodTracking", force: true))
         XCTAssertFalse(vc.debug_statusChipHidden())
-        XCTAssertFalse(vc.debug_progressHidden())
+        XCTAssertTrue(vc.debug_progressHidden())
     }
 
     func testStopScanningCancelPathTriggersDelegateCancel() {

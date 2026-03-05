@@ -88,4 +88,13 @@ final class SettingsStoreTests: XCTestCase {
         store.exportGLTF = false
         XCTAssertFalse(store.hasRequiredExportFormatsEnabled)
     }
+
+    func testDeveloperModePersistsAndResets() {
+        XCTAssertFalse(store.developerModeEnabled)
+        store.developerModeEnabled = true
+        XCTAssertTrue(store.developerModeEnabled)
+
+        store.resetToDefaults()
+        XCTAssertFalse(store.developerModeEnabled)
+    }
 }

@@ -249,7 +249,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
     private let promptLabel: UILabel = {
         let label = UILabel()
-        label.numberOfLines = 0
+        label.numberOfLines = 2
         label.textAlignment = .center
         label.font = DesignSystem.Typography.button()
         label.textColor = DesignSystem.Colors.textPrimary
@@ -269,8 +269,8 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         label.textAlignment = .center
         label.font = DesignSystem.Typography.caption()
         label.adjustsFontForContentSizeCategory = true
-        label.text = L("scanning.guidance.status.good")
-        label.backgroundColor = UIColor.systemGreen.withAlphaComponent(0.86)
+        label.text = L("scanning.guidance.status.caution")
+        label.backgroundColor = UIColor.systemOrange.withAlphaComponent(0.9)
         label.textColor = UIColor.white
         label.layer.cornerRadius = 10
         label.layer.masksToBounds = true
@@ -423,7 +423,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
             promptLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 12),
             promptLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -12),
-            promptLabel.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -90),
+            promptLabel.bottomAnchor.constraint(equalTo: shutterButton.topAnchor, constant: -16),
 
             guidanceStatusChip.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             guidanceStatusChip.bottomAnchor.constraint(equalTo: promptLabel.topAnchor, constant: -8),
@@ -811,11 +811,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     private func startPromptLoop() {
         stopPromptLoop()
         promptStep = 0
-        _ = applyNextIdlePromptIfNeeded()
-
-        promptTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
-            _ = self?.applyNextIdlePromptIfNeeded()
-        }
+        promptLabel.text = L("scanning.prompt.initial")
     }
 
     private func stopPromptLoop() {
@@ -870,7 +866,8 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         } else {
             let progress = min(max(Float(assimilatedFrameIndex) / Float(minSucceededFramesForCompletion), 0), 1)
             captureProgressView.setProgress(progress, animated: true)
-            progressLabel.text = String(format: L("scanning.progress.framesFormat"), assimilatedFrameIndex)
+            let percent = Int(round(progress * 100))
+            progressLabel.text = String(format: L("scanning.progress.capturePercentFormat"), percent)
         }
     }
 
@@ -895,8 +892,11 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         case .poorTracking, .moveSlower:
             status = .caution
             currentHUDState = .warning
-        case .goodTracking, .start:
+        case .goodTracking:
             status = .good
+            currentHUDState = .capturing
+        case .start:
+            status = .caution
             currentHUDState = .capturing
         }
         guidanceStatusChip.text = "  \(status.title)  "
@@ -928,7 +928,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         case .capturing, .warning, .critical:
             promptLabel.isHidden = false
             progressLabel.isHidden = false
-            captureProgressView.isHidden = false
+            captureProgressView.isHidden = true
             guidanceStatusChip.isHidden = false
             autoFinishLabel.isHidden = autoFinishSeconds <= 0
             focusHintLabel.isHidden = true

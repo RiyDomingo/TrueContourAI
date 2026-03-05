@@ -8,6 +8,13 @@ final class PreviewOverlayUIController {
     private(set) weak var scanQualityLabel: UILabel?
     private(set) weak var scanQualityHintLabel: UILabel?
     private(set) weak var derivedMeasurementsLabel: UILabel?
+    private(set) weak var fitCheckButton: UIButton?
+    private(set) weak var fitExportButton: UIButton?
+    private(set) weak var fitResultsCardLabel: UILabel?
+    private(set) weak var fitBrowSlider: UISlider?
+    private(set) weak var fitBrowSliderLabel: UILabel?
+    private(set) weak var fitBrowAdvancedButton: UIButton?
+    private(set) weak var fitContainerView: UIView?
     private(set) weak var hostView: UIView?
 
     func addVerifyEarUI(to hostView: UIView, showHint: Bool) -> UIButton {
@@ -57,7 +64,7 @@ final class PreviewOverlayUIController {
 
         NSLayoutConstraint.activate([
             button.leadingAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.leadingAnchor, constant: 12),
-            button.topAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.topAnchor, constant: 12),
+            button.bottomAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.bottomAnchor, constant: -84),
 
             badge.trailingAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.trailingAnchor, constant: -12),
             badge.topAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.topAnchor, constant: badgeTopOffset),
@@ -138,6 +145,13 @@ final class PreviewOverlayUIController {
         verifyEarButton?.removeFromSuperview()
         earOverlayBadge?.removeFromSuperview()
         verifyEarActivityIndicator?.removeFromSuperview()
+        fitCheckButton?.removeFromSuperview()
+        fitExportButton?.removeFromSuperview()
+        fitResultsCardLabel?.removeFromSuperview()
+        fitBrowSlider?.removeFromSuperview()
+        fitBrowSliderLabel?.removeFromSuperview()
+        fitBrowAdvancedButton?.removeFromSuperview()
+        fitContainerView?.removeFromSuperview()
         removeVerifyHint()
         scanQualityLabel?.removeFromSuperview()
         scanQualityLabel = nil
@@ -149,6 +163,142 @@ final class PreviewOverlayUIController {
         verifyEarButton = nil
         earOverlayBadge = nil
         verifyEarActivityIndicator = nil
+        fitCheckButton = nil
+        fitExportButton = nil
+        fitResultsCardLabel = nil
+        fitBrowSlider = nil
+        fitBrowSliderLabel = nil
+        fitBrowAdvancedButton = nil
+        fitContainerView = nil
+    }
+
+    func addFitModelUI(to hostView: UIView) -> (check: UIButton, export: UIButton, resultsCard: UILabel, browSlider: UISlider) {
+        if let check = fitCheckButton, let export = fitExportButton, let card = fitResultsCardLabel, let slider = fitBrowSlider {
+            return (check, export, card, slider)
+        }
+        self.hostView = hostView
+
+        let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        container.backgroundColor = DesignSystem.Colors.overlay.withAlphaComponent(0.86)
+        container.layer.cornerRadius = DesignSystem.CornerRadius.medium
+        container.layer.masksToBounds = true
+        container.accessibilityIdentifier = "fitModelControlsContainer"
+
+        let checkButton = UIButton(type: .system)
+        DesignSystem.applyButton(checkButton, title: L("scan.preview.fit.check"), style: .secondary, size: .regular)
+        checkButton.accessibilityIdentifier = "fitModelCheckButton"
+        checkButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+
+        let exportButton = UIButton(type: .system)
+        DesignSystem.applyButton(exportButton, title: L("scan.preview.fit.export"), style: .secondary, size: .regular)
+        exportButton.accessibilityIdentifier = "fitModelExportButton"
+        exportButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+
+        let card = UILabel()
+        card.translatesAutoresizingMaskIntoConstraints = false
+        card.numberOfLines = 0
+        card.textAlignment = .left
+        card.font = DesignSystem.Typography.caption()
+        card.textColor = DesignSystem.Colors.textPrimary
+        card.backgroundColor = UIColor.clear
+        card.text = "\(L("scan.preview.fit.results.title"))\n\(L("scan.preview.fit.results.pending"))"
+        card.accessibilityIdentifier = "fitModelResultsCard"
+        card.isHidden = true
+
+        let advancedButton = UIButton(type: .system)
+        advancedButton.translatesAutoresizingMaskIntoConstraints = false
+        advancedButton.setTitle(L("scan.preview.fit.brow.advanced"), for: .normal)
+        advancedButton.titleLabel?.font = DesignSystem.Typography.caption()
+        advancedButton.contentHorizontalAlignment = .left
+        advancedButton.setTitleColor(DesignSystem.Colors.textSecondary, for: .normal)
+        advancedButton.accessibilityIdentifier = "fitModelBrowAdvancedButton"
+        advancedButton.isHidden = true
+
+        let browLabel = UILabel()
+        browLabel.translatesAutoresizingMaskIntoConstraints = false
+        browLabel.numberOfLines = 2
+        browLabel.textAlignment = .left
+        browLabel.font = DesignSystem.Typography.caption()
+        browLabel.textColor = DesignSystem.Colors.textSecondary
+        browLabel.text = String(format: L("scan.preview.fit.brow.slider"), 25)
+        browLabel.accessibilityIdentifier = "fitModelBrowSliderLabel"
+        browLabel.isHidden = true
+
+        let browSlider = UISlider()
+        browSlider.translatesAutoresizingMaskIntoConstraints = false
+        browSlider.minimumValue = 0.20
+        browSlider.maximumValue = 0.30
+        browSlider.value = 0.25
+        browSlider.accessibilityIdentifier = "fitModelBrowSlider"
+        browSlider.isHidden = true
+
+        let actionsRow = UIStackView(arrangedSubviews: [checkButton, exportButton])
+        actionsRow.translatesAutoresizingMaskIntoConstraints = false
+        actionsRow.axis = .horizontal
+        actionsRow.spacing = 8
+        actionsRow.distribution = .fillEqually
+
+        hostView.addSubview(container)
+        container.addSubview(actionsRow)
+        container.addSubview(card)
+        container.addSubview(advancedButton)
+        container.addSubview(browLabel)
+        container.addSubview(browSlider)
+        NSLayoutConstraint.activate([
+            container.trailingAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.trailingAnchor, constant: -12),
+            container.topAnchor.constraint(equalTo: (earOverlayBadge?.bottomAnchor ?? hostView.safeAreaLayoutGuide.topAnchor), constant: 8),
+            container.leadingAnchor.constraint(greaterThanOrEqualTo: hostView.safeAreaLayoutGuide.leadingAnchor, constant: 80),
+            container.widthAnchor.constraint(lessThanOrEqualToConstant: 300),
+
+            actionsRow.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 10),
+            actionsRow.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -10),
+            actionsRow.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
+
+            card.leadingAnchor.constraint(equalTo: actionsRow.leadingAnchor),
+            card.trailingAnchor.constraint(equalTo: actionsRow.trailingAnchor),
+            card.topAnchor.constraint(equalTo: actionsRow.bottomAnchor, constant: 8),
+
+            advancedButton.leadingAnchor.constraint(equalTo: actionsRow.leadingAnchor),
+            advancedButton.topAnchor.constraint(equalTo: card.bottomAnchor, constant: 8),
+            advancedButton.trailingAnchor.constraint(equalTo: actionsRow.trailingAnchor),
+
+            browLabel.leadingAnchor.constraint(equalTo: actionsRow.leadingAnchor),
+            browLabel.topAnchor.constraint(equalTo: advancedButton.bottomAnchor, constant: 8),
+            browLabel.trailingAnchor.constraint(equalTo: actionsRow.trailingAnchor),
+
+            browSlider.leadingAnchor.constraint(equalTo: actionsRow.leadingAnchor),
+            browSlider.topAnchor.constraint(equalTo: browLabel.bottomAnchor, constant: 4),
+            browSlider.trailingAnchor.constraint(equalTo: actionsRow.trailingAnchor),
+            browSlider.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -10)
+        ])
+
+        fitCheckButton = checkButton
+        fitExportButton = exportButton
+        fitResultsCardLabel = card
+        fitBrowSlider = browSlider
+        fitBrowSliderLabel = browLabel
+        fitBrowAdvancedButton = advancedButton
+        fitContainerView = container
+        return (checkButton, exportButton, card, browSlider)
+    }
+
+    func updateFitResultsCard(_ text: String) {
+        fitResultsCardLabel?.isHidden = false
+        fitBrowAdvancedButton?.isHidden = false
+        fitResultsCardLabel?.text = text
+        fitResultsCardLabel?.accessibilityLabel = text
+    }
+
+    func updateBrowSliderLabel(percentage: Int) {
+        let text = String(format: L("scan.preview.fit.brow.slider"), percentage)
+        fitBrowSliderLabel?.text = text
+        fitBrowSliderLabel?.accessibilityLabel = text
+    }
+
+    func setBrowControlsVisible(_ visible: Bool) {
+        fitBrowSliderLabel?.isHidden = !visible
+        fitBrowSlider?.isHidden = !visible
     }
 
     func addOrUpdateDerivedMeasurements(
@@ -187,10 +337,10 @@ final class PreviewOverlayUIController {
         label.accessibilityIdentifier = "derivedMeasurementsLabel"
 
         hostView.addSubview(label)
-        let anchor = scanQualityHintLabel ?? scanQualityLabel ?? verifyEarButton
         NSLayoutConstraint.activate([
-            label.topAnchor.constraint(equalTo: (anchor?.bottomAnchor ?? hostView.safeAreaLayoutGuide.topAnchor), constant: 8),
+            label.bottomAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.bottomAnchor, constant: -132),
             label.centerXAnchor.constraint(equalTo: hostView.centerXAnchor),
+            label.topAnchor.constraint(greaterThanOrEqualTo: hostView.safeAreaLayoutGuide.topAnchor, constant: 12),
             label.leadingAnchor.constraint(greaterThanOrEqualTo: hostView.leadingAnchor, constant: 20),
             label.trailingAnchor.constraint(lessThanOrEqualTo: hostView.trailingAnchor, constant: -20)
         ])
@@ -215,7 +365,7 @@ final class PreviewOverlayUIController {
         hostView.addSubview(hint)
         NSLayoutConstraint.activate([
             hint.leadingAnchor.constraint(equalTo: anchor.leadingAnchor),
-            hint.topAnchor.constraint(equalTo: anchor.bottomAnchor, constant: 6),
+            hint.bottomAnchor.constraint(equalTo: anchor.topAnchor, constant: -6),
             hint.trailingAnchor.constraint(lessThanOrEqualTo: hostView.trailingAnchor, constant: -12)
         ])
 

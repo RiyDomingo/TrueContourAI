@@ -43,6 +43,7 @@ final class SettingsStore {
 
     private enum Keys {
         static let showPreScanChecklist = "settings_show_pre_scan_checklist"
+        static let developerModeEnabled = "settings_developer_mode_enabled"
         static let exportGLTF = "settings_export_gltf"
         static let exportOBJ = "settings_export_obj"
         static let showVerifyEarHint = "settings_show_verify_ear_hint"
@@ -63,6 +64,11 @@ final class SettingsStore {
     var showPreScanChecklist: Bool {
         get { bool(forKey: Keys.showPreScanChecklist, default: true) }
         set { defaults.set(newValue, forKey: Keys.showPreScanChecklist) }
+    }
+
+    var developerModeEnabled: Bool {
+        get { bool(forKey: Keys.developerModeEnabled, default: false) }
+        set { defaults.set(newValue, forKey: Keys.developerModeEnabled) }
     }
 
     var exportGLTF: Bool {
@@ -136,6 +142,7 @@ final class SettingsStore {
 
     func resetToDefaults() {
         defaults.removeObject(forKey: Keys.showPreScanChecklist)
+        defaults.removeObject(forKey: Keys.developerModeEnabled)
         defaults.removeObject(forKey: Keys.exportGLTF)
         defaults.removeObject(forKey: Keys.exportOBJ)
         defaults.removeObject(forKey: Keys.showVerifyEarHint)

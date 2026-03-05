@@ -116,6 +116,15 @@ final class SettingsViewController: UITableViewController {
                     )
                 ),
                 Row(
+                    title: L("settings.developerMode.title"),
+                    subtitle: L("settings.developerMode.subtitle"),
+                    kind: .toggle(
+                        isOn: { [store] in store.developerModeEnabled },
+                        setOn: { [store] value in store.developerModeEnabled = value },
+                        identifier: "settings.developerModeEnabled"
+                    )
+                ),
+                Row(
                     title: L("settings.ear.hint.title"),
                     subtitle: L("settings.ear.hint.subtitle"),
                     kind: .toggle(

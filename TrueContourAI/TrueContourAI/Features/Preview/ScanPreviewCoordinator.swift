@@ -1,6 +1,8 @@
 import UIKit
 import StandardCyborgUI
 import StandardCyborgFusion
+import SceneKit
+import simd
 
 protocol ScanExporting {
     func exportScanFolder(
@@ -69,6 +71,7 @@ final class ScanPreviewCoordinator {
 
     private weak var meshingStatusLabel: UILabel?
     private weak var meshingActivityIndicator: UIActivityIndicatorView?
+    private weak var meshingProgressIndicator: UIProgressView?
     private let saveExportViewState: SaveExportUIStateAdapting
     private let previewOverlayUI = PreviewOverlayUIController()
     private let alertPresenter = PreviewAlertPresenter()
@@ -82,6 +85,22 @@ final class ScanPreviewCoordinator {
     private var latestSessionMetrics: ScanFlowState.ScanSessionMetrics?
     private var latestQualityReport: ScanQualityReport?
     private var latestMeasurementSummary: LocalMeasurementGenerationService.ResultSummary?
+    private let fitModelPackService = FitModelPackService()
+    private var latestFitCheckResult: FitModelCheckResult?
+    private var latestFitMeshData: FitModelPackService.MeshData?
+    private var manualEarLeftMeters: SIMD3<Float>?
+    private var manualEarRightMeters: SIMD3<Float>?
+    private var fitEarPickTapGesture: UITapGestureRecognizer?
+    private var browPlaneDropFromTopFraction: Float = 0.25
+    private var showsAdvancedBrowControls = false
+
+    private enum FitEarPickState {
+        case none
+        case pickLeft
+        case pickRight
+    }
+
+    private var fitEarPickState: FitEarPickState = .none
 
     init(
         presenter: UIViewController,
@@ -111,6 +130,12 @@ final class ScanPreviewCoordinator {
     private func startPreviewSession() -> UUID {
         let sessionID = UUID()
         currentPreviewSessionID = sessionID
+        latestFitCheckResult = nil
+        latestFitMeshData = nil
+        manualEarLeftMeters = nil
+        manualEarRightMeters = nil
+        fitEarPickState = .none
+        showsAdvancedBrowControls = false
         return sessionID
     }
 
@@ -171,6 +196,7 @@ final class ScanPreviewCoordinator {
                     confidence: derived.confidence
                 )
             }
+            self.configureFitModelUIIfNeeded(previewVC: vc)
         }
         Log.ui.info("Presented existing scan preview: \(item.displayName, privacy: .public)")
     }
@@ -286,6 +312,8 @@ final class ScanPreviewCoordinator {
                 guard let self, self.isCurrentPreviewSession(previewSessionID) else { return }
                 let clamped = max(0, min(1, progress))
                 let percent = clamped * 100
+                self.meshingProgressIndicator?.isHidden = false
+                self.meshingProgressIndicator?.setProgress(clamped, animated: true)
                 self.saveExportViewState.setMeshingStatusText(
                     String(format: L("scan.preview.meshing.progressFormat"), percent)
                 )
@@ -300,6 +328,8 @@ final class ScanPreviewCoordinator {
                 vc?.rightButton.alpha = 1.0
                 self.saveExportViewState.setMeshingStatusText(L("scan.preview.readyToSave"))
                 self.saveExportViewState.setMeshingSpinnerActive(false)
+                self.meshingProgressIndicator?.setProgress(1, animated: true)
+                self.meshingProgressIndicator?.isHidden = true
                 self.cancelMeshingTimeout()
                 Log.scan.info("Mesh ready for export")
             }
@@ -332,6 +362,7 @@ final class ScanPreviewCoordinator {
             presenter.present(container, animated: true) { [weak self] in
                 guard let self, self.isCurrentPreviewSession(previewSessionID) else { return }
                 self.addVerifyEarUI(to: vc)
+                self.configureFitModelUIIfNeeded(previewVC: vc)
                 if let quality = self.previewViewModel.scanQuality {
                     self.addScanQualityLabel(to: vc, quality: quality)
                 }
@@ -478,6 +509,45 @@ final class ScanPreviewCoordinator {
                     Log.ml.error("Ear verification failed: \(error.localizedDescription, privacy: .public)")
                 }
             }
+        }
+    }
+
+    @objc private func fitModelCheckTapped() {
+        runFitModelCheck(showHaptic: true, allowEarPickPrompt: true)
+    }
+
+    @objc private func exportFitPackTapped() {
+        guard let previewVC = scenePreviewVC else { return }
+        guard let fitResult = latestFitCheckResult, let meshData = latestFitMeshData else {
+            fitModelCheckTapped()
+            return
+        }
+
+        let parentFolderURL: URL
+        if let scanFolder = scanFlowState.currentlyPreviewedFolderURL {
+            parentFolderURL = scanFolder
+        } else {
+            let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+            parentFolderURL = scanService.scansRootURL.appendingPathComponent("FitModelPack-\(stamp)", isDirectory: true)
+            try? FileManager.default.createDirectory(at: parentFolderURL, withIntermediateDirectories: true)
+        }
+
+        do {
+            let packURL = try fitModelPackService.exportPack(
+                meshData: meshData,
+                fitCheckResult: fitResult,
+                parentFolderURL: parentFolderURL
+            )
+            onToast?(String(format: L("scan.preview.fit.export.success"), packURL.lastPathComponent))
+        } catch {
+            previewVC.present(
+                alertPresenter.makeAlert(
+                    title: L("scan.preview.fit.export.failed.title"),
+                    message: String(format: L("scan.preview.fit.export.failed.message"), error.localizedDescription),
+                    identifier: "fitExportFailedAlert"
+                ),
+                animated: true
+            )
         }
     }
 
@@ -671,6 +741,158 @@ final class ScanPreviewCoordinator {
         button.addTarget(self, action: #selector(verifyEarTapped), for: .touchUpInside)
     }
 
+    private func configureFitModelUIIfNeeded(previewVC: ScenePreviewViewController) {
+        guard settingsStore.developerModeEnabled else { return }
+        guard let hostView = previewContainerVC?.overlayView ?? previewVC.view else { return }
+        let controls = previewOverlayUI.addFitModelUI(to: hostView)
+        controls.check.removeTarget(nil, action: nil, for: .allEvents)
+        controls.export.removeTarget(nil, action: nil, for: .allEvents)
+        controls.browSlider.removeTarget(nil, action: nil, for: .allEvents)
+        previewOverlayUI.fitBrowAdvancedButton?.removeTarget(nil, action: nil, for: .allEvents)
+        controls.browSlider.value = browPlaneDropFromTopFraction
+        previewOverlayUI.updateBrowSliderLabel(percentage: Int((browPlaneDropFromTopFraction * 100).rounded()))
+        previewOverlayUI.setBrowControlsVisible(showsAdvancedBrowControls)
+        controls.check.addTarget(self, action: #selector(fitModelCheckTapped), for: .touchUpInside)
+        controls.export.addTarget(self, action: #selector(exportFitPackTapped), for: .touchUpInside)
+        previewOverlayUI.fitBrowAdvancedButton?.addTarget(self, action: #selector(fitBrowAdvancedTapped), for: .touchUpInside)
+        controls.browSlider.addTarget(self, action: #selector(fitBrowSliderChanged(_:)), for: .valueChanged)
+    }
+
+    @objc private func fitBrowAdvancedTapped() {
+        showsAdvancedBrowControls.toggle()
+        previewOverlayUI.setBrowControlsVisible(showsAdvancedBrowControls)
+    }
+
+    @objc private func fitBrowSliderChanged(_ slider: UISlider) {
+        browPlaneDropFromTopFraction = min(0.30, max(0.20, slider.value))
+        previewOverlayUI.updateBrowSliderLabel(percentage: Int((browPlaneDropFromTopFraction * 100).rounded()))
+        if latestFitMeshData != nil {
+            runFitModelCheck(showHaptic: false, allowEarPickPrompt: false)
+        }
+    }
+
+    private func updateFitResultsCard(with result: FitModelCheckResult) {
+        var text = String(
+            format: L("scan.preview.fit.results.format"),
+            Int(result.fitData.head_circumference_brow_mm.rounded()),
+            Int(result.fitData.head_width_max_mm.rounded()),
+            Int(result.fitData.head_length_max_mm.rounded()),
+            Int(result.fitData.occipital_offset_mm.rounded()),
+            Int((result.fitData.quality_flags.scan_coverage_score * 100).rounded())
+        )
+        if result.fitData.ear_left_xyz_mm == nil || result.fitData.ear_right_xyz_mm == nil {
+            text += "\n" + L("scan.preview.fit.results.missingEars")
+        } else if !result.warnings.isEmpty {
+            text += "\n" + result.warnings.joined(separator: " ")
+        }
+        previewOverlayUI.updateFitResultsCard("\(L("scan.preview.fit.results.title"))\n\(text)")
+    }
+
+    private func beginFitEarPicking(in previewVC: ScenePreviewViewController) {
+        fitEarPickState = .pickLeft
+        onToast?(L("scan.preview.fit.pick.left"))
+
+        if fitEarPickTapGesture == nil {
+            let tap = UITapGestureRecognizer(target: self, action: #selector(handleFitEarPickTap(_:)))
+            tap.cancelsTouchesInView = false
+            previewVC.sceneView.addGestureRecognizer(tap)
+            fitEarPickTapGesture = tap
+        }
+    }
+
+    private func runFitModelCheck(showHaptic: Bool, allowEarPickPrompt: Bool) {
+        guard let previewVC = scenePreviewVC else { return }
+        if showHaptic {
+            DesignSystem.hapticPrimary()
+        }
+
+        let appVersion = Self.appVersionString()
+        let deviceModel = UIDevice.current.model
+
+        let meshData: FitModelPackService.MeshData?
+        if let mesh = previewViewModel.meshForExport {
+            meshData = FitModelPackService.extractMeshData(from: mesh)
+        } else if let folder = scanFlowState.currentlyPreviewedFolderURL,
+                  let objURL = scanService.resolveOBJFromFolder(folder) {
+            meshData = FitModelPackService.readOBJMeshData(from: objURL)
+        } else {
+            meshData = nil
+        }
+
+        guard let meshData else {
+            previewVC.present(
+                alertPresenter.makeAlert(
+                    title: L("scan.preview.fit.unavailable.title"),
+                    message: L("scan.preview.fit.unavailable.message"),
+                    identifier: "fitUnavailableAlert"
+                ),
+                animated: true
+            )
+            return
+        }
+
+        latestFitMeshData = meshData
+        let result = fitModelPackService.checkFromOBJMeshData(
+            meshData: meshData,
+            manualEarLeftMeters: manualEarLeftMeters,
+            manualEarRightMeters: manualEarRightMeters,
+            browPlaneDropFromTopFraction: browPlaneDropFromTopFraction,
+            appVersion: appVersion,
+            deviceModel: deviceModel
+        )
+
+        guard let result else {
+            previewVC.present(
+                alertPresenter.makeAlert(
+                    title: L("scan.preview.fit.unavailable.title"),
+                    message: L("scan.preview.fit.unavailable.message"),
+                    identifier: "fitUnavailableAlert"
+                ),
+                animated: true
+            )
+            return
+        }
+
+        latestFitCheckResult = result
+        updateFitResultsCard(with: result)
+        if allowEarPickPrompt,
+           result.fitData.ear_left_xyz_mm == nil || result.fitData.ear_right_xyz_mm == nil {
+            beginFitEarPicking(in: previewVC)
+        }
+    }
+
+    @objc private func handleFitEarPickTap(_ gesture: UITapGestureRecognizer) {
+        guard let previewVC = scenePreviewVC else { return }
+        guard fitEarPickState != .none else { return }
+        let location = gesture.location(in: previewVC.sceneView)
+        let hits = previewVC.sceneView.hitTest(location, options: [
+            SCNHitTestOption.firstFoundOnly: true
+        ])
+        guard let hit = hits.first else {
+            onToast?(L("scan.preview.fit.pick.failed"))
+            return
+        }
+        let w = hit.worldCoordinates
+        let point = SIMD3<Float>(w.x, w.y, w.z)
+
+        switch fitEarPickState {
+        case .pickLeft:
+            manualEarLeftMeters = point
+            fitEarPickState = .pickRight
+            onToast?(L("scan.preview.fit.pick.right"))
+        case .pickRight:
+            manualEarRightMeters = point
+            fitEarPickState = .none
+            if let tap = fitEarPickTapGesture {
+                previewVC.sceneView.removeGestureRecognizer(tap)
+                fitEarPickTapGesture = nil
+            }
+            fitModelCheckTapped()
+        case .none:
+            break
+        }
+    }
+
     private func addMeshingStatusLabel(to previewVC: ScenePreviewViewController) {
         if meshingStatusLabel != nil { return }
         guard let hostView = previewVC.view else { return }
@@ -689,18 +911,32 @@ final class ScanPreviewCoordinator {
         spinner.color = DesignSystem.Colors.textPrimary
         spinner.hidesWhenStopped = true
 
+        let progress = UIProgressView(progressViewStyle: .default)
+        progress.translatesAutoresizingMaskIntoConstraints = false
+        progress.trackTintColor = UIColor.white.withAlphaComponent(0.28)
+        progress.progressTintColor = DesignSystem.Colors.actionPrimary
+        progress.progress = 0
+        progress.isHidden = false
+        progress.accessibilityIdentifier = "previewMeshingProgressView"
+
         hostView.addSubview(label)
         hostView.addSubview(spinner)
+        hostView.addSubview(progress)
         NSLayoutConstraint.activate([
             label.bottomAnchor.constraint(equalTo: previewVC.rightButton.topAnchor, constant: -8),
             label.trailingAnchor.constraint(equalTo: previewVC.rightButton.trailingAnchor),
 
             spinner.centerYAnchor.constraint(equalTo: label.centerYAnchor),
-            spinner.leadingAnchor.constraint(equalTo: label.trailingAnchor, constant: 6)
+            spinner.leadingAnchor.constraint(equalTo: label.trailingAnchor, constant: 6),
+
+            progress.leadingAnchor.constraint(equalTo: previewVC.rightButton.leadingAnchor),
+            progress.trailingAnchor.constraint(equalTo: previewVC.rightButton.trailingAnchor),
+            progress.bottomAnchor.constraint(equalTo: label.topAnchor, constant: -8)
         ])
 
         meshingStatusLabel = label
         meshingActivityIndicator = spinner
+        meshingProgressIndicator = progress
         saveExportViewState.setMeshingSpinnerActive(true)
         saveExportViewState.configure(
             previewVC: previewVC,
@@ -747,10 +983,21 @@ final class ScanPreviewCoordinator {
         previewOverlayUI.clear()
         isVerifyingEar = false
         previewViewModel.clearVerification()
+        latestFitCheckResult = nil
+        latestFitMeshData = nil
+        manualEarLeftMeters = nil
+        manualEarRightMeters = nil
+        fitEarPickState = .none
+        if let tap = fitEarPickTapGesture, let sceneView = scenePreviewVC?.sceneView {
+            sceneView.removeGestureRecognizer(tap)
+        }
+        fitEarPickTapGesture = nil
         meshingStatusLabel?.removeFromSuperview()
         meshingStatusLabel = nil
         meshingActivityIndicator?.removeFromSuperview()
         meshingActivityIndicator = nil
+        meshingProgressIndicator?.removeFromSuperview()
+        meshingProgressIndicator = nil
         saveExportViewState.clear()
         cancelMeshingTimeout()
         didShowMeshingTimeoutAlert = false
@@ -773,6 +1020,15 @@ final class ScanPreviewCoordinator {
             DesignSystem.updateButtonEnabled(button, style: .secondary)
         }
         previewOverlayUI.setVerifyButtonTitle(title)
+    }
+
+    private static func appVersionString() -> String {
+        let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
+        if let short, let build {
+            return "\(short) (\(build))"
+        }
+        return short ?? build ?? "unknown"
     }
 
     #if DEBUG
@@ -818,6 +1074,17 @@ final class ScanPreviewCoordinator {
         case .ready:
             return "ready"
         }
+    }
+
+    @discardableResult
+    func debug_addFitControlsIfDeveloperMode(hostView: UIView) -> Bool {
+        guard settingsStore.developerModeEnabled else { return false }
+        _ = previewOverlayUI.addFitModelUI(to: hostView)
+        return previewOverlayUI.fitBrowSlider != nil
+    }
+
+    func debug_hasFitBrowSlider() -> Bool {
+        previewOverlayUI.fitBrowSlider != nil
     }
     #endif
 }

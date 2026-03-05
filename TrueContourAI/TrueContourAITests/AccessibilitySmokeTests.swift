@@ -51,6 +51,34 @@ final class AccessibilitySmokeTests: XCTestCase {
         XCTAssertEqual(verifyButton.accessibilityLabel, L("scan.preview.accessibility.verify.label"))
         XCTAssertEqual(verifyButton.accessibilityHint, L("scan.preview.accessibility.verify.hint"))
     }
+
+    func testFitBrowSliderAppearsOnlyInDeveloperMode() {
+        let hostView = UIView(frame: CGRect(x: 0, y: 0, width: 320, height: 640))
+
+        let defaultsOff = UserDefaults(suiteName: "FitBrowSliderOff.\(UUID().uuidString)")!
+        let settingsOff = SettingsStore(defaults: defaultsOff)
+        settingsOff.developerModeEnabled = false
+        let coordinatorOff = ScanPreviewCoordinator(
+            presenter: UIViewController(),
+            scanService: ScanService(),
+            settingsStore: settingsOff,
+            scanFlowState: ScanFlowState()
+        )
+        XCTAssertFalse(coordinatorOff.debug_addFitControlsIfDeveloperMode(hostView: hostView))
+        XCTAssertFalse(coordinatorOff.debug_hasFitBrowSlider())
+
+        let defaultsOn = UserDefaults(suiteName: "FitBrowSliderOn.\(UUID().uuidString)")!
+        let settingsOn = SettingsStore(defaults: defaultsOn)
+        settingsOn.developerModeEnabled = true
+        let coordinatorOn = ScanPreviewCoordinator(
+            presenter: UIViewController(),
+            scanService: ScanService(),
+            settingsStore: settingsOn,
+            scanFlowState: ScanFlowState()
+        )
+        XCTAssertTrue(coordinatorOn.debug_addFitControlsIfDeveloperMode(hostView: hostView))
+        XCTAssertTrue(coordinatorOn.debug_hasFitBrowSlider())
+    }
 }
 
 private extension UIView {

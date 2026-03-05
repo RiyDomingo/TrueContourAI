@@ -74,6 +74,9 @@
 		13F1A0152F6A123400111111 /* AppScanningViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F1A0162F6A123400111111 /* AppScanningViewControllerTests.swift */; };
 		13F1A0172F6A123400111111 /* LocalMeasurementGenerationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F1A0182F6A123400111111 /* LocalMeasurementGenerationServiceTests.swift */; };
 		13F1A0192F6A123400111111 /* SettingsViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F1A01A2F6A123400111111 /* SettingsViewControllerTests.swift */; };
+		14A100012F7C000100ABC001 /* Features/Fit/FitModelPackModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14A100112F7C000100ABC001 /* Features/Fit/FitModelPackModels.swift */; };
+		14A100022F7C000100ABC001 /* Features/Fit/FitModelPackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14A100122F7C000100ABC001 /* Features/Fit/FitModelPackService.swift */; };
+		14A100032F7C000100ABC001 /* FitModelPackServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14A100132F7C000100ABC001 /* FitModelPackServiceTests.swift */; };
 		13FA01012F7B000100ABCDEF /* StandardCyborgFusion in Frameworks */ = {isa = PBXBuildFile; productRef = 766314032CEB185300CC7AF3 /* StandardCyborgFusion */; };
 		7642B7FC21E679E800BC45C7 /* App/AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7642B7FB21E679E800BC45C7 /* App/AppDelegate.swift */; };
 		7642B7FE21E679E800BC45C7 /* Features/Home/HomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7642B7FD21E679E800BC45C7 /* Features/Home/HomeViewController.swift */; };
@@ -180,6 +183,9 @@
 		13F1A0162F6A123400111111 /* AppScanningViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppScanningViewControllerTests.swift; sourceTree = "<group>"; };
 		13F1A0182F6A123400111111 /* LocalMeasurementGenerationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalMeasurementGenerationServiceTests.swift; sourceTree = "<group>"; };
 		13F1A01A2F6A123400111111 /* SettingsViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewControllerTests.swift; sourceTree = "<group>"; };
+		14A100112F7C000100ABC001 /* Features/Fit/FitModelPackModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Fit/FitModelPackModels.swift; sourceTree = "<group>"; };
+		14A100122F7C000100ABC001 /* Features/Fit/FitModelPackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Fit/FitModelPackService.swift; sourceTree = "<group>"; };
+		14A100132F7C000100ABC001 /* FitModelPackServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitModelPackServiceTests.swift; sourceTree = "<group>"; };
 		7642B7F821E679E800BC45C7 /* TrueContourAI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TrueContourAI.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7642B7FB21E679E800BC45C7 /* App/AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppDelegate.swift; sourceTree = "<group>"; };
 		7642B7FD21E679E800BC45C7 /* Features/Home/HomeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeViewController.swift; sourceTree = "<group>"; };
@@ -232,6 +238,7 @@
 		13E2D4002F1D0100003DE022 /* TrueContourAITests */ = {
 			isa = PBXGroup;
 			children = (
+				14A100132F7C000100ABC001 /* FitModelPackServiceTests.swift */,
 				131CF1392F23C61E00D173CC /* ScanTimingTests.swift */,
 				1343F3DD2F2108370003238B /* MathAndFormattingTests.swift */,
 				13DD59B32F22712A0A33CAF /* MeshingTimeoutControllerTests.swift */,
@@ -298,9 +305,19 @@
 				13F1A0062F6A123400111111 /* Home */,
 				13F1A0072F6A123400111111 /* Scan */,
 				13F1A0082F6A123400111111 /* Preview */,
+				14A100142F7C000100ABC001 /* Fit */,
 				13F1A0092F6A123400111111 /* Settings */,
 			);
 			name = Features;
+			sourceTree = "<group>";
+		};
+		14A100142F7C000100ABC001 /* Fit */ = {
+			isa = PBXGroup;
+			children = (
+				14A100112F7C000100ABC001 /* Features/Fit/FitModelPackModels.swift */,
+				14A100122F7C000100ABC001 /* Features/Fit/FitModelPackService.swift */,
+			);
+			name = Fit;
 			sourceTree = "<group>";
 		};
 		13F1A0062F6A123400111111 /* Home */ = {
@@ -573,6 +590,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				14A100032F7C000100ABC001 /* FitModelPackServiceTests.swift in Sources */,
 				13E2D4122F1D0300003DE022 /* EarLandmarksServiceTests.swift in Sources */,
 				13E2D4042F1D0100003DE022 /* ScanServiceTests.swift in Sources */,
 				1343F3DE2F2108370003238B /* MathAndFormattingTests.swift in Sources */,
@@ -598,6 +616,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				14A100012F7C000100ABC001 /* Features/Fit/FitModelPackModels.swift in Sources */,
+				14A100022F7C000100ABC001 /* Features/Fit/FitModelPackService.swift in Sources */,
 				132BDB642F1FD83200B012E2 /* Features/Home/PreScanChecklistViewController.swift in Sources */,
 				1374657B2F12A2C300C2772D /* Features/Scan/HeadMeasurementService.swift in Sources */,
 				7642B7FE21E679E800BC45C7 /* Features/Home/HomeViewController.swift in Sources */,
