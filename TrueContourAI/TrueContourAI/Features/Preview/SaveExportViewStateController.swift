@@ -49,7 +49,7 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
 
         let card = UIView()
         card.translatesAutoresizingMaskIntoConstraints = false
-        card.backgroundColor = DesignSystem.Colors.overlay
+        card.backgroundColor = DesignSystem.Colors.overlayCard
         card.layer.cornerRadius = DesignSystem.CornerRadius.large
         card.layer.masksToBounds = true
 

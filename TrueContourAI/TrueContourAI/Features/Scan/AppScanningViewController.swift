@@ -134,6 +134,13 @@ protocol AppScanningViewControllerDelegate: AnyObject {
 }
 
 final class AppScanningViewController: UIViewController, CameraManagerDelegate, SCReconstructionManagerDelegate {
+    private enum Layout {
+        static let horizontalInset: CGFloat = 12
+        static let bottomInstructionInset: CGFloat = 16
+        static let topStatusInset: CGFloat = 10
+        static let instructionToProgressSpacing: CGFloat = 8
+        static let statusToFocusHintSpacing: CGFloat = 6
+    }
 
     enum ScanningTerminationReason {
         case canceled
@@ -169,6 +176,15 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         case capturing
         case warning
         case critical
+    }
+
+    private struct HUDVisibility {
+        let promptHidden: Bool
+        let progressHidden: Bool
+        let progressBarHidden: Bool
+        let statusHidden: Bool
+        let autoFinishHidden: Bool
+        let focusHintHidden: Bool
     }
 
     private enum GuidanceState {
@@ -253,7 +269,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         label.textAlignment = .center
         label.font = DesignSystem.Typography.button()
         label.textColor = DesignSystem.Colors.textPrimary
-        label.backgroundColor = DesignSystem.Colors.overlay
+        label.backgroundColor = DesignSystem.Colors.overlayCard
         label.layer.cornerRadius = DesignSystem.CornerRadius.medium
         label.layer.masksToBounds = true
         label.adjustsFontForContentSizeCategory = true
@@ -421,26 +437,26 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
             metalContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             metalContainerView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            promptLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 12),
-            promptLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -12),
-            promptLabel.bottomAnchor.constraint(equalTo: shutterButton.topAnchor, constant: -16),
+            promptLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Layout.horizontalInset),
+            promptLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -Layout.horizontalInset),
+            promptLabel.bottomAnchor.constraint(equalTo: shutterButton.topAnchor, constant: -Layout.bottomInstructionInset),
 
             guidanceStatusChip.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            guidanceStatusChip.bottomAnchor.constraint(equalTo: promptLabel.topAnchor, constant: -8),
+            guidanceStatusChip.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: Layout.topStatusInset),
             guidanceStatusChip.heightAnchor.constraint(greaterThanOrEqualToConstant: 24),
-            guidanceStatusChip.leadingAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 12),
-            guidanceStatusChip.trailingAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -12),
+            guidanceStatusChip.leadingAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Layout.horizontalInset),
+            guidanceStatusChip.trailingAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -Layout.horizontalInset),
 
             progressLabel.leadingAnchor.constraint(equalTo: promptLabel.leadingAnchor),
             progressLabel.trailingAnchor.constraint(equalTo: promptLabel.trailingAnchor),
-            progressLabel.bottomAnchor.constraint(equalTo: promptLabel.topAnchor, constant: -12),
+            progressLabel.bottomAnchor.constraint(equalTo: promptLabel.topAnchor, constant: -Layout.instructionToProgressSpacing),
 
             captureProgressView.leadingAnchor.constraint(equalTo: progressLabel.leadingAnchor),
             captureProgressView.trailingAnchor.constraint(equalTo: progressLabel.trailingAnchor),
             captureProgressView.bottomAnchor.constraint(equalTo: progressLabel.topAnchor, constant: -8),
 
             focusHintLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            focusHintLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
+            focusHintLabel.topAnchor.constraint(equalTo: guidanceStatusChip.bottomAnchor, constant: Layout.statusToFocusHintSpacing),
 
             autoFinishLabel.leadingAnchor.constraint(equalTo: progressLabel.leadingAnchor),
             autoFinishLabel.trailingAnchor.constraint(equalTo: progressLabel.trailingAnchor),
@@ -910,28 +926,48 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     }
 
     private func updateHUDVisibility() {
-        switch currentHUDState {
+        let visibility = hudVisibility(for: currentHUDState)
+        promptLabel.isHidden = visibility.promptHidden
+        progressLabel.isHidden = visibility.progressHidden
+        captureProgressView.isHidden = visibility.progressBarHidden
+        guidanceStatusChip.isHidden = visibility.statusHidden
+        autoFinishLabel.isHidden = visibility.autoFinishHidden
+        focusHintLabel.isHidden = visibility.focusHintHidden
+    }
+
+    private func hudVisibility(for state: HUDState) -> HUDVisibility {
+        // Visibility matrix (single source of truth):
+        // idlePrompts => prompt + focus hint only
+        // countdown   => countdown only
+        // capturing/* => prompt + status + progress text (+ auto-finish when enabled)
+        switch state {
         case .idlePrompts:
-            promptLabel.isHidden = false
-            progressLabel.isHidden = true
-            captureProgressView.isHidden = true
-            guidanceStatusChip.isHidden = true
-            autoFinishLabel.isHidden = true
-            focusHintLabel.isHidden = false
+            return HUDVisibility(
+                promptHidden: false,
+                progressHidden: true,
+                progressBarHidden: true,
+                statusHidden: true,
+                autoFinishHidden: true,
+                focusHintHidden: false
+            )
         case .countdown:
-            promptLabel.isHidden = true
-            progressLabel.isHidden = true
-            captureProgressView.isHidden = true
-            guidanceStatusChip.isHidden = true
-            autoFinishLabel.isHidden = true
-            focusHintLabel.isHidden = true
+            return HUDVisibility(
+                promptHidden: true,
+                progressHidden: true,
+                progressBarHidden: true,
+                statusHidden: true,
+                autoFinishHidden: true,
+                focusHintHidden: true
+            )
         case .capturing, .warning, .critical:
-            promptLabel.isHidden = false
-            progressLabel.isHidden = false
-            captureProgressView.isHidden = true
-            guidanceStatusChip.isHidden = false
-            autoFinishLabel.isHidden = autoFinishSeconds <= 0
-            focusHintLabel.isHidden = true
+            return HUDVisibility(
+                promptHidden: false,
+                progressHidden: false,
+                progressBarHidden: true,
+                statusHidden: false,
+                autoFinishHidden: true,
+                focusHintHidden: true
+            )
         }
     }
 

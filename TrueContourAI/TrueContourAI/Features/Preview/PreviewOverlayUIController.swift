@@ -1,6 +1,19 @@
 import UIKit
 
 final class PreviewOverlayUIController {
+    private struct OverlayLayoutProfile {
+        let bottomControlsInset: CGFloat
+        let measurementsBottomInset: CGFloat
+        let panelMaxWidth: CGFloat
+        let panelMaxHeightMultiplier: CGFloat
+    }
+
+    private enum FitPanelVisibilityState {
+        case actionsOnly
+        case resultsCollapsed
+        case resultsWithAdvanced
+    }
+
     private(set) weak var verifyEarButton: UIButton?
     private(set) weak var earOverlayBadge: UIImageView?
     private(set) weak var verifyEarActivityIndicator: UIActivityIndicatorView?
@@ -14,12 +27,35 @@ final class PreviewOverlayUIController {
     private(set) weak var fitBrowSlider: UISlider?
     private(set) weak var fitBrowSliderLabel: UILabel?
     private(set) weak var fitBrowAdvancedButton: UIButton?
+    private(set) weak var fitPanelToggleButton: UIButton?
     private(set) weak var fitContainerView: UIView?
+    private(set) weak var fitPanelScrollView: UIScrollView?
     private(set) weak var hostView: UIView?
+    private var fitPanelVisibilityState: FitPanelVisibilityState = .actionsOnly
+
+    private static func layoutProfile(for hostView: UIView) -> OverlayLayoutProfile {
+        let compactHeight = hostView.bounds.height > 0 ? hostView.bounds.height < 760 : false
+        let compactTraits = hostView.traitCollection.verticalSizeClass == .compact
+        if compactHeight || compactTraits {
+            return OverlayLayoutProfile(
+                bottomControlsInset: 72,
+                measurementsBottomInset: 118,
+                panelMaxWidth: 264,
+                panelMaxHeightMultiplier: 0.30
+            )
+        }
+        return OverlayLayoutProfile(
+            bottomControlsInset: 84,
+            measurementsBottomInset: 132,
+            panelMaxWidth: 300,
+            panelMaxHeightMultiplier: 0.35
+        )
+    }
 
     func addVerifyEarUI(to hostView: UIView, showHint: Bool) -> UIButton {
         if let existing = verifyEarButton { return existing }
         self.hostView = hostView
+        let profile = Self.layoutProfile(for: hostView)
 
         let button = UIButton(type: .system)
         DesignSystem.applyButton(button, title: L("scan.preview.verify"), style: .secondary, size: .regular)
@@ -64,7 +100,7 @@ final class PreviewOverlayUIController {
 
         NSLayoutConstraint.activate([
             button.leadingAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.leadingAnchor, constant: 12),
-            button.bottomAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.bottomAnchor, constant: -84),
+            button.bottomAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.bottomAnchor, constant: -profile.bottomControlsInset),
 
             badge.trailingAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.trailingAnchor, constant: -12),
             badge.topAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.topAnchor, constant: badgeTopOffset),
@@ -151,7 +187,9 @@ final class PreviewOverlayUIController {
         fitBrowSlider?.removeFromSuperview()
         fitBrowSliderLabel?.removeFromSuperview()
         fitBrowAdvancedButton?.removeFromSuperview()
+        fitPanelToggleButton?.removeFromSuperview()
         fitContainerView?.removeFromSuperview()
+        fitPanelScrollView?.removeFromSuperview()
         removeVerifyHint()
         scanQualityLabel?.removeFromSuperview()
         scanQualityLabel = nil
@@ -169,7 +207,10 @@ final class PreviewOverlayUIController {
         fitBrowSlider = nil
         fitBrowSliderLabel = nil
         fitBrowAdvancedButton = nil
+        fitPanelToggleButton = nil
         fitContainerView = nil
+        fitPanelScrollView = nil
+        fitPanelVisibilityState = .actionsOnly
     }
 
     func addFitModelUI(to hostView: UIView) -> (check: UIButton, export: UIButton, resultsCard: UILabel, browSlider: UISlider) {
@@ -177,13 +218,41 @@ final class PreviewOverlayUIController {
             return (check, export, card, slider)
         }
         self.hostView = hostView
+        let profile = Self.layoutProfile(for: hostView)
 
         let container = UIView()
         container.translatesAutoresizingMaskIntoConstraints = false
-        container.backgroundColor = DesignSystem.Colors.overlay.withAlphaComponent(0.86)
+        container.backgroundColor = DesignSystem.Colors.overlayCard
         container.layer.cornerRadius = DesignSystem.CornerRadius.medium
         container.layer.masksToBounds = true
         container.accessibilityIdentifier = "fitModelControlsContainer"
+        container.isHidden = true
+
+        let scrollView = UIScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.showsVerticalScrollIndicator = true
+        scrollView.alwaysBounceVertical = true
+        scrollView.accessibilityIdentifier = "fitModelPanelScrollView"
+
+        let contentView = UIView()
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+
+        let panelToggleButton: UIButton
+        if let existing = fitPanelToggleButton {
+            panelToggleButton = existing
+        } else {
+            let button = UIButton(type: .system)
+            DesignSystem.applyButton(button, title: L("scan.preview.fit.tools"), style: .secondary, size: .regular)
+            button.accessibilityIdentifier = "fitModelPanelToggleButton"
+            button.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+            hostView.addSubview(button)
+            NSLayoutConstraint.activate([
+                button.trailingAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.trailingAnchor, constant: -12),
+                button.bottomAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.bottomAnchor, constant: -profile.bottomControlsInset)
+            ])
+            fitPanelToggleButton = button
+            panelToggleButton = button
+        }
 
         let checkButton = UIButton(type: .system)
         DesignSystem.applyButton(checkButton, title: L("scan.preview.fit.check"), style: .secondary, size: .regular)
@@ -235,25 +304,41 @@ final class PreviewOverlayUIController {
 
         let actionsRow = UIStackView(arrangedSubviews: [checkButton, exportButton])
         actionsRow.translatesAutoresizingMaskIntoConstraints = false
-        actionsRow.axis = .horizontal
+        actionsRow.axis = .vertical
         actionsRow.spacing = 8
-        actionsRow.distribution = .fillEqually
+        actionsRow.distribution = .fill
 
         hostView.addSubview(container)
-        container.addSubview(actionsRow)
-        container.addSubview(card)
-        container.addSubview(advancedButton)
-        container.addSubview(browLabel)
-        container.addSubview(browSlider)
+        container.addSubview(scrollView)
+        scrollView.addSubview(contentView)
+        contentView.addSubview(actionsRow)
+        contentView.addSubview(card)
+        contentView.addSubview(advancedButton)
+        contentView.addSubview(browLabel)
+        contentView.addSubview(browSlider)
         NSLayoutConstraint.activate([
+            // Keep the center viewport clear: diagnostics stay in the right-bottom quadrant.
+            container.leadingAnchor.constraint(greaterThanOrEqualTo: hostView.centerXAnchor, constant: 8),
             container.trailingAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.trailingAnchor, constant: -12),
-            container.topAnchor.constraint(equalTo: (earOverlayBadge?.bottomAnchor ?? hostView.safeAreaLayoutGuide.topAnchor), constant: 8),
-            container.leadingAnchor.constraint(greaterThanOrEqualTo: hostView.safeAreaLayoutGuide.leadingAnchor, constant: 80),
-            container.widthAnchor.constraint(lessThanOrEqualToConstant: 300),
+            container.bottomAnchor.constraint(equalTo: panelToggleButton.topAnchor, constant: -8),
+            container.widthAnchor.constraint(lessThanOrEqualToConstant: profile.panelMaxWidth),
+            container.heightAnchor.constraint(lessThanOrEqualTo: hostView.heightAnchor, multiplier: profile.panelMaxHeightMultiplier),
+            container.topAnchor.constraint(greaterThanOrEqualTo: hostView.safeAreaLayoutGuide.topAnchor, constant: 12),
 
-            actionsRow.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 10),
-            actionsRow.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -10),
-            actionsRow.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
+            scrollView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            scrollView.topAnchor.constraint(equalTo: container.topAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+
+            contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
+
+            actionsRow.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
+            actionsRow.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10),
+            actionsRow.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
 
             card.leadingAnchor.constraint(equalTo: actionsRow.leadingAnchor),
             card.trailingAnchor.constraint(equalTo: actionsRow.trailingAnchor),
@@ -270,7 +355,7 @@ final class PreviewOverlayUIController {
             browSlider.leadingAnchor.constraint(equalTo: actionsRow.leadingAnchor),
             browSlider.topAnchor.constraint(equalTo: browLabel.bottomAnchor, constant: 4),
             browSlider.trailingAnchor.constraint(equalTo: actionsRow.trailingAnchor),
-            browSlider.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -10)
+            browSlider.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10)
         ])
 
         fitCheckButton = checkButton
@@ -280,14 +365,19 @@ final class PreviewOverlayUIController {
         fitBrowSliderLabel = browLabel
         fitBrowAdvancedButton = advancedButton
         fitContainerView = container
+        fitPanelScrollView = scrollView
+        applyFitPanelVisibility(.actionsOnly)
         return (checkButton, exportButton, card, browSlider)
     }
 
     func updateFitResultsCard(_ text: String) {
-        fitResultsCardLabel?.isHidden = false
-        fitBrowAdvancedButton?.isHidden = false
         fitResultsCardLabel?.text = text
         fitResultsCardLabel?.accessibilityLabel = text
+        if fitPanelVisibilityState == .resultsWithAdvanced {
+            applyFitPanelVisibility(.resultsWithAdvanced)
+        } else {
+            applyFitPanelVisibility(.resultsCollapsed)
+        }
     }
 
     func updateBrowSliderLabel(percentage: Int) {
@@ -297,8 +387,35 @@ final class PreviewOverlayUIController {
     }
 
     func setBrowControlsVisible(_ visible: Bool) {
-        fitBrowSliderLabel?.isHidden = !visible
-        fitBrowSlider?.isHidden = !visible
+        guard fitPanelVisibilityState != .actionsOnly else { return }
+        if visible {
+            applyFitPanelVisibility(.resultsWithAdvanced)
+        } else {
+            applyFitPanelVisibility(.resultsCollapsed)
+        }
+    }
+
+    func resetFitPanelToActionsOnly() {
+        applyFitPanelVisibility(.actionsOnly)
+    }
+
+    func setFitPanelExpanded(_ expanded: Bool) {
+        fitContainerView?.isHidden = !expanded
+        let title = expanded ? L("scan.preview.fit.tools.hide") : L("scan.preview.fit.tools")
+        if #available(iOS 15.0, *) {
+            var cfg = fitPanelToggleButton?.configuration
+            cfg?.title = title
+            fitPanelToggleButton?.configuration = cfg
+        } else {
+            fitPanelToggleButton?.setTitle(title, for: .normal)
+        }
+    }
+
+    func setFitToolsAvailable(_ available: Bool) {
+        if !available {
+            setFitPanelExpanded(false)
+        }
+        fitPanelToggleButton?.isHidden = !available
     }
 
     func addOrUpdateDerivedMeasurements(
@@ -308,6 +425,7 @@ final class PreviewOverlayUIController {
         depthMm: Float,
         confidence: Float
     ) {
+        let profile = Self.layoutProfile(for: hostView)
         let text = String(
             format: L("scan.preview.measurements.format"),
             Int(round(circumferenceMm)),
@@ -330,7 +448,7 @@ final class PreviewOverlayUIController {
         label.textAlignment = .center
         label.numberOfLines = 2
         label.text = text
-        label.backgroundColor = DesignSystem.Colors.overlay.withAlphaComponent(0.82)
+        label.backgroundColor = DesignSystem.Colors.overlayCard
         label.layer.cornerRadius = DesignSystem.CornerRadius.medium
         label.layer.masksToBounds = true
         label.accessibilityLabel = text
@@ -338,7 +456,7 @@ final class PreviewOverlayUIController {
 
         hostView.addSubview(label)
         NSLayoutConstraint.activate([
-            label.bottomAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.bottomAnchor, constant: -132),
+            label.bottomAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.bottomAnchor, constant: -profile.measurementsBottomInset),
             label.centerXAnchor.constraint(equalTo: hostView.centerXAnchor),
             label.topAnchor.constraint(greaterThanOrEqualTo: hostView.safeAreaLayoutGuide.topAnchor, constant: 12),
             label.leadingAnchor.constraint(greaterThanOrEqualTo: hostView.leadingAnchor, constant: 20),
@@ -373,6 +491,31 @@ final class PreviewOverlayUIController {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in
             self?.removeVerifyHint()
+        }
+    }
+
+    private func applyFitPanelVisibility(_ state: FitPanelVisibilityState) {
+        // Visibility matrix (single source of truth):
+        // actionsOnly         => show check/export only
+        // resultsCollapsed    => show results + advanced toggle
+        // resultsWithAdvanced => show results + advanced toggle + brow controls
+        fitPanelVisibilityState = state
+        switch state {
+        case .actionsOnly:
+            fitResultsCardLabel?.isHidden = true
+            fitBrowAdvancedButton?.isHidden = true
+            fitBrowSliderLabel?.isHidden = true
+            fitBrowSlider?.isHidden = true
+        case .resultsCollapsed:
+            fitResultsCardLabel?.isHidden = false
+            fitBrowAdvancedButton?.isHidden = false
+            fitBrowSliderLabel?.isHidden = true
+            fitBrowSlider?.isHidden = true
+        case .resultsWithAdvanced:
+            fitResultsCardLabel?.isHidden = false
+            fitBrowAdvancedButton?.isHidden = false
+            fitBrowSliderLabel?.isHidden = false
+            fitBrowSlider?.isHidden = false
         }
     }
 

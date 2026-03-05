@@ -48,8 +48,12 @@ enum DesignSystem {
             dark: UIColor.white.withAlphaComponent(0.20)
         )
         static let overlay = adaptive(
-            light: UIColor.black.withAlphaComponent(0.62),
-            dark: UIColor.black.withAlphaComponent(0.72)
+            light: UIColor.black.withAlphaComponent(0.52),
+            dark: UIColor.black.withAlphaComponent(0.62)
+        )
+        static let overlayCard = adaptive(
+            light: UIColor.black.withAlphaComponent(0.44),
+            dark: UIColor.black.withAlphaComponent(0.56)
         )
         static let qualityGood = UIColor.systemGreen
         static let qualityOk = UIColor.systemOrange
@@ -69,12 +73,12 @@ enum DesignSystem {
 
     enum Typography {
         static func largeTitle() -> UIFont { font(.largeTitle, 32, .bold) }
-        static func title() -> UIFont { font(.title2, 20, .bold) }
-        static func body() -> UIFont { font(.body, 15, .regular) }
-        static func bodyEmphasis() -> UIFont { font(.body, 15, .semibold) }
-        static func caption() -> UIFont { font(.footnote, 13, .medium) }
+        static func title() -> UIFont { font(.title2, 21, .bold) }
+        static func body() -> UIFont { font(.body, 16, .regular) }
+        static func bodyEmphasis() -> UIFont { font(.body, 16, .semibold) }
+        static func caption() -> UIFont { font(.footnote, 14, .medium) }
         static func button() -> UIFont { font(.headline, 17, .semibold) }
-        static func buttonSecondary() -> UIFont { font(.subheadline, 15, .semibold) }
+        static func buttonSecondary() -> UIFont { font(.subheadline, 16, .semibold) }
 
         private static func font(_ style: UIFont.TextStyle, _ size: CGFloat, _ weight: UIFont.Weight) -> UIFont {
             UIFontMetrics(forTextStyle: style).scaledFont(for: UIFont.systemFont(ofSize: size, weight: weight))
@@ -82,19 +86,19 @@ enum DesignSystem {
     }
 
     enum Spacing {
-        static let xs: CGFloat = 6
-        static let s: CGFloat = 10
-        static let m: CGFloat = 14
-        static let l: CGFloat = 18
-        static let xl: CGFloat = 24
-        static let xxl: CGFloat = 32
+        static let xs: CGFloat = 8
+        static let s: CGFloat = 12
+        static let m: CGFloat = 16
+        static let l: CGFloat = 20
+        static let xl: CGFloat = 28
+        static let xxl: CGFloat = 36
     }
 
     enum CornerRadius {
-        static let small: CGFloat = 10
-        static let medium: CGFloat = 14
-        static let large: CGFloat = 18
-        static let xl: CGFloat = 22
+        static let small: CGFloat = 12
+        static let medium: CGFloat = 16
+        static let large: CGFloat = 20
+        static let xl: CGFloat = 24
     }
 
     enum ButtonStyle {
@@ -174,18 +178,18 @@ enum DesignSystem {
     private static func contentInsets(for size: ButtonSize) -> NSDirectionalEdgeInsets {
         switch size {
         case .large:
-            return NSDirectionalEdgeInsets(top: 16, leading: 20, bottom: 16, trailing: 20)
+            return NSDirectionalEdgeInsets(top: 16, leading: 22, bottom: 16, trailing: 22)
         case .regular:
-            return NSDirectionalEdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16)
+            return NSDirectionalEdgeInsets(top: 13, leading: 18, bottom: 13, trailing: 18)
         }
     }
 
     private static func legacyInsets(for size: ButtonSize) -> UIEdgeInsets {
         switch size {
         case .large:
-            return UIEdgeInsets(top: 16, left: 20, bottom: 16, right: 20)
+            return UIEdgeInsets(top: 16, left: 22, bottom: 16, right: 22)
         case .regular:
-            return UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+            return UIEdgeInsets(top: 13, left: 18, bottom: 13, right: 18)
         }
     }
 

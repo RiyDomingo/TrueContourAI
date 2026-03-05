@@ -253,6 +253,8 @@
 "scan.preview.measurements.format" = "Est. measurements: C %d mm · W %d mm · D %d mm (%d%%)";
 "scan.preview.fit.check" = "Fit Model Check";
 "scan.preview.fit.export" = "Export Fit Pack";
+"scan.preview.fit.tools" = "Developer Tools";
+"scan.preview.fit.tools.hide" = "Hide Tools";
 "scan.preview.fit.results.title" = "Fit Check Results";
 "scan.preview.fit.results.pending" = "Run Fit Model Check to compute fit metrics.";
 "scan.preview.fit.brow.advanced" = "Advanced: Adjust brow plane";

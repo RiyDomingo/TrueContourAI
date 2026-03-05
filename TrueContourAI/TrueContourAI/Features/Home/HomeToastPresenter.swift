@@ -15,7 +15,7 @@ final class HomeToastPresenter {
         label.text = message
         label.textColor = DesignSystem.Colors.textPrimary
         label.font = DesignSystem.Typography.caption()
-        label.backgroundColor = DesignSystem.Colors.overlay
+        label.backgroundColor = DesignSystem.Colors.overlayCard
         label.textAlignment = .center
         label.numberOfLines = 0
         label.accessibilityIdentifier = "toastLabel"

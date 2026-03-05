@@ -93,6 +93,8 @@ final class ScanPreviewCoordinator {
     private var fitEarPickTapGesture: UITapGestureRecognizer?
     private var browPlaneDropFromTopFraction: Float = 0.25
     private var showsAdvancedBrowControls = false
+    private var showsFitPanel = false
+    private var isPreviewMeshingActive = false
 
     private enum FitEarPickState {
         case none
@@ -136,6 +138,8 @@ final class ScanPreviewCoordinator {
         manualEarRightMeters = nil
         fitEarPickState = .none
         showsAdvancedBrowControls = false
+        showsFitPanel = false
+        isPreviewMeshingActive = false
         return sessionID
     }
 
@@ -276,6 +280,7 @@ final class ScanPreviewCoordinator {
         )
         let quality = previewViewModel.evaluateScanQuality(report: qualityReport)
         previewViewModel.setScanQuality(quality)
+        isPreviewMeshingActive = true
         scanFlowState.setPhase(.preview)
         previewViewModel.setPhase(.preview)
 
@@ -324,12 +329,14 @@ final class ScanPreviewCoordinator {
             DispatchQueue.main.async {
                 guard let self, self.isCurrentPreviewSession(previewSessionID) else { return }
                 self.previewViewModel.setMeshForExport(mesh)
+                self.isPreviewMeshingActive = false
                 vc?.rightButton.isEnabled = true
                 vc?.rightButton.alpha = 1.0
                 self.saveExportViewState.setMeshingStatusText(L("scan.preview.readyToSave"))
                 self.saveExportViewState.setMeshingSpinnerActive(false)
                 self.meshingProgressIndicator?.setProgress(1, animated: true)
                 self.meshingProgressIndicator?.isHidden = true
+                self.previewOverlayUI.setFitToolsAvailable(true)
                 self.cancelMeshingTimeout()
                 Log.scan.info("Mesh ready for export")
             }
@@ -749,13 +756,25 @@ final class ScanPreviewCoordinator {
         controls.export.removeTarget(nil, action: nil, for: .allEvents)
         controls.browSlider.removeTarget(nil, action: nil, for: .allEvents)
         previewOverlayUI.fitBrowAdvancedButton?.removeTarget(nil, action: nil, for: .allEvents)
+        previewOverlayUI.fitPanelToggleButton?.removeTarget(nil, action: nil, for: .allEvents)
+        if latestFitCheckResult == nil {
+            previewOverlayUI.resetFitPanelToActionsOnly()
+        }
+        previewOverlayUI.setFitToolsAvailable(!isPreviewMeshingActive)
+        previewOverlayUI.setFitPanelExpanded(showsFitPanel)
         controls.browSlider.value = browPlaneDropFromTopFraction
         previewOverlayUI.updateBrowSliderLabel(percentage: Int((browPlaneDropFromTopFraction * 100).rounded()))
         previewOverlayUI.setBrowControlsVisible(showsAdvancedBrowControls)
+        previewOverlayUI.fitPanelToggleButton?.addTarget(self, action: #selector(fitPanelToggleTapped), for: .touchUpInside)
         controls.check.addTarget(self, action: #selector(fitModelCheckTapped), for: .touchUpInside)
         controls.export.addTarget(self, action: #selector(exportFitPackTapped), for: .touchUpInside)
         previewOverlayUI.fitBrowAdvancedButton?.addTarget(self, action: #selector(fitBrowAdvancedTapped), for: .touchUpInside)
         controls.browSlider.addTarget(self, action: #selector(fitBrowSliderChanged(_:)), for: .valueChanged)
+    }
+
+    @objc private func fitPanelToggleTapped() {
+        showsFitPanel.toggle()
+        previewOverlayUI.setFitPanelExpanded(showsFitPanel)
     }
 
     @objc private func fitBrowAdvancedTapped() {
@@ -975,7 +994,7 @@ final class ScanPreviewCoordinator {
         previewOverlayUI.addScanQualityLabel(
             to: hostView,
             quality: quality,
-            anchor: previewOverlayUI.verifyEarButton
+            anchor: nil
         )
     }
 
@@ -992,6 +1011,7 @@ final class ScanPreviewCoordinator {
             sceneView.removeGestureRecognizer(tap)
         }
         fitEarPickTapGesture = nil
+        isPreviewMeshingActive = false
         meshingStatusLabel?.removeFromSuperview()
         meshingStatusLabel = nil
         meshingActivityIndicator?.removeFromSuperview()
