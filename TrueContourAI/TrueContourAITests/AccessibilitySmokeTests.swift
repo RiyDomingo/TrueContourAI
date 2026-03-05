@@ -14,7 +14,7 @@ final class AccessibilitySmokeTests: XCTestCase {
             settingsStore: SettingsStore(),
             earServiceFactory: { nil }
         )
-        let vc = ViewController(dependencies: deps)
+        let vc = HomeViewController(dependencies: deps)
         _ = vc.view
 
         let startButton = vc.view.findView(withAccessibilityIdentifier: "startScanButton")

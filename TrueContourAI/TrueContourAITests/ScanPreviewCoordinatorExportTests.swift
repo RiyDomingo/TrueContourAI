@@ -145,10 +145,10 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
         XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: nil, hasMesh: false), "meshNotReady")
     }
 
-    func testDebugSavePrecheckBlocksWhenNoExportFormatsEnabled() {
+    func testDebugSavePrecheckBlocksWhenGLTFExportDisabled() {
         let settings = SettingsStore(defaults: defaults)
         settings.exportGLTF = false
-        settings.exportOBJ = false
+        settings.exportOBJ = true
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
             scanService: ScanService(scansRootURL: tempDir, defaults: defaults),
@@ -157,7 +157,7 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
             onToast: nil
         )
 
-        XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: nil, hasMesh: true), "noExportFormatsEnabled")
+        XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: nil, hasMesh: true), "gltfExportRequired")
     }
 
     func testDebugSavePrecheckReady() {

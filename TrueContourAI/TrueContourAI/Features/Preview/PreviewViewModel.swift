@@ -38,30 +38,45 @@ final class PreviewViewModel {
         verifiedEarOverlay = overlay
     }
 
-    func evaluateScanQuality(for pointCloud: SCPointCloud) -> ScanQuality {
-        evaluateScanQuality(pointCount: Int(pointCloud.pointCount))
-    }
-
-    func evaluateScanQuality(pointCount: Int) -> ScanQuality {
-        if pointCount >= 200_000 {
+    func evaluateScanQuality(report: ScanQualityReport) -> ScanQuality {
+        if report.isExportRecommended && report.qualityScore >= 0.8 {
             return .init(
                 title: L("scan.preview.quality.great"),
                 color: DesignSystem.Colors.qualityGood,
                 tip: L("scan.preview.quality.tip.great")
             )
-        } else if pointCount >= 100_000 {
+        } else if report.isExportRecommended && report.qualityScore >= 0.6 {
             return .init(
                 title: L("scan.preview.quality.ok"),
                 color: DesignSystem.Colors.qualityOk,
                 tip: L("scan.preview.quality.tip.ok")
             )
-        } else {
-            return .init(
-                title: L("scan.preview.quality.tryagain"),
-                color: DesignSystem.Colors.qualityBad,
-                tip: L("scan.preview.quality.tip.tryagain")
-            )
         }
+
+        return .init(
+            title: L("scan.preview.quality.tryagain"),
+            color: DesignSystem.Colors.qualityBad,
+            tip: L("scan.preview.quality.tip.tryagain")
+        )
+    }
+
+    func evaluateScanQuality(for pointCloud: SCPointCloud) -> ScanQuality {
+        evaluateScanQuality(pointCount: Int(pointCloud.pointCount))
+    }
+
+    func evaluateScanQuality(pointCount: Int) -> ScanQuality {
+        let approximateReport = ScanQualityReport(
+            pointCount: pointCount,
+            validPointCount: pointCount,
+            widthMeters: 0,
+            heightMeters: 0,
+            depthMeters: 0,
+            qualityScore: pointCount >= 200_000 ? 0.85 : (pointCount >= 100_000 ? 0.65 : 0.45),
+            isExportRecommended: pointCount >= 100_000,
+            advice: .rescanSlowly,
+            reason: ""
+        )
+        return evaluateScanQuality(report: approximateReport)
     }
 
     func clearVerification() {

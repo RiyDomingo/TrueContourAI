@@ -28,6 +28,7 @@ protocol ReconstructionManaging: AnyObject {
 
 protocol CameraManaging: AnyObject {
     var delegate: CameraManagerDelegate! { get set }
+    var isSessionRunning: Bool { get }
 
     func configureCaptureSession(maxResolution: Int)
     func startSession(_ completion: ((CameraManager.SessionSetupResult) -> Void)?)
@@ -103,6 +104,8 @@ final class CameraManagerAdapter: CameraManaging {
         get { manager.delegate }
         set { manager.delegate = newValue }
     }
+
+    var isSessionRunning: Bool { manager.isSessionRunning }
 
     func configureCaptureSession(maxResolution: Int) {
         manager.configureCaptureSession(maxResolution: maxResolution)
@@ -403,6 +406,8 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     }
 
     @objc func shutterTapped(_ sender: UIButton?) {
+        guard presentedViewController == nil, cameraManager.isSessionRunning else { return }
+
         switch state {
         case .default:
             startCountdown { [weak self] in
@@ -412,7 +417,6 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
             hapticEngine.scanningCanceled()
             cancelCountdown()
         case .scanning:
-            hapticEngine.scanningFinished()
             stopScanning(reason: .finished)
         }
     }
@@ -429,7 +433,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         assimilatedFrameIndex = 0
         consecutiveFailedCount = 0
         meshTexturing.reset()
-        emitGuidance("Move slowly around your head")
+        emitGuidance(L("scanning.guidance.start"))
         startAutoFinishTimerIfNeeded()
     }
 
@@ -508,7 +512,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
                 acceleration.z * acceleration.z
             )
             if magnitude > self.unstableMotionThreshold {
-                self.emitGuidance("Move slower and keep your head steady")
+                self.emitGuidance(L("scanning.guidance.motion"))
             }
         }
     }
@@ -520,7 +524,10 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     // MARK: - CameraManagerDelegate
 
     func cameraDidOutput(colorBuffer: CVPixelBuffer, depthBuffer: CVPixelBuffer, depthCalibrationData: AVCameraCalibrationData) {
-        let isScanning = state == .scanning
+        var isScanning = false
+        DispatchQueue.main.sync {
+            isScanning = self.state == .scanning
+        }
         let pointCloud: SCPointCloud
 
         if isScanning {
@@ -571,16 +578,16 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
             assimilatedFrameIndex += 1
             consecutiveFailedCount = 0
             if metadata.result == .poorTracking {
-                emitGuidance("Tracking is weak. Keep face in view and move slowly")
+                emitGuidance(L("scanning.guidance.poorTracking"))
             } else if assimilatedFrameIndex % 20 == 0 {
-                emitGuidance("Great tracking. Continue rotating")
+                emitGuidance(L("scanning.guidance.goodTracking"))
             }
         case .failed:
             if requiresManualFinish {
                 break
             }
             consecutiveFailedCount += 1
-            emitGuidance("Tracking lost. Pause briefly, then continue")
+            emitGuidance(L("scanning.guidance.trackingLost"))
             let belowMinFrames = statistics.succeededCount < minSucceededFramesForCompletion
             let exceededFailureTolerance = consecutiveFailedCount >= 5
             if belowMinFrames && exceededFailureTolerance {
@@ -718,16 +725,26 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     @objc private func thermalStateChanged(_ notification: Notification) {
         guard let processInfo = notification.object as? ProcessInfo else { return }
         if processInfo.thermalState == .serious || processInfo.thermalState == .critical {
-            let alert = UIAlertController(
-                title: L("scanning.thermal.title"),
-                message: L("scanning.thermal.message"),
-                preferredStyle: .alert
-            )
-            alert.addAction(UIAlertAction(title: L("common.ok"), style: .default, handler: { [weak self] _ in
-                self?.dismiss(animated: true)
-            }))
-            present(alert, animated: true)
+            handleCriticalThermalState()
         }
+    }
+
+    private func handleCriticalThermalState() {
+        if state == .scanning {
+            stopScanning(reason: .finished)
+        }
+
+        let alert = UIAlertController(
+            title: L("scanning.thermal.title"),
+            message: L("scanning.thermal.message"),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: L("common.ok"), style: .default, handler: { [weak self] _ in
+            self?.dismiss(animated: true)
+        }))
+
+        guard presentedViewController == nil else { return }
+        present(alert, animated: true)
     }
 
     private func installVolumeShutterIfNeeded() {
@@ -787,6 +804,10 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
     func debug_triggerViewWillDisappear() {
         viewWillDisappear(false)
+    }
+
+    func debug_handleCriticalThermalState() {
+        handleCriticalThermalState()
     }
 #endif
 }

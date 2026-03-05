@@ -214,87 +214,6 @@ final class SettingsViewController: UITableViewController {
                             store.scanQualityConfig = cfg
                         }
                     )
-                ),
-                Row(
-                    title: L("settings.advanced.decimateRatio.title"),
-                    subtitle: L("settings.advanced.decimateRatio.subtitle"),
-                    kind: .option(
-                        options: [
-                            .init(title: L("settings.advanced.decimateRatio.low"), value: 75),
-                            .init(title: L("settings.advanced.decimateRatio.recommended"), value: 100),
-                            .init(title: L("settings.advanced.decimateRatio.high"), value: 125)
-                        ],
-                        selected: { [store] in Int(round(store.processingConfig.decimateRatio * 100)) },
-                        setSelected: { [store] value in
-                            var cfg = store.processingConfig
-                            cfg.decimateRatio = Float(value) / 100.0
-                            store.processingConfig = cfg
-                        }
-                    )
-                ),
-                Row(
-                    title: L("settings.advanced.outlierSigma.title"),
-                    subtitle: L("settings.advanced.outlierSigma.subtitle"),
-                    kind: .option(
-                        options: [
-                            .init(title: L("settings.advanced.outlierSigma.low"), value: 20),
-                            .init(title: L("settings.advanced.outlierSigma.recommended"), value: 30),
-                            .init(title: L("settings.advanced.outlierSigma.high"), value: 40)
-                        ],
-                        selected: { [store] in Int(round(store.processingConfig.outlierSigma * 10)) },
-                        setSelected: { [store] value in
-                            var cfg = store.processingConfig
-                            cfg.outlierSigma = Float(value) / 10.0
-                            store.processingConfig = cfg
-                        }
-                    )
-                ),
-                Row(
-                    title: L("settings.advanced.meshResolution.title"),
-                    subtitle: L("settings.advanced.meshResolution.subtitle"),
-                    kind: .option(
-                        options: [
-                            .init(title: L("settings.advanced.meshResolution.low"), value: 5),
-                            .init(title: L("settings.advanced.meshResolution.recommended"), value: 6),
-                            .init(title: L("settings.advanced.meshResolution.high"), value: 7)
-                        ],
-                        selected: { [store] in store.processingConfig.meshResolution },
-                        setSelected: { [store] value in
-                            var cfg = store.processingConfig
-                            cfg.meshResolution = value
-                            store.processingConfig = cfg
-                        }
-                    )
-                ),
-                Row(
-                    title: L("settings.advanced.meshSmoothness.title"),
-                    subtitle: L("settings.advanced.meshSmoothness.subtitle"),
-                    kind: .option(
-                        options: [
-                            .init(title: L("settings.advanced.meshSmoothness.low"), value: 2),
-                            .init(title: L("settings.advanced.meshSmoothness.recommended"), value: 3),
-                            .init(title: L("settings.advanced.meshSmoothness.high"), value: 4)
-                        ],
-                        selected: { [store] in store.processingConfig.meshSmoothness },
-                        setSelected: { [store] value in
-                            var cfg = store.processingConfig
-                            cfg.meshSmoothness = value
-                            store.processingConfig = cfg
-                        }
-                    )
-                ),
-                Row(
-                    title: L("settings.advanced.cropBelowNeck.title"),
-                    subtitle: L("settings.advanced.cropBelowNeck.subtitle"),
-                    kind: .toggle(
-                        isOn: { [store] in store.processingConfig.cropBelowNeck },
-                        setOn: { [store] value in
-                            var cfg = store.processingConfig
-                            cfg.cropBelowNeck = value
-                            store.processingConfig = cfg
-                        },
-                        identifier: "settings.processingCropBelowNeck"
-                    )
                 )
             ]),
             (.storage, L("settings.section.storage"), [
@@ -420,20 +339,9 @@ final class SettingsViewController: UITableViewController {
         let row = sender.tag % 100
         guard sections.indices.contains(section), sections[section].rows.indices.contains(row) else { return }
         let item = sections[section].rows[row]
-        if case .toggle(_, let setOn, _) = item.kind {
-            if item.identifier == "settings.exportGLTF",
-               sender.isOn == false,
-               store.exportOBJ == false {
-                sender.setOn(true, animated: true)
-                showError(
-                    title: L("settings.export.minimum.title"),
-                    message: L("settings.export.minimum.message")
-                )
-                return
-            }
-            if item.identifier == "settings.exportOBJ",
-               sender.isOn == false,
-               store.exportGLTF == false {
+        if case .toggle(_, let setOn, let toggleIdentifier) = item.kind {
+            if toggleIdentifier == "settings.exportGLTF",
+               sender.isOn == false {
                 sender.setOn(true, animated: true)
                 showError(
                     title: L("settings.export.minimum.title"),
@@ -468,9 +376,9 @@ final class SettingsViewController: UITableViewController {
     private func refreshStorageUsage() {
         updateStorageUsageRow(with: L("settings.calculating"))
 
+        let scanService = self.scanService
         DispatchQueue.global(qos: .utility).async { [weak self] in
-            guard let self else { return }
-            let usage = self.formatStorageUsage()
+            let usage = Self.formatStorageUsage(scanService: scanService)
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
                 self.updateStorageUsageRow(with: usage)
@@ -507,7 +415,7 @@ final class SettingsViewController: UITableViewController {
         }
     }
 
-    private func formatStorageUsage() -> String {
+    private static func formatStorageUsage(scanService: SettingsScanServicing) -> String {
         if case .failure = scanService.ensureScansRootFolder() {
             return L("settings.storage.unavailable")
         }
@@ -518,7 +426,7 @@ final class SettingsViewController: UITableViewController {
         return formatter.string(fromByteCount: bytes)
     }
 
-    private func directorySize(at url: URL) -> Int64 {
+    private static func directorySize(at url: URL) -> Int64 {
         guard let enumerator = FileManager.default.enumerator(
             at: url,
             includingPropertiesForKeys: [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey],

@@ -39,7 +39,7 @@ final class ScanPreviewCoordinator {
 
     private enum SavePrecheckResult: Equatable {
         case blockedByQualityGate
-        case noExportFormatsEnabled
+        case gltfExportRequired
         case meshNotReady
         case ready
     }
@@ -79,6 +79,7 @@ final class ScanPreviewCoordinator {
     private let meshingTimeoutController = MeshingTimeoutController()
     private var didShowMeshingTimeoutAlert = false
     private let meshingTimeoutSeconds: TimeInterval = 25
+    private var currentPreviewSessionID = UUID()
     private var latestSessionMetrics: ScanFlowState.ScanSessionMetrics?
     private var latestQualityReport: ScanQualityReport?
     private var latestMeasurementSummary: LocalMeasurementGenerationService.ResultSummary?
@@ -108,8 +109,23 @@ final class ScanPreviewCoordinator {
         self.onExportResult = onExportResult
     }
 
+    private func startPreviewSession() -> UUID {
+        let sessionID = UUID()
+        currentPreviewSessionID = sessionID
+        return sessionID
+    }
+
+    private func invalidatePreviewSession() {
+        currentPreviewSessionID = UUID()
+    }
+
+    private func isCurrentPreviewSession(_ sessionID: UUID) -> Bool {
+        currentPreviewSessionID == sessionID
+    }
+
     func presentExistingScan(_ item: ScanService.ScanItem) {
         guard let presenter else { return }
+        let sessionID = startPreviewSession()
         let skipGLTF = ProcessInfo.processInfo.arguments.contains("ui-test-skip-gltf")
         let existingSummary = scanService.resolveScanSummary(from: item.folderURL)
         if skipGLTF {
@@ -146,7 +162,7 @@ final class ScanPreviewCoordinator {
         scenePreviewVC = vc
         activePreviewVC = vc
         presenter.present(vc, animated: true) { [weak self, weak vc] in
-            guard let self, let vc else { return }
+            guard let self, let vc, self.isCurrentPreviewSession(sessionID) else { return }
             if let derived = existingSummary?.derivedMeasurements {
                 self.previewOverlayUI.addOrUpdateDerivedMeasurements(
                     to: vc.view,
@@ -205,6 +221,7 @@ final class ScanPreviewCoordinator {
         sessionMetrics: ScanFlowState.ScanSessionMetrics?
     ) {
         guard let presenter else { return }
+        let previewSessionID = startPreviewSession()
 
         Log.scan.info("Presenting preview after scan")
         latestSessionMetrics = sessionMetrics
@@ -222,6 +239,7 @@ final class ScanPreviewCoordinator {
             )
         )
         latestQualityReport = qualityReport
+        latestSessionMetrics = sessionMetrics?.withOverallConfidence(qualityReport.qualityScore)
         Log.scanning.info(
             """
             Scan quality report: raw=\(qualityReport.pointCount, privacy: .public) \
@@ -231,7 +249,7 @@ final class ScanPreviewCoordinator {
             exportable=\(qualityReport.isExportRecommended, privacy: .public)
             """
         )
-        let quality = previewViewModel.evaluateScanQuality(pointCount: qualityReport.validPointCount)
+        let quality = previewViewModel.evaluateScanQuality(report: qualityReport)
         previewViewModel.setScanQuality(quality)
         scanFlowState.setPhase(.preview)
         previewViewModel.setPhase(.preview)
@@ -258,7 +276,7 @@ final class ScanPreviewCoordinator {
         vc.rightButton.isEnabled = false
         DesignSystem.updateButtonEnabled(vc.rightButton, style: .primary)
         addMeshingStatusLabel(to: vc)
-        startMeshingTimeout(in: vc)
+        startMeshingTimeout(in: vc, sessionID: previewSessionID)
         saveExportViewState.configure(
             previewVC: vc,
             meshingStatusLabel: meshingStatusLabel,
@@ -267,12 +285,13 @@ final class ScanPreviewCoordinator {
 
         vc.onTexturedMeshGenerated = { [weak self, weak vc] mesh in
             DispatchQueue.main.async {
-                self?.previewViewModel.setMeshForExport(mesh)
+                guard let self, self.isCurrentPreviewSession(previewSessionID) else { return }
+                self.previewViewModel.setMeshForExport(mesh)
                 vc?.rightButton.isEnabled = true
                 vc?.rightButton.alpha = 1.0
-                self?.saveExportViewState.setMeshingStatusText(L("scan.preview.readyToSave"))
-                self?.saveExportViewState.setMeshingSpinnerActive(false)
-                self?.cancelMeshingTimeout()
+                self.saveExportViewState.setMeshingStatusText(L("scan.preview.readyToSave"))
+                self.saveExportViewState.setMeshingSpinnerActive(false)
+                self.cancelMeshingTimeout()
                 Log.scan.info("Mesh ready for export")
             }
         }
@@ -283,7 +302,7 @@ final class ScanPreviewCoordinator {
                 Log.scan.debug("Measurement generation progress: \(progress, privacy: .public)")
             },
             completion: { [weak self] result in
-                guard let self else { return }
+                guard let self, self.isCurrentPreviewSession(previewSessionID) else { return }
                 switch result {
                 case .success(let summary):
                     self.latestMeasurementSummary = summary
@@ -302,7 +321,7 @@ final class ScanPreviewCoordinator {
         activePreviewVC = container
         scanningVC.dismiss(animated: false) { [weak self] in
             presenter.present(container, animated: true) { [weak self] in
-                guard let self else { return }
+                guard let self, self.isCurrentPreviewSession(previewSessionID) else { return }
                 self.addVerifyEarUI(to: vc)
                 if let quality = self.previewViewModel.scanQuality {
                     self.addScanQualityLabel(to: vc, quality: quality)
@@ -316,6 +335,7 @@ final class ScanPreviewCoordinator {
 
     @objc private func dismissPreviewTapped() {
         Log.ui.info("Dismissed preview")
+        invalidatePreviewSession()
         removeVerifyEarUI()
         cancelMeshingTimeout()
         scanFlowState.setPhase(.idle)
@@ -353,6 +373,7 @@ final class ScanPreviewCoordinator {
     @objc private func verifyEarTapped() {
         guard let previewVC = scenePreviewVC else { return }
         guard !isVerifyingEar else { return }
+        let previewSessionID = currentPreviewSessionID
         guard let svc = earService else {
             previewVC.present(
                 alertPresenter.makeAlert(
@@ -383,7 +404,7 @@ final class ScanPreviewCoordinator {
             do {
                 guard let result = try svc.detect(in: snapshot) else {
                     DispatchQueue.main.async { [weak self] in
-                        guard let self else { return }
+                        guard let self, self.isCurrentPreviewSession(previewSessionID) else { return }
                         self.finishVerifyEarUI(title: L("scan.preview.verify"))
                         previewVC.present(
                             self.alertPresenter.makeAlert(
@@ -406,7 +427,7 @@ final class ScanPreviewCoordinator {
                 )
 
                 DispatchQueue.main.async { [weak self] in
-                    guard let self else { return }
+                    guard let self, self.isCurrentPreviewSession(previewSessionID) else { return }
                     self.previewViewModel.setVerifiedEar(
                         image: snapshot,
                         result: result,
@@ -432,7 +453,7 @@ final class ScanPreviewCoordinator {
                 }
             } catch {
                 DispatchQueue.main.async { [weak self] in
-                    guard let self else { return }
+                    guard let self, self.isCurrentPreviewSession(previewSessionID) else { return }
                     let mlElapsed = CFAbsoluteTimeGetCurrent() - mlStart
                     Log.ml.info("Ear verification failed in \(mlElapsed, privacy: .public)s")
                     self.finishVerifyEarUI(title: L("scan.preview.verify"))
@@ -452,6 +473,7 @@ final class ScanPreviewCoordinator {
 
     @objc private func saveFromPreviewTapped() {
         guard let previewVC = scenePreviewVC else { return }
+        let previewSessionID = currentPreviewSessionID
         DesignSystem.hapticPrimary()
 
         let precheck = savePrecheck(qualityReport: latestQualityReport, meshAvailable: previewViewModel.meshForExport != nil)
@@ -472,7 +494,7 @@ final class ScanPreviewCoordinator {
             Log.export.error("Export blocked by quality gate: \(qualityReport.reason, privacy: .public)")
             return
         }
-        if precheck == .noExportFormatsEnabled {
+        if precheck == .gltfExportRequired {
             previewVC.present(
                 alertPresenter.makeAlert(
                     title: L("settings.export.minimum.title"),
@@ -481,7 +503,7 @@ final class ScanPreviewCoordinator {
                 ),
                 animated: true
             )
-            Log.export.error("Export blocked: no export formats enabled")
+            Log.export.error("Export blocked: GLTF export disabled")
             return
         }
 
@@ -547,7 +569,7 @@ final class ScanPreviewCoordinator {
         )
 
             DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
+                guard let self, self.isCurrentPreviewSession(previewSessionID) else { return }
                 let exportElapsed = CFAbsoluteTimeGetCurrent() - exportStart
                 Log.export.info("Export completed in \(exportElapsed, privacy: .public)s")
                 switch exportResult {
@@ -578,7 +600,8 @@ final class ScanPreviewCoordinator {
 #endif
 
                     self.dismissActivePreview(animated: true) { [weak self] in
-                        guard let self else { return }
+                        guard let self, self.isCurrentPreviewSession(previewSessionID) else { return }
+                        self.invalidatePreviewSession()
                         self.saveExportViewState.hideSavingToast()
                         self.removeVerifyEarUI()
                         self.scanFlowState.currentlyPreviewedFolderURL = nil
@@ -619,8 +642,8 @@ final class ScanPreviewCoordinator {
         if let qualityReport, !qualityReport.isExportRecommended {
             return .blockedByQualityGate
         }
-        if !settingsStore.hasAnyExportFormatEnabled {
-            return .noExportFormatsEnabled
+        if !settingsStore.hasRequiredExportFormatsEnabled {
+            return .gltfExportRequired
         }
         if !meshAvailable {
             return .meshNotReady
@@ -695,11 +718,12 @@ final class ScanPreviewCoordinator {
         )
     }
 
-    private func startMeshingTimeout(in previewVC: ScenePreviewViewController) {
+    private func startMeshingTimeout(in previewVC: ScenePreviewViewController, sessionID: UUID) {
         cancelMeshingTimeout()
         didShowMeshingTimeoutAlert = false
         meshingTimeoutController.start(after: meshingTimeoutSeconds) { [weak self, weak previewVC] in
             guard let self, let previewVC else { return }
+            guard self.isCurrentPreviewSession(sessionID) else { return }
             guard self.previewViewModel.phase == .preview else { return }
             guard self.previewViewModel.meshForExport == nil else { return }
             guard !self.didShowMeshingTimeoutAlert else { return }
@@ -742,17 +766,12 @@ final class ScanPreviewCoordinator {
     }
 
     private func dismissActivePreview(animated: Bool, completion: (() -> Void)? = nil) {
-        if let activePreviewVC, activePreviewVC.presentingViewController != nil {
-            activePreviewVC.dismiss(animated: animated, completion: completion)
+        guard let activePreviewVC, activePreviewVC.presentingViewController != nil else {
+            completion?()
             return
         }
 
-        if let presenter, presenter.presentedViewController != nil {
-            presenter.dismiss(animated: animated, completion: completion)
-            return
-        }
-
-        completion?()
+        activePreviewVC.dismiss(animated: animated, completion: completion)
     }
 
     private func finishVerifyEarUI(title: String) {
@@ -803,8 +822,8 @@ final class ScanPreviewCoordinator {
         switch savePrecheck(qualityReport: qualityReport, meshAvailable: hasMesh) {
         case .blockedByQualityGate:
             return "blockedByQualityGate"
-        case .noExportFormatsEnabled:
-            return "noExportFormatsEnabled"
+        case .gltfExportRequired:
+            return "gltfExportRequired"
         case .meshNotReady:
             return "meshNotReady"
         case .ready:

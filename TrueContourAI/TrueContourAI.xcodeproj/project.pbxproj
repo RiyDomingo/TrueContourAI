@@ -25,7 +25,6 @@
 		136674272F16AED100F7E18B /* App/SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 136674262F16AED100F7E18B /* App/SceneDelegate.swift */; };
 		136674292F1794DF00F7E18B /* Features/Home/ScanCardCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 136674282F1794DF00F7E18B /* Features/Home/ScanCardCell.swift */; };
 		136865B62F20E63C005034DD /* Core/Utilities/DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 136865B52F20E63C005034DD /* Core/Utilities/DesignSystem.swift */; };
-		137465792F12A21D00C2772D /* Features/Scan/HeadScanningViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 137465782F12A21D00C2772D /* Features/Scan/HeadScanningViewController.swift */; };
 		1374657B2F12A2C300C2772D /* Features/Scan/HeadMeasurementService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1374657A2F12A2C300C2772D /* Features/Scan/HeadMeasurementService.swift */; };
 		1374657E2F150C9C00C2772D /* Resources/MLModels/SCEarLandmarking.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 1374657C2F150C9C00C2772D /* Resources/MLModels/SCEarLandmarking.mlmodel */; };
 		1374657F2F150C9C00C2772D /* Resources/MLModels/SCEarTrackingModel.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 1374657D2F150C9C00C2772D /* Resources/MLModels/SCEarTrackingModel.mlmodel */; };
@@ -52,6 +51,7 @@
 		13DD59C42F228A0000A33CAF /* Features/Home/StartScanCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59C32F228A0000A33CAF /* Features/Home/StartScanCardView.swift */; };
 		13DD59C62F228A0000A33CAF /* Features/Home/HomeActionRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59C52F228A0000A33CAF /* Features/Home/HomeActionRowView.swift */; };
 		13DD59C82F228A0000A33CAF /* Features/Home/RecentScansView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59C72F228A0000A33CAF /* Features/Home/RecentScansView.swift */; };
+		13DD59CA2F228A0000A33CAF /* Features/Home/HomeToastPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59C92F228A0000A33CAF /* Features/Home/HomeToastPresenter.swift */; };
 		13E2D3F42F1CE978003DE022 /* Core/Services/ScanService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13E2D3F32F1CE978003DE022 /* Core/Services/ScanService.swift */; };
 		13E2D3F62F1CF4E3003DE022 /* Features/Preview/PreviewContainerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13E2D3F52F1CF4E3003DE022 /* Features/Preview/PreviewContainerViewController.swift */; };
 		13E2D4042F1D0100003DE022 /* ScanServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13E2D4012F1D0100003DE022 /* ScanServiceTests.swift */; };
@@ -76,7 +76,7 @@
 		13F1A0192F6A123400111111 /* SettingsViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F1A01A2F6A123400111111 /* SettingsViewControllerTests.swift */; };
 		13FA01012F7B000100ABCDEF /* StandardCyborgFusion in Frameworks */ = {isa = PBXBuildFile; productRef = 766314032CEB185300CC7AF3 /* StandardCyborgFusion */; };
 		7642B7FC21E679E800BC45C7 /* App/AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7642B7FB21E679E800BC45C7 /* App/AppDelegate.swift */; };
-		7642B7FE21E679E800BC45C7 /* Features/Home/ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7642B7FD21E679E800BC45C7 /* Features/Home/ViewController.swift */; };
+		7642B7FE21E679E800BC45C7 /* Features/Home/HomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7642B7FD21E679E800BC45C7 /* Features/Home/HomeViewController.swift */; };
 		7642B80321E679E900BC45C7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7642B80221E679E900BC45C7 /* Assets.xcassets */; };
 		7642B80621E679E900BC45C7 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7642B80421E679E900BC45C7 /* LaunchScreen.storyboard */; };
 		766314042CEB185300CC7AF3 /* StandardCyborgFusion in Frameworks */ = {isa = PBXBuildFile; productRef = 766314032CEB185300CC7AF3 /* StandardCyborgFusion */; };
@@ -136,7 +136,6 @@
 		136674262F16AED100F7E18B /* App/SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/SceneDelegate.swift; sourceTree = "<group>"; };
 		136674282F1794DF00F7E18B /* Features/Home/ScanCardCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/ScanCardCell.swift; sourceTree = "<group>"; };
 		136865B52F20E63C005034DD /* Core/Utilities/DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Utilities/DesignSystem.swift; sourceTree = "<group>"; };
-		137465782F12A21D00C2772D /* Features/Scan/HeadScanningViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Scan/HeadScanningViewController.swift; sourceTree = "<group>"; };
 		1374657A2F12A2C300C2772D /* Features/Scan/HeadMeasurementService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Scan/HeadMeasurementService.swift; sourceTree = "<group>"; };
 		1374657C2F150C9C00C2772D /* Resources/MLModels/SCEarLandmarking.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = Resources/MLModels/SCEarLandmarking.mlmodel; sourceTree = "<group>"; };
 		1374657D2F150C9C00C2772D /* Resources/MLModels/SCEarTrackingModel.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = Resources/MLModels/SCEarTrackingModel.mlmodel; sourceTree = "<group>"; };
@@ -156,6 +155,7 @@
 		13DD59C32F228A0000A33CAF /* Features/Home/StartScanCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/StartScanCardView.swift; sourceTree = "<group>"; };
 		13DD59C52F228A0000A33CAF /* Features/Home/HomeActionRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeActionRowView.swift; sourceTree = "<group>"; };
 		13DD59C72F228A0000A33CAF /* Features/Home/RecentScansView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/RecentScansView.swift; sourceTree = "<group>"; };
+		13DD59C92F228A0000A33CAF /* Features/Home/HomeToastPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeToastPresenter.swift; sourceTree = "<group>"; };
 		13E2D3F32F1CE978003DE022 /* Core/Services/ScanService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Services/ScanService.swift; sourceTree = "<group>"; };
 		13E2D3F52F1CF4E3003DE022 /* Features/Preview/PreviewContainerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewContainerViewController.swift; sourceTree = "<group>"; };
 		13E2D4012F1D0100003DE022 /* ScanServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanServiceTests.swift; sourceTree = "<group>"; };
@@ -182,7 +182,7 @@
 		13F1A01A2F6A123400111111 /* SettingsViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewControllerTests.swift; sourceTree = "<group>"; };
 		7642B7F821E679E800BC45C7 /* TrueContourAI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TrueContourAI.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7642B7FB21E679E800BC45C7 /* App/AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppDelegate.swift; sourceTree = "<group>"; };
-		7642B7FD21E679E800BC45C7 /* Features/Home/ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/ViewController.swift; sourceTree = "<group>"; };
+		7642B7FD21E679E800BC45C7 /* Features/Home/HomeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeViewController.swift; sourceTree = "<group>"; };
 		7642B80221E679E900BC45C7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7642B80521E679E900BC45C7 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Resources/Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		7642B80721E679E900BC45C7 /* Resources/Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Resources/Info.plist; sourceTree = "<group>"; };
@@ -306,13 +306,14 @@
 		13F1A0062F6A123400111111 /* Home */ = {
 			isa = PBXGroup;
 			children = (
-				7642B7FD21E679E800BC45C7 /* Features/Home/ViewController.swift */,
+				7642B7FD21E679E800BC45C7 /* Features/Home/HomeViewController.swift */,
 				132BDB5D2F1FD71000B012E2 /* Features/Home/HomeCoordinator.swift */,
 				13E2D41B2F1D2500003DE022 /* Features/Home/HomeViewModel.swift */,
 				13DD59C12F228A0000A33CAF /* Features/Home/HomeHeaderView.swift */,
 				13DD59C52F228A0000A33CAF /* Features/Home/HomeActionRowView.swift */,
 				13DD59C32F228A0000A33CAF /* Features/Home/StartScanCardView.swift */,
 				13DD59C72F228A0000A33CAF /* Features/Home/RecentScansView.swift */,
+				13DD59C92F228A0000A33CAF /* Features/Home/HomeToastPresenter.swift */,
 				136674282F1794DF00F7E18B /* Features/Home/ScanCardCell.swift */,
 				13DD59BF2F228A0000A33CAF /* Features/Home/ChecklistLine.swift */,
 				132BDB902F1FFBFF00B012E2 /* Features/Home/HowToScanViewController.swift */,
@@ -327,7 +328,6 @@
 			isa = PBXGroup;
 			children = (
 				13F0A0022F6A123400111111 /* Features/Scan/AppScanningViewController.swift */,
-				137465782F12A21D00C2772D /* Features/Scan/HeadScanningViewController.swift */,
 				13E2D4192F1D2000003DE022 /* Features/Scan/ScanCoordinator.swift */,
 				132BDB572F1FCFAB00B012E2 /* Features/Scan/ScanFlowState.swift */,
 				132BDB582F1FCFAB00B012E2 /* Features/Scan/ScanQuality.swift */,
@@ -600,7 +600,7 @@
 			files = (
 				132BDB642F1FD83200B012E2 /* Features/Home/PreScanChecklistViewController.swift in Sources */,
 				1374657B2F12A2C300C2772D /* Features/Scan/HeadMeasurementService.swift in Sources */,
-				7642B7FE21E679E800BC45C7 /* Features/Home/ViewController.swift in Sources */,
+				7642B7FE21E679E800BC45C7 /* Features/Home/HomeViewController.swift in Sources */,
 				13E2D4182F1D2000003DE022 /* Features/Scan/ScanCoordinator.swift in Sources */,
 				13E2D41A2F1D2500003DE022 /* Features/Home/HomeViewModel.swift in Sources */,
 				13E2D4142F1D1000003DE022 /* Features/Settings/SettingsStore.swift in Sources */,
@@ -620,9 +620,9 @@
 				13DD59C42F228A0000A33CAF /* Features/Home/StartScanCardView.swift in Sources */,
 				13DD59C62F228A0000A33CAF /* Features/Home/HomeActionRowView.swift in Sources */,
 				13DD59C82F228A0000A33CAF /* Features/Home/RecentScansView.swift in Sources */,
+				13DD59CA2F228A0000A33CAF /* Features/Home/HomeToastPresenter.swift in Sources */,
 				132BDB622F1FD74300B012E2 /* Core/Utilities/UIView+Snapshot.swift in Sources */,
 				13E2D3F42F1CE978003DE022 /* Core/Services/ScanService.swift in Sources */,
-				137465792F12A21D00C2772D /* Features/Scan/HeadScanningViewController.swift in Sources */,
 				13F0A0012F6A123400111111 /* Features/Scan/AppScanningViewController.swift in Sources */,
 				136865B62F20E63C005034DD /* Core/Utilities/DesignSystem.swift in Sources */,
 				132BDB6C2F1FE78500B012E2 /* Core/Utilities/Localization.swift in Sources */,

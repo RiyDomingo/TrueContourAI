@@ -1,6 +1,17 @@
 import Foundation
 import StandardCyborgFusion
 
+private enum SCMeshingHelperError: LocalizedError {
+    case missingMeshAndError
+
+    var errorDescription: String? {
+        switch self {
+        case .missingMeshAndError:
+            return "Mesh reconstruction finished without returning either a mesh or an error."
+        }
+    }
+}
+
 public class SCMeshingHelper {
     enum Status {
         case inProgress(Float)
@@ -46,7 +57,7 @@ public class SCMeshingHelper {
                     return
                 }
                 
-                onMeshStatusUpdate(.failure(error!))
+                onMeshStatusUpdate(.failure(error ?? SCMeshingHelperError.missingMeshAndError))
         })
     }
 }

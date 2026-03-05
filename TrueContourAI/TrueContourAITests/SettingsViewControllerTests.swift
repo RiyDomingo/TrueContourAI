@@ -34,7 +34,7 @@ final class SettingsViewControllerTests: XCTestCase {
         XCTAssertEqual(vc.debug_storageUsageText(), L("settings.calculating"))
 
         let exp = expectation(description: "resolved")
-        waitUntil(timeout: 2.0) {
+        waitUntil(timeout: 6.0) {
             let text = vc.debug_storageUsageText()
             if text != L("settings.calculating") {
                 exp.fulfill()
@@ -43,7 +43,7 @@ final class SettingsViewControllerTests: XCTestCase {
             return false
         }
 
-        wait(for: [exp], timeout: 2.5)
+        wait(for: [exp], timeout: 8.0)
     }
 
     func testDeleteAllSuccessTriggersOnScansChanged() {
@@ -98,15 +98,15 @@ final class SettingsViewControllerTests: XCTestCase {
         XCTAssertEqual(vc.tableView(table, numberOfRowsInSection: 1), 2)
 
         XCTAssertEqual(vc.tableView(table, titleForHeaderInSection: 2), L("settings.section.advanced"))
-        XCTAssertEqual(vc.tableView(table, numberOfRowsInSection: 2), 10)
+        XCTAssertEqual(vc.tableView(table, numberOfRowsInSection: 2), 5)
 
         XCTAssertEqual(vc.tableView(table, titleForHeaderInSection: 3), L("settings.section.storage"))
         XCTAssertEqual(vc.tableView(table, numberOfRowsInSection: 3), 4)
     }
 
-    func testDisablingLastExportFormatIsPrevented() {
-        store.exportGLTF = false
-        store.exportOBJ = true
+    func testDisablingGLTFExportIsPrevented() {
+        store.exportGLTF = true
+        store.exportOBJ = false
         let service = SettingsScanServiceFake()
         let vc = SettingsViewController(store: store, scanService: service)
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
@@ -116,17 +116,18 @@ final class SettingsViewControllerTests: XCTestCase {
         }
         vc.loadViewIfNeeded()
 
-        let exportOBJIndexPath = IndexPath(row: 1, section: 1)
-        let cell = vc.tableView(vc.tableView, cellForRowAt: exportOBJIndexPath)
+        let exportGLTFIndexPath = IndexPath(row: 0, section: 1)
+        let cell = vc.tableView(vc.tableView, cellForRowAt: exportGLTFIndexPath)
         guard let toggle = cell.accessoryView as? UISwitch else {
-            XCTFail("Expected export OBJ toggle")
+            XCTFail("Expected export GLTF toggle")
             return
         }
 
+        toggle.tag = 100
         toggle.setOn(false, animated: false)
-        toggle.sendActions(for: .valueChanged)
+        vc.perform(NSSelectorFromString("toggleChanged:"), with: toggle)
 
-        XCTAssertTrue(store.exportOBJ)
+        XCTAssertTrue(store.exportGLTF)
         XCTAssertTrue(toggle.isOn)
         let alert = vc.presentedViewController as? UIAlertController
         XCTAssertEqual(alert?.title, L("settings.export.minimum.title"))

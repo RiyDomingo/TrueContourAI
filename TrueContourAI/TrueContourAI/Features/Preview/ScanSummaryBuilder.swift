@@ -15,19 +15,10 @@ enum ScanSummaryBuilder {
             startedAt: metrics.startedAt,
             finishedAt: metrics.finishedAt,
             durationSeconds: metrics.durationSeconds,
-            overallConfidence: min(metrics.overallConfidence, qualityReport?.qualityScore ?? metrics.overallConfidence),
-            completedPoses: 0,
-            skippedPoses: 0,
-            poseRecords: [],
+            overallConfidence: qualityReport?.qualityScore ?? measurementSummary?.confidence ?? metrics.overallConfidence,
             pointCountEstimate: qualityReport?.validPointCount ?? 0,
             hadEarVerification: hadEarVerification,
-            processingProfile: .init(
-                outlierSigma: settingsStore.processingConfig.outlierSigma,
-                decimateRatio: settingsStore.processingConfig.decimateRatio,
-                cropBelowNeck: settingsStore.processingConfig.cropBelowNeck,
-                meshResolution: settingsStore.processingConfig.meshResolution,
-                meshSmoothness: settingsStore.processingConfig.meshSmoothness
-            ),
+            processingProfile: nil,
             derivedMeasurements: measurementSummary.map {
                 ScanService.ScanSummary.DerivedMeasurements(
                     sliceHeightNormalized: $0.sliceHeightNormalized,

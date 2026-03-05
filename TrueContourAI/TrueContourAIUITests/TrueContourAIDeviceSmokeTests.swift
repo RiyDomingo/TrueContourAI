@@ -70,40 +70,9 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         throw XCTSkip("TrueDepth smoke tests run only on physical iPhone hardware")
 #endif
         let app = launchDeviceSmokeApp(skipEarML: true)
-        let startButton = app.buttons["startScanButton"]
-        XCTAssertTrue(waitForElement(startButton))
-        startButton.tap()
-
-        if app.alerts["TrueDepth Not Available"].waitForExistence(timeout: 2.0) {
-            throw XCTSkip("Connected device does not expose TrueDepth camera")
-        }
-
-        let shutter = app.buttons["scanShutterButton"]
-        XCTAssertTrue(
-            waitUntil(timeout: 20) {
-                shutter.exists && shutter.isHittable
-            },
-            "Expected scan shutter button to become hittable on device"
-        )
-        shutter.tap() // start countdown -> scanning
-        _ = waitUntil(timeout: 6.0) { app.buttons["finishScanNowButton"].isHittable }
-
-        XCTAssertTrue(waitForElement(app.buttons["finishScanNowButton"], timeout: 12))
-        app.buttons["finishScanNowButton"].tap()
-        XCTAssertTrue(waitForElement(app.buttons["previewSaveButton"], timeout: 30))
-
-        let ready = waitUntil(timeout: 25) { app.buttons["previewSaveButton"].isEnabled }
-        XCTAssertTrue(ready)
-        app.buttons["previewSaveButton"].tap()
-
-        XCTAssertTrue(waitForElement(startButton, timeout: 20))
-        let diagnosticsLabel = app.staticTexts["deviceSmokeDiagnosticsLabel"]
-        XCTAssertTrue(waitForElement(diagnosticsLabel, timeout: 8.0))
-        let hasExpectedDiagnostics = waitUntil(timeout: 8.0) {
-            let value = diagnosticsLabel.label
-            return value.contains("gltf=") && value.contains("obj=") && value.contains("folder=")
-        }
-        XCTAssertTrue(hasExpectedDiagnostics, "Unexpected diagnostics label: \(diagnosticsLabel.label)")
+        let diagnostics = try saveAndReturnDiagnostics(app: app)
+        XCTAssertTrue(diagnostics.contains("gltf=1"), "Expected GLTF artifact in diagnostics: \(diagnostics)")
+        XCTAssertTrue(diagnostics.contains("obj=1"), "Expected OBJ artifact in diagnostics: \(diagnostics)")
     }
 
     @MainActor
@@ -157,7 +126,7 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
     }
 
     @MainActor
-    func testDeviceSmokeSaveReportsOBJOnlyArtifacts() throws {
+    func testDeviceSmokeGLTFDisableLaunchArgIsIgnored() throws {
 #if targetEnvironment(simulator)
         throw XCTSkip("TrueDepth smoke tests run only on physical iPhone hardware")
 #endif
@@ -166,8 +135,7 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
             extraArguments: ["ui-test-export-gltf-off"]
         )
         let diagnostics = try saveAndReturnDiagnostics(app: app)
-        XCTAssertTrue(diagnostics.contains("gltf=0"), "Expected GLTF to be disabled in diagnostics: \(diagnostics)")
-        XCTAssertTrue(diagnostics.contains("obj=1"), "Expected OBJ artifact in diagnostics: \(diagnostics)")
+        XCTAssertTrue(diagnostics.contains("gltf=1"), "Expected GLTF artifact even when launch arg disables it: \(diagnostics)")
     }
 
     @MainActor

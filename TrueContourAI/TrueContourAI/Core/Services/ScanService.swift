@@ -32,9 +32,9 @@ final class ScanService {
         let finishedAt: Date
         let durationSeconds: Double
         let overallConfidence: Float
-        let completedPoses: Int
-        let skippedPoses: Int
-        let poseRecords: [PoseRecord]
+        let completedPoses: Int?
+        let skippedPoses: Int?
+        let poseRecords: [PoseRecord]?
         let pointCountEstimate: Int
         let hadEarVerification: Bool
         let processingProfile: ProcessingProfile?
@@ -61,9 +61,9 @@ final class ScanService {
             finishedAt: Date,
             durationSeconds: Double,
             overallConfidence: Float,
-            completedPoses: Int,
-            skippedPoses: Int,
-            poseRecords: [PoseRecord],
+            completedPoses: Int? = nil,
+            skippedPoses: Int? = nil,
+            poseRecords: [PoseRecord]? = nil,
             pointCountEstimate: Int,
             hadEarVerification: Bool,
             processingProfile: ProcessingProfile? = nil,
@@ -90,9 +90,9 @@ final class ScanService {
             finishedAt = try container.decode(Date.self, forKey: .finishedAt)
             durationSeconds = try container.decode(Double.self, forKey: .durationSeconds)
             overallConfidence = try container.decode(Float.self, forKey: .overallConfidence)
-            completedPoses = try container.decode(Int.self, forKey: .completedPoses)
-            skippedPoses = try container.decode(Int.self, forKey: .skippedPoses)
-            poseRecords = try container.decode([PoseRecord].self, forKey: .poseRecords)
+            completedPoses = try container.decodeIfPresent(Int.self, forKey: .completedPoses)
+            skippedPoses = try container.decodeIfPresent(Int.self, forKey: .skippedPoses)
+            poseRecords = try container.decodeIfPresent([PoseRecord].self, forKey: .poseRecords)
             pointCountEstimate = try container.decode(Int.self, forKey: .pointCountEstimate)
             hadEarVerification = try container.decode(Bool.self, forKey: .hadEarVerification)
             processingProfile = try container.decodeIfPresent(ProcessingProfile.self, forKey: .processingProfile)
@@ -328,6 +328,11 @@ final class ScanService {
         return nil
     }
 
+    func resolveLastScanItem() -> ScanItem? {
+        guard let folder = resolveLastScanFolderURL() else { return nil }
+        return listScans().first { $0.folderURL == folder }
+    }
+
     func setLastScanFolder(_ folderURL: URL) {
         defaults.set(folderURL.path, forKey: lastScanFolderPathKey)
     }
@@ -423,6 +428,9 @@ final class ScanService {
     ) -> ExportResult {
         if case .failure(let error) = ensureScansRootFolder() {
             return .failure(String(format: L("scan.service.createFolderFailed"), error.localizedDescription))
+        }
+        guard includeGLTF else {
+            return .failure(L("settings.export.minimum.message"))
         }
 
         let timestamp = Self.timestampFormatter.string(from: Date()).replacingOccurrences(of: ":", with: "-")
@@ -526,6 +534,9 @@ final class ScanService {
 
     @discardableResult
     func _exportArtifactMatrixForTest(includeGLTF: Bool, includeOBJ: Bool) -> URL? {
+        guard includeGLTF else {
+            return nil
+        }
         if case .failure = ensureScansRootFolder() {
             return nil
         }

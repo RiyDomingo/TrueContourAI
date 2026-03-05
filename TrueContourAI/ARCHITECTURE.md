@@ -4,8 +4,8 @@ This document explains how TrueContourAI is organized and how scan data moves th
 
 ## Architectural Style
 - Programmatic UIKit app.
-- Coordinator-driven flow for scan and preview navigation.
-- Service-oriented persistence/export layer.
+- Coordinator-assisted flow for scan start, home actions, and preview presentation.
+- Service-oriented persistence/export layer with scan lifecycle state shared through `ScanFlowState`.
 - Explicit scan lifecycle state via `ScanFlowState`.
 
 ## Top-Level Modules
@@ -17,7 +17,7 @@ This document explains how TrueContourAI is organized and how scan data moves th
 
 ## Feature Ownership
 ### Home
-- `ViewController`: home UI and wiring.
+- `HomeViewController`: home UI and wiring.
 - `HomeViewModel`: recent scans, filter/sort state, and display models.
 - `HomeCoordinator`: routes to scan start, settings, preview entry points.
 
@@ -28,7 +28,7 @@ This document explains how TrueContourAI is organized and how scan data moves th
 - `ScanQualityValidator`: quality scoring and export gate advice.
 
 ### Preview
-- `ScanPreviewCoordinator`: post-scan orchestration, meshing state, save/export.
+- `ScanPreviewCoordinator`: post-scan orchestration, meshing state, save/export, and preview-session lifecycle guards.
 - `ScanPreviewCoordinator.ExportResultEvent`: structured success/failure export UI event output.
 - `SaveExportViewStateController`: save button/spinner/toast UI state control.
 - `ScanSummaryBuilder`: summary metadata for persisted scans.
@@ -36,6 +36,8 @@ This document explains how TrueContourAI is organized and how scan data moves th
 ### Settings
 - `SettingsViewController`: settings UI and storage/delete actions.
   - Sections: `General`, `Export`, `Advanced`, `Storage`.
+  - `Export` now treats GLTF as required for any saved scan the app can reopen in-app.
+  - `Advanced` exposes only quality-gate controls that are actually honored by the app.
 - `SettingsStore`: persisted app preferences.
 
 ### Core
@@ -64,12 +66,12 @@ Failure transitions:
 
 ## Why This Design
 - Separation of concerns:
-  - View controllers focus on UI interactions.
-  - Coordinators own multi-screen flow.
+  - View controllers still own most UIKit composition.
+  - Coordinators own route orchestration and some flow policy.
   - Services own IO/export/serialization.
 - Testability:
   - Protocol seams around scan engine components.
-  - Deterministic test hooks for quality gating and export paths.
+  - Deterministic test hooks around quality gating and export paths remain, but release validation still depends on real build and simulator/device coverage.
 
 ## Closest Reference Implementation
 The scan engine architecture in TrueContourAI is closer to the old `TrueDepthFusion` pattern than `StandardCyborgExample`, because it uses:

@@ -128,10 +128,10 @@ final class SettingsStore {
         }
     }
 
-    var scanSummarySchemaVersion: Int { 2 }
+    var scanSummarySchemaVersion: Int { 3 }
 
-    var hasAnyExportFormatEnabled: Bool {
-        exportGLTF || exportOBJ
+    var hasRequiredExportFormatsEnabled: Bool {
+        exportGLTF
     }
 
     func resetToDefaults() {

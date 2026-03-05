@@ -79,13 +79,13 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.processingConfig.meshResolution, SettingsStore.ProcessingConfig.default.meshResolution)
     }
 
-    func testHasAnyExportFormatEnabledReflectsCurrentSettings() {
-        XCTAssertTrue(store.hasAnyExportFormatEnabled)
-
-        store.exportGLTF = false
-        XCTAssertTrue(store.hasAnyExportFormatEnabled)
+    func testHasRequiredExportFormatsEnabledReflectsGLTFRequirement() {
+        XCTAssertTrue(store.hasRequiredExportFormatsEnabled)
 
         store.exportOBJ = false
-        XCTAssertFalse(store.hasAnyExportFormatEnabled)
+        XCTAssertTrue(store.hasRequiredExportFormatsEnabled)
+
+        store.exportGLTF = false
+        XCTAssertFalse(store.hasRequiredExportFormatsEnabled)
     }
 }

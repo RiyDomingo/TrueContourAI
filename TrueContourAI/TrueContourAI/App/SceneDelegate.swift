@@ -14,7 +14,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Create the window using the provided windowScene to avoid deprecated init(frame:) and UIScreen.main
         let window = UIWindow(windowScene: windowScene)
         let dependencies = AppDependencies()
-        window.rootViewController = ViewController(dependencies: dependencies)
+        window.rootViewController = HomeViewController(dependencies: dependencies)
         window.makeKeyAndVisible()
         self.window = window
     }

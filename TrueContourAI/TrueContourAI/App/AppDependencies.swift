@@ -29,6 +29,9 @@ struct AppDependencies {
             if args.contains("ui-test-export-obj-off") {
                 self.settingsStore.exportOBJ = false
             }
+            if !self.settingsStore.exportGLTF {
+                self.settingsStore.exportGLTF = true
+            }
             if args.contains("ui-test-force-quality-gate-block") {
                 var quality = self.settingsStore.scanQualityConfig
                 quality.gateEnabled = true

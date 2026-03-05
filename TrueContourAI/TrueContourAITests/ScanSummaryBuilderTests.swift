@@ -72,7 +72,7 @@ final class ScanSummaryBuilderTests: XCTestCase {
         XCTAssertEqual(summary?.schemaVersion, settingsStore.scanSummarySchemaVersion)
     }
 
-    func testBuildMapsDerivedMeasurementsAndProcessingProfile() {
+    func testBuildMapsDerivedMeasurementsWithoutProcessingProfile() {
         var processing = settingsStore.processingConfig
         processing.outlierSigma = 4.0
         processing.decimateRatio = 1.25
@@ -107,17 +107,7 @@ final class ScanSummaryBuilderTests: XCTestCase {
         XCTAssertNotNil(summary)
         XCTAssertEqual(summary?.hadEarVerification, true)
         XCTAssertEqual(summary?.pointCountEstimate, 0)
-        guard let outlierSigma = summary?.processingProfile?.outlierSigma else {
-            return XCTFail("Expected outlierSigma")
-        }
-        guard let decimateRatio = summary?.processingProfile?.decimateRatio else {
-            return XCTFail("Expected decimateRatio")
-        }
-        XCTAssertEqual(outlierSigma, Float(4.0), accuracy: Float(0.0001))
-        XCTAssertEqual(decimateRatio, Float(1.25), accuracy: Float(0.0001))
-        XCTAssertEqual(summary?.processingProfile?.cropBelowNeck, false)
-        XCTAssertEqual(summary?.processingProfile?.meshResolution, 7)
-        XCTAssertEqual(summary?.processingProfile?.meshSmoothness, 5)
+        XCTAssertNil(summary?.processingProfile)
         guard let circumferenceMm = summary?.derivedMeasurements?.circumferenceMm else {
             return XCTFail("Expected circumferenceMm")
         }

@@ -1,5 +1,5 @@
 //
-//  ViewController.swift
+//  HomeViewController.swift
 //  TrueContourAI
 //
 
@@ -7,7 +7,7 @@ import UIKit
 import StandardCyborgUI
 import StandardCyborgFusion
 
-final class ViewController: UIViewController {
+final class HomeViewController: UIViewController {
 
     // MARK: - Data model
 
@@ -25,6 +25,7 @@ final class ViewController: UIViewController {
     private let settingsStore: SettingsStore
     private var scanStartTime: CFAbsoluteTime?
     private var latestScanMetrics: ScanFlowState.ScanSessionMetrics?
+    private lazy var toastPresenter = HomeToastPresenter(hostView: view)
     private lazy var scanCoordinator = ScanCoordinator(settingsStore: settingsStore)
     private lazy var homeCoordinator = HomeCoordinator(
         scanService: scanService,
@@ -284,35 +285,7 @@ final class ViewController: UIViewController {
             return
         }
 #endif
-        let label = UILabel()
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = message
-        label.textColor = DesignSystem.Colors.textPrimary
-        label.font = DesignSystem.Typography.caption()
-        label.backgroundColor = DesignSystem.Colors.overlay
-        label.textAlignment = .center
-        label.numberOfLines = 0
-        label.accessibilityIdentifier = "toastLabel"
-        label.layer.cornerRadius = DesignSystem.CornerRadius.medium
-        label.layer.masksToBounds = true
-        label.alpha = 0
-
-        view.addSubview(label)
-
-        NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 18),
-            label.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -18),
-            label.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -18)
-        ])
-
-        UIView.animate(withDuration: 0.22) { label.alpha = 1 }
-        let args = ProcessInfo.processInfo.arguments
-        let dwellSeconds: TimeInterval = args.contains("ui-test-device-smoke") ? 8.0 : 1.8
-        DispatchQueue.main.asyncAfter(deadline: .now() + dwellSeconds) {
-            UIView.animate(withDuration: 0.22, animations: { label.alpha = 0 }) { _ in
-                label.removeFromSuperview()
-            }
-        }
+        toastPresenter.show(message: message)
     }
 
     private func presentStorageUnavailableAlert() {
@@ -362,7 +335,7 @@ final class ViewController: UIViewController {
 
 // MARK: - UITableView
 
-extension ViewController: UITableViewDataSource, UITableViewDelegate {
+extension HomeViewController: UITableViewDataSource, UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         scans.count
@@ -404,11 +377,11 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
 }
 // MARK: - UITableView actions + share
 
-extension ViewController {
+extension HomeViewController {
 }
 // MARK: - Scanning delegate
 
-extension ViewController: AppScanningViewControllerDelegate {
+extension HomeViewController: AppScanningViewControllerDelegate {
 
     func appScanningViewControllerDidCancel(_ controller: AppScanningViewController) {
         recordScanCanceled()
@@ -422,7 +395,7 @@ extension ViewController: AppScanningViewControllerDelegate {
         meshTexturing: SCMeshTexturing
     ) {
         recordScanCompleted()
-        latestScanMetrics = scanFlowState.completeScanSession(estimatedConfidence: 0.85)
+        latestScanMetrics = scanFlowState.completeScanSession(estimatedConfidence: 0)
         previewCoordinator.presentPreviewAfterScan(
             from: controller,
             pointCloud: pointCloud,
@@ -435,7 +408,7 @@ extension ViewController: AppScanningViewControllerDelegate {
 
 // MARK: - Scan timing
 
-private extension ViewController {
+private extension HomeViewController {
     func recordScanStarted() {
         scanStartTime = CFAbsoluteTimeGetCurrent()
         Log.scan.info("Scan started")
@@ -469,7 +442,7 @@ private extension ViewController {
 }
 
 #if DEBUG
-extension ViewController {
+extension HomeViewController {
     func _recordScanStartedForTesting() { recordScanStarted() }
     func _recordScanCompletedForTesting() { recordScanCompleted() }
     func _recordScanCanceledForTesting() { recordScanCanceled() }

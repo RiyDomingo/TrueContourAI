@@ -15,6 +15,15 @@ final class ScanFlowState {
         let finishedAt: Date
         let durationSeconds: Double
         let overallConfidence: Float
+
+        func withOverallConfidence(_ confidence: Float) -> ScanSessionMetrics {
+            ScanSessionMetrics(
+                startedAt: startedAt,
+                finishedAt: finishedAt,
+                durationSeconds: durationSeconds,
+                overallConfidence: max(0, min(1, confidence))
+            )
+        }
     }
 
     private(set) var phase: Phase = .idle

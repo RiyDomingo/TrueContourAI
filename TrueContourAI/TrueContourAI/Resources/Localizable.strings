@@ -297,6 +297,11 @@
 "scanning.prompt.5" = "Continue to RIGHT side.\nMove slowly and smoothly.";
 "scanning.prompt.6" = "Return to FRONT to close the loop.\nThen press Finish.";
 "scanning.autofinish" = "Auto-finish in %ds";
+"scanning.guidance.start" = "Move slowly around your head";
+"scanning.guidance.motion" = "Move slower and keep your head steady";
+"scanning.guidance.poorTracking" = "Tracking is weak. Keep face in view and move slowly";
+"scanning.guidance.goodTracking" = "Great tracking. Continue rotating";
+"scanning.guidance.trackingLost" = "Tracking lost. Pause briefly, then continue";
 "scanning.thermal.title" = "iPhone is too warm";
 "scanning.thermal.message" = "Let your device cool down, then try scanning again.";
 
@@ -306,7 +311,7 @@
 "scan.service.writeGLTFFailed" = "Failed to write scene.gltf. Check free storage and try again.";
 "scan.service.writeOBJFailed" = "Failed to write head_mesh.obj\n\n%@";
 "settings.export.minimum.title" = "Select An Export Format";
-"settings.export.minimum.message" = "Keep at least one export format enabled so saved scans can be reopened or shared.";
+"settings.export.minimum.message" = "Keep GLTF export enabled so saved scans can be reopened in the app. OBJ export is optional.";
 
 "ear.service.modelMissing" = "Missing model in bundle: %@.mlmodelc (ensure the .mlmodel is added to your app target and builds into .mlmodelc)";
 "ear.service.cgImageMissing" = "Could not create CGImage from UIImage.";

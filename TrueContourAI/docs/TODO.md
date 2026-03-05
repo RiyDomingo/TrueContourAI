@@ -8,12 +8,12 @@ This file tracks remaining implementation, validation, and hygiene tasks.
   - `TrueContourAITests`
   - `TrueContourAIUITests`
 - [ ] Validate main scan flow end-to-end on device: start scan -> preview -> export -> reopen scan.
-- [ ] Verify quality-gate blocked export flow and recovery messaging on device.
+- [x] Verify quality-gate blocked export flow and recovery messaging on device.
 - [ ] Validate export settings matrix on device:
   - [x] GLTF on / OBJ on
   - [x] GLTF on / OBJ off
-  - [x] GLTF off / OBJ on
-  - confirm `GLTF off / OBJ off` is prevented in Settings and from preview-save precheck
+  - [x] `GLTF off / OBJ on` is prevented (`SettingsViewController` guard + device-smoke launch-arg hardening keeps GLTF enabled)
+  - [x] `GLTF off / OBJ off` is prevented in Settings and from preview-save precheck
 - [ ] Re-run the full `TrueContourAIUITests` suite on the connected iPhone and capture a final pass/fail summary after the decimate-ratio fix landed.
 
 ## Next
@@ -107,3 +107,39 @@ This file tracks remaining implementation, validation, and hygiene tasks.
 - [x] 2026-03-03: `testDeviceSmokeStartScanFinishShowsPreview` later failed in a full hardware suite rerun because the scan shutter did not become ready within the original short timeout, then passed in a targeted physical-device rerun after the test was hardened to wait for a hittable shutter button.
 - [ ] 2026-03-03: A second post-fix full `TrueContourAIUITests` rerun was started on `Riy's iPhone`, but the live `xcodebuild test-without-building` session remained unresolved long past the earlier full-run duration and did not finalize a readable `.xcresult` bundle before this note.
 - [ ] 2026-03-03: Focused simulator `xcodebuild test` rerun for the new unit tests did not complete due to simulator/runtime startup issues; test targets still compile cleanly.
+- [x] 2026-03-04: Recovery validation on the standalone app repo succeeded:
+  - `TrueContourAI` builds cleanly
+  - `TrueContourAITests` builds cleanly
+  - `TrueContourAIUITests` builds cleanly
+- [x] 2026-03-04: Full `TrueContourAITests` simulator run completed with `** TEST SUCCEEDED **` after hardening fixes:
+  - `SettingsViewControllerTests.testRefreshStorageUsageTransitionsFromCalculatingToResolvedText` now passes in focused and full reruns
+  - `ScanCoordinatorTests.testStartScanFlowAppliesConfigurationToScanningViewController` was made deterministic by pinning camera authorization to `.authorized`
+- [x] 2026-03-04: Production-hardening milestones landed through active-flow structural cleanup:
+  - GLTF is now required for saved scans the app can reopen in-app
+  - fake last-scan metadata was removed from Home
+  - saved summary confidence no longer uses the old hard-coded `0.85`
+  - unsupported advanced processing controls were removed from Settings
+  - scan runtime safety was tightened around readiness, queue access, and thermal shutdown
+  - preview async callbacks are now guarded by preview-session identity
+  - package integration was hardened in low-risk areas (`CameraManager`, bundle lookup, meshing error fallback, preview scene fallback)
+  - `ViewController` was renamed to `HomeViewController`
+- [x] 2026-03-04: Fresh simulator UI evidence was captured for the updated settings flow:
+  - `TrueContourAIUITests.testSettingsShowsAdvancedSection()` passed on `iPhone 17 Pro` simulator
+  - `xcodebuild test` completed with `** TEST SUCCEEDED **` and produced:
+    - `~/Library/Developer/Xcode/DerivedData/TrueContourAI-emphtlquybacfifpqnuczgkofhot/Logs/Test/Test-TrueContourAIUITests-2026.03.04_20-31-42-+0200.xcresult`
+- [x] 2026-03-05: Fresh full `TrueContourAITests` simulator rerun passed after widening the flaky async timeout in `SettingsViewControllerTests`:
+  - `xcodebuild test -scheme TrueContourAITests` completed with `** TEST SUCCEEDED **`
+  - `SettingsViewControllerTests.testRefreshStorageUsageTransitionsFromCalculatingToResolvedText` passed in the full suite
+- [x] 2026-03-05: Physical TrueDepth smoke evidence refreshed on `Riy’s iPhone`:
+  - `testDeviceSmokeStartScanFinishShowsPreview` passed
+  - `testDeviceSmokeStartScanCancelReturnsHome` passed
+  - `testDeviceSmokeQualityGateBlockShowsAlert` passed
+  - `testDeviceSmokeSaveReportsGLTFOnlyArtifacts` passed
+  - `testDeviceSmokeGLTFDisableLaunchArgIsIgnored` passed
+  - `testDeviceSmokeSaveReportsExportArtifactPresence` initially failed due a brittle home/diagnostics assertion, then passed after switching to the shared `saveAndReturnDiagnostics` helper
+- [ ] 2026-03-05: Full simulator `TrueContourAIUITests` runs remain unstable in this environment:
+  - long-running `xcodebuild test` sessions can terminate with CoreSimulator state failures (e.g., Mach `ipc/mig server died`, `Invalid device state`) before emitting final XCTest summaries
+  - device smoke evidence above is treated as the primary release signal for TrueDepth-critical flows
+- [ ] 2026-03-05: `swift test --package-path StandardCyborgFusion` fails in this environment while linking package tests with:
+  - `ld: framework 'UIKit' not found`
+  - this is tracked as an environment/toolchain limitation for SwiftPM package-test execution rather than an app-target runtime regression

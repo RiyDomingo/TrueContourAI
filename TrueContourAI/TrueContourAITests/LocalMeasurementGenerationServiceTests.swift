@@ -105,6 +105,32 @@ final class LocalMeasurementGenerationServiceTests: XCTestCase {
         XCTAssertEqual(observed, [0.1, 0.5, 1.0])
     }
 
+    func testProgressAndCompletionAreDeliveredOnMainThread() {
+        let measurement = HeadMeasurements(
+            sliceHeightNormalized: 0.62,
+            circumferenceMm: 620,
+            widthMm: 210,
+            depthMm: 205
+        )
+        let service = LocalMeasurementGenerationService(estimator: { _ in measurement })
+        let exp = expectation(description: "completion")
+        var progressThreadsAreMain: [Bool] = []
+        var completionOnMain = false
+
+        service.generate(
+            from: placeholderPointCloud(),
+            progress: { _ in progressThreadsAreMain.append(Thread.isMainThread) },
+            completion: { _ in
+                completionOnMain = Thread.isMainThread
+                exp.fulfill()
+            }
+        )
+
+        wait(for: [exp], timeout: 2.0)
+        XCTAssertEqual(progressThreadsAreMain, [true, true, true])
+        XCTAssertTrue(completionOnMain)
+    }
+
     private func placeholderPointCloud() -> SCPointCloud {
         // Tests only validate service branching/progress, not point cloud internals.
         placeholderObject(SCPointCloud.self)

@@ -26,18 +26,10 @@ final class HomeCoordinator {
     }
 
     func openLastScan(from presenter: UIViewController) {
-        guard let folder = scanService.resolveLastScanFolderURL() else {
+        guard let item = scanService.resolveLastScanItem() else {
             presenter.present(alert(title: L("scan.flow.noLast.title"), message: L("scan.flow.noLast.message")), animated: true)
             return
         }
-
-        let item = ScanService.ScanItem(
-            folderURL: folder,
-            displayName: folder.lastPathComponent,
-            date: Date(),
-            thumbnailURL: nil,
-            sceneGLTFURL: scanService.resolveGLTFFromFolder(folder)
-        )
         onOpenScan?(item)
     }
 

@@ -172,6 +172,20 @@ final class ScanServiceTests: XCTestCase {
         XCTAssertNil(service.resolveLastScanGLTFURL())
     }
 
+    func testResolveLastScanItemReturnsStoredScanMetadata() throws {
+        let date = Date(timeIntervalSince1970: 179)
+        let folder = try makeScanFolder(name: "scan", date: date, withThumbnail: true, withScene: true)
+        try FileManager.default.setAttributes([.modificationDate: date], ofItemAtPath: folder.path)
+        service.setLastScanFolder(folder)
+
+        let item = service.resolveLastScanItem()
+        XCTAssertEqual(item?.folderURL, folder)
+        XCTAssertEqual(item?.displayName, "scan")
+        XCTAssertEqual(item?.thumbnailURL?.lastPathComponent, "thumbnail.png")
+        XCTAssertEqual(item?.sceneGLTFURL?.lastPathComponent, "scene.gltf")
+        XCTAssertEqual(item?.date, date)
+    }
+
     func testRenameScanFolderSanitizesName() throws {
         let date = Date(timeIntervalSince1970: 190)
         let folder = try makeScanFolder(name: "scan", date: date)
@@ -416,9 +430,7 @@ final class ScanServiceTests: XCTestCase {
     func testExportArtifactsRespectSettingsToggleMatrix() {
         let matrix: [(includeGLTF: Bool, includeOBJ: Bool)] = [
             (true, true),
-            (true, false),
-            (false, true),
-            (false, false)
+            (true, false)
         ]
 
         for entry in matrix {
@@ -431,6 +443,11 @@ final class ScanServiceTests: XCTestCase {
             XCTAssertEqual(FileManager.default.fileExists(atPath: gltfPath), entry.includeGLTF)
             XCTAssertEqual(FileManager.default.fileExists(atPath: objPath), entry.includeOBJ)
         }
+    }
+
+    func testExportArtifactMatrixRejectsMissingGLTF() {
+        XCTAssertNil(service._exportArtifactMatrixForTest(includeGLTF: false, includeOBJ: true))
+        XCTAssertNil(service._exportArtifactMatrixForTest(includeGLTF: false, includeOBJ: false))
     }
 
     func testLastScanPointerUpdatesAcrossRenameThenDeleteSequence() throws {

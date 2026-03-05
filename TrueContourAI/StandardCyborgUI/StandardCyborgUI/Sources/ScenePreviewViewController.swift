@@ -75,18 +75,28 @@ import UIKit
         super.init(coder: coder)
     }
         
-    
+    private static func makePreviewScene() -> SCNScene {
+        guard let sceneURL = Bundle.scuiResourcesBundle.url(forResource: "ScenePreviewViewController", withExtension: "scn") else {
+            assertionFailure("Could not find scene file for ScenePreviewViewController")
+            return SCNScene()
+        }
+
+        do {
+            let scene = try SCNScene(url: sceneURL, options: nil)
+            scene.background.contents = UIColor.clear
+            return scene
+        } catch {
+            assertionFailure("Could not load scene file for ScenePreviewViewController: \(error)")
+            let scene = SCNScene()
+            scene.background.contents = UIColor.clear
+            return scene
+        }
+    }
+
     /** Owners may mutate this view to change its appearance and add nodes to its scene */
     @objc public let sceneView: SCNView = {
-        guard let sceneURL = Bundle.scuiResourcesBundle.url(forResource: "ScenePreviewViewController", withExtension: "scn") else {
-            fatalError("Could not find scene file for ScenePreviewViewController")
-        }
-        
-        let scene = try! SCNScene(url: sceneURL, options: nil)
-        scene.background.contents = UIColor.clear
-        
         let sceneView = SCNView()
-        sceneView.scene = scene
+        sceneView.scene = makePreviewScene()
         sceneView.allowsCameraControl = true
         sceneView.backgroundColor = UIColor.clear
         return sceneView
@@ -198,8 +208,11 @@ import UIKit
     private var _initialPointOfView = SCNMatrix4Identity
     private var _containerNode = SCNNode()
     private var _meshingHelper: SCMeshingHelper?
+    private var _snapshotGeneration = 0
     
     private func _constructScene(withSCScene scScene: SCScene) {
+        _snapshotGeneration += 1
+        let snapshotGeneration = _snapshotGeneration
         _containerNode.childNodes.forEach { $0.removeFromParentNode() }
         
         _containerNode.addChildNode(scScene.rootNode)
@@ -221,6 +234,7 @@ import UIKit
         // This is a bit of a hack. There doesn't appear to be a good way to determine when a sceneView has finished
         // rendering nodes. Delaying half a second before grabbing a snapshot seems to work.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            guard snapshotGeneration == self._snapshotGeneration else { return }
             self.renderedSceneImage = self.sceneView.snapshot()
         }
     }

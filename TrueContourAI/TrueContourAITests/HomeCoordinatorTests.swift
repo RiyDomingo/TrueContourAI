@@ -57,6 +57,38 @@ final class HomeCoordinatorTests: XCTestCase {
         XCTAssertEqual(alert?.title, L("scan.flow.noLast.title"))
     }
 
+    func testOpenLastScanUsesStoredScanItemMetadata() throws {
+        let presenter = TestPresenter()
+        let scanService = ScanService(scansRootURL: tempDir, defaults: defaults)
+        let settingsStore = SettingsStore(defaults: defaults)
+        let flowState = ScanFlowState()
+        let coordinator = HomeCoordinator(
+            scanService: scanService,
+            settingsStore: settingsStore,
+            scanFlowState: flowState
+        )
+        let folder = tempDir.appendingPathComponent("sample", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let thumbnailURL = folder.appendingPathComponent("thumbnail.png")
+        try Data([0x01]).write(to: thumbnailURL, options: [.atomic])
+        let gltfURL = folder.appendingPathComponent("scene.gltf")
+        try Data("{\"asset\":{\"version\":\"2.0\"}}".utf8).write(to: gltfURL, options: [.atomic])
+        let date = Date(timeIntervalSince1970: 1234)
+        try FileManager.default.setAttributes([.modificationDate: date], ofItemAtPath: folder.path)
+        scanService.setLastScanFolder(folder)
+
+        var openedItem: ScanService.ScanItem?
+        coordinator.onOpenScan = { openedItem = $0 }
+
+        coordinator.openLastScan(from: presenter)
+
+        XCTAssertEqual(openedItem?.folderURL, folder)
+        XCTAssertEqual(openedItem?.displayName, "sample")
+        XCTAssertEqual(openedItem?.thumbnailURL, thumbnailURL)
+        XCTAssertEqual(openedItem?.sceneGLTFURL, gltfURL)
+        XCTAssertEqual(openedItem?.date, date)
+    }
+
     func testPresentScanActionsIncludesExpectedOrderAndLabels() throws {
         let presenter = TestPresenter()
         let scanService = ScanService(scansRootURL: tempDir, defaults: defaults)

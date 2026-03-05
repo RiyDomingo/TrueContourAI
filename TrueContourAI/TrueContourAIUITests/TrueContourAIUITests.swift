@@ -55,7 +55,7 @@ final class TrueContourAIUITests: XCTestCase {
         XCTAssertTrue(waitForElement(app.staticTexts["Advanced"]))
         XCTAssertTrue(waitForElement(app.staticTexts["Enable quality gate"]))
         XCTAssertTrue(waitForElement(app.staticTexts["Minimum quality score"]))
-        XCTAssertTrue(waitForElement(app.staticTexts["Decimate ratio"]))
+        XCTAssertTrue(waitForElement(app.staticTexts["Minimum valid points"]))
     }
 
     @MainActor
@@ -77,17 +77,17 @@ final class TrueContourAIUITests: XCTestCase {
     }
 
     @MainActor
-    func testSettingsDecimateRatioOptionCanBeChanged() throws {
+    func testSettingsMinimumQualityScoreOptionCanBeChanged() throws {
         let app = launchApp()
         openSettings(in: app)
 
-        tapSettingsRow(named: "Decimate ratio", in: app)
+        tapSettingsRow(named: "Minimum quality score", in: app)
 
-        let option = settingsOptionButton(prefix: "1.25", in: app)
+        let option = settingsOptionButton(prefix: "75% (Strict)", in: app)
         XCTAssertTrue(waitForElement(option))
         option.tap()
 
-        XCTAssertTrue(waitForSettingsRowValue(title: "Decimate ratio", expectedValue: "1.25", in: app))
+        XCTAssertTrue(waitForSettingsRowValue(title: "Minimum quality score", expectedValue: "75% (Strict)", in: app))
     }
 
     @MainActor
@@ -95,18 +95,18 @@ final class TrueContourAIUITests: XCTestCase {
         let app = launchApp()
         openSettings(in: app)
 
-        tapSettingsRow(named: "Decimate ratio", in: app)
+        tapSettingsRow(named: "Minimum quality score", in: app)
 
-        let option = settingsOptionButton(prefix: "1.25", in: app)
+        let option = settingsOptionButton(prefix: "75% (Strict)", in: app)
         XCTAssertTrue(waitForElement(option))
         option.tap()
-        XCTAssertTrue(waitForSettingsRowValue(title: "Decimate ratio", expectedValue: "1.25", in: app))
+        XCTAssertTrue(waitForSettingsRowValue(title: "Minimum quality score", expectedValue: "75% (Strict)", in: app))
 
         tapSettingsRow(identifier: "settings.resetRow", named: "Reset settings", in: app)
         XCTAssertTrue(waitForElement(app.alerts["Reset Settings?"]))
         app.alerts["Reset Settings?"].buttons["Reset"].tap()
 
-        XCTAssertTrue(waitForSettingsRowValue(title: "Decimate ratio", expectedValue: "1.00 (Recommended)", in: app))
+        XCTAssertTrue(waitForSettingsRowValue(title: "Minimum quality score", expectedValue: "65% (Balanced)", in: app))
     }
 
     @MainActor

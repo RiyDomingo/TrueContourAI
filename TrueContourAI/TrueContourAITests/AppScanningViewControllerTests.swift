@@ -123,6 +123,44 @@ final class AppScanningViewControllerTests: XCTestCase {
         XCTAssertEqual(camera.stopSessionCount, 1)
     }
 
+    func testShutterTapIgnoresInputWhenCameraSessionIsNotRunning() {
+        let reconstruction = ReconstructionManagerFake()
+        let camera = CameraManagerFake()
+        camera.isSessionRunning = false
+        let haptics = HapticsFake()
+        let delegate = ScanningDelegateSpy()
+
+        let vc = makeController(reconstruction: reconstruction, camera: camera, haptics: haptics)
+        vc.delegate = delegate
+        vc.debug_setStateScanning()
+
+        vc.shutterTapped(nil)
+
+        XCTAssertEqual(delegate.scanCount, 0)
+        XCTAssertEqual(camera.stopSessionCount, 0)
+        XCTAssertEqual(haptics.finishCount, 0)
+    }
+
+    func testCriticalThermalStateStopsActiveScanBeforeDismissalAlert() {
+        let reconstruction = ReconstructionManagerFake()
+        let camera = CameraManagerFake()
+        let haptics = HapticsFake()
+        let delegate = ScanningDelegateSpy()
+
+        let vc = makeController(reconstruction: reconstruction, camera: camera, haptics: haptics)
+        vc.delegate = delegate
+        vc.loadViewIfNeeded()
+        vc.debug_setStateScanning()
+
+        vc.debug_handleCriticalThermalState()
+
+        XCTAssertEqual(reconstruction.finalizeCount, 1)
+        XCTAssertEqual(reconstruction.resetCount, 1)
+        XCTAssertEqual(delegate.scanCount, 1)
+        XCTAssertEqual(camera.stopSessionCount, 1)
+        XCTAssertEqual(haptics.finishCount, 1)
+    }
+
     private func makeController(
         reconstruction: ReconstructionManaging,
         camera: CameraManaging,
@@ -205,6 +243,7 @@ private final class ReconstructionManagerFake: ReconstructionManaging {
 
 private final class CameraManagerFake: CameraManaging {
     weak var delegate: CameraManagerDelegate!
+    var isSessionRunning = true
     private(set) var stopSessionCount = 0
 
     func configureCaptureSession(maxResolution: Int) {}
