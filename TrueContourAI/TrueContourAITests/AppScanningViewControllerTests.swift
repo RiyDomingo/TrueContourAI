@@ -7,6 +7,100 @@ import StandardCyborgUI
 
 @MainActor
 final class AppScanningViewControllerTests: XCTestCase {
+    func testIdlePromptStepDoesNotAdvanceWhileScanning() {
+        let vc = makeController(
+            reconstruction: ReconstructionManagerFake(),
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.loadViewIfNeeded()
+        vc.debug_setStateDefault()
+
+        XCTAssertTrue(vc.debug_applyNextIdlePromptStep())
+        let idleText = vc.debug_guidanceText()
+        XCTAssertFalse(idleText?.isEmpty ?? true)
+
+        vc.debug_setStateScanning()
+        XCTAssertFalse(vc.debug_applyNextIdlePromptStep())
+        XCTAssertEqual(vc.debug_guidanceText(), idleText)
+    }
+
+    func testCriticalGuidancePreemptsWithoutCooldownDelay() {
+        let vc = makeController(
+            reconstruction: ReconstructionManagerFake(),
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.loadViewIfNeeded()
+        vc.debug_setStateScanning()
+
+        XCTAssertTrue(vc.debug_emitGuidance(named: "start", force: true))
+        XCTAssertTrue(vc.debug_emitGuidance(named: "trackingLost"))
+        XCTAssertEqual(vc.debug_statusChipText(), "Lost")
+    }
+
+    func testGuidanceHysteresisHoldsTransitionsUntilWindowElapsed() {
+        let vc = makeController(
+            reconstruction: ReconstructionManagerFake(),
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.loadViewIfNeeded()
+        vc.debug_setStateScanning()
+
+        XCTAssertTrue(vc.debug_emitGuidance(named: "start", force: true))
+        XCTAssertFalse(vc.debug_emitGuidance(named: "moveSlower"))
+        advance(seconds: 0.65)
+        XCTAssertTrue(vc.debug_emitGuidance(named: "moveSlower"))
+        XCTAssertEqual(vc.debug_statusChipText(), "Caution")
+
+        XCTAssertFalse(vc.debug_emitGuidance(named: "goodTracking"))
+        advance(seconds: 4.2)
+        XCTAssertFalse(vc.debug_emitGuidance(named: "goodTracking"))
+        advance(seconds: 0.9)
+        XCTAssertTrue(vc.debug_emitGuidance(named: "goodTracking"))
+        XCTAssertEqual(vc.debug_statusChipText(), "Good")
+    }
+
+    func testProgressTextStaysModeConsistentPerRun() {
+        let vc = makeController(
+            reconstruction: ReconstructionManagerFake(),
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.loadViewIfNeeded()
+        vc.debug_setStateScanning()
+
+        vc.debug_setAutoFinishForProgress(seconds: 20, remaining: 18)
+        vc.debug_updateCaptureProgress()
+        XCTAssertTrue(vc.debug_progressLabelText()?.contains("2 / 20") == true)
+
+        vc.debug_setAutoFinishForProgress(seconds: 0, remaining: 0)
+        vc.debug_setAssimilatedFramesForProgress(12)
+        vc.debug_updateCaptureProgress()
+        XCTAssertTrue(vc.debug_progressLabelText()?.contains("12") == true)
+    }
+
+    func testCountdownVisibilityIsIndependentFromActiveGuidance() {
+        let vc = makeController(
+            reconstruction: ReconstructionManagerFake(),
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.loadViewIfNeeded()
+
+        vc.debug_setStateCountdown(seconds: 2)
+        XCTAssertFalse(vc.debug_countdownHidden())
+        XCTAssertTrue(vc.debug_statusChipHidden())
+        XCTAssertTrue(vc.debug_progressHidden())
+
+        vc.debug_setStateScanning()
+        XCTAssertTrue(vc.debug_countdownHidden())
+        XCTAssertTrue(vc.debug_emitGuidance(named: "goodTracking", force: true))
+        XCTAssertFalse(vc.debug_statusChipHidden())
+        XCTAssertFalse(vc.debug_progressHidden())
+    }
+
     func testStopScanningCancelPathTriggersDelegateCancel() {
         let reconstruction = ReconstructionManagerFake()
         let camera = CameraManagerFake()
@@ -171,6 +265,10 @@ final class AppScanningViewControllerTests: XCTestCase {
             cameraManager: camera,
             hapticEngine: haptics
         )
+    }
+
+    private func advance(seconds: TimeInterval) {
+        RunLoop.current.run(until: Date().addingTimeInterval(seconds))
     }
 }
 

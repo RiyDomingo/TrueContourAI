@@ -65,22 +65,11 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
     }
 
     @MainActor
-    func testDeviceSmokeSaveReportsExportArtifactPresence() throws {
+    func testDeviceSmokeScanHUDCountdownProgressAndControls() throws {
 #if targetEnvironment(simulator)
         throw XCTSkip("TrueDepth smoke tests run only on physical iPhone hardware")
 #endif
-        let app = launchDeviceSmokeApp(skipEarML: true)
-        let diagnostics = try saveAndReturnDiagnostics(app: app)
-        XCTAssertTrue(diagnostics.contains("gltf=1"), "Expected GLTF artifact in diagnostics: \(diagnostics)")
-        XCTAssertTrue(diagnostics.contains("obj=1"), "Expected OBJ artifact in diagnostics: \(diagnostics)")
-    }
-
-    @MainActor
-    func testDeviceSmokeQualityGateBlockShowsAlert() throws {
-#if targetEnvironment(simulator)
-        throw XCTSkip("TrueDepth smoke tests run only on physical iPhone hardware")
-#endif
-        let app = launchDeviceSmokeApp(skipEarML: true, extraArguments: ["ui-test-force-quality-gate-block"])
+        let app = launchDeviceSmokeApp()
         let startButton = app.buttons["startScanButton"]
         XCTAssertTrue(waitForElement(startButton))
         startButton.tap()
@@ -97,18 +86,47 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
             "Expected scan shutter button to become hittable on device"
         )
         shutter.tap()
-        _ = waitUntil(timeout: 6.0) { app.buttons["finishScanNowButton"].isHittable }
 
-        XCTAssertTrue(waitForElement(app.buttons["finishScanNowButton"], timeout: 12))
-        app.buttons["finishScanNowButton"].tap()
+        let countdown = app.staticTexts["scanCountdownLabel"]
+        XCTAssertTrue(waitForElement(countdown, timeout: 3.0), "Expected countdown label after starting scan")
+
+        let progress = app.progressIndicators["scanCaptureProgressView"]
+        XCTAssertTrue(waitForElement(progress, timeout: 10.0), "Expected visible capture progress during scan")
+
+        let statusChip = app.staticTexts["scanGuidanceStatusChip"]
+        XCTAssertTrue(
+            waitUntil(timeout: 10.0) {
+                statusChip.exists && !statusChip.label.isEmpty
+            },
+            "Expected guidance status chip during active scan"
+        )
+
+        let finish = app.buttons["finishScanNowButton"]
+        XCTAssertTrue(waitForElement(finish, timeout: 12), "Expected finish button while guidance updates")
+        finish.tap()
         XCTAssertTrue(waitForElement(app.buttons["previewSaveButton"], timeout: 30))
-        XCTAssertTrue(waitUntil(timeout: 25) { app.buttons["previewSaveButton"].isEnabled })
-        app.buttons["previewSaveButton"].tap()
+    }
 
-        let alert = app.alerts["qualityGateAlert"]
-        XCTAssertTrue(waitForElement(alert, timeout: 8.0))
-        alert.buttons["OK"].tap()
-        XCTAssertTrue(waitForElement(app.buttons["previewSaveButton"], timeout: 4.0))
+    @MainActor
+    func testDeviceSmokeSaveReportsExportArtifactPresence() throws {
+#if targetEnvironment(simulator)
+        throw XCTSkip("TrueDepth smoke tests run only on physical iPhone hardware")
+#endif
+        let app = launchDeviceSmokeApp(skipEarML: true)
+        let diagnostics = try saveAndReturnDiagnostics(app: app)
+        XCTAssertTrue(diagnostics.contains("gltf=1"), "Expected GLTF artifact in diagnostics: \(diagnostics)")
+        XCTAssertTrue(diagnostics.contains("obj=1"), "Expected OBJ artifact in diagnostics: \(diagnostics)")
+    }
+
+    @MainActor
+    func testDeviceSmokeForcedQualityGateStillAllowsSave() throws {
+#if targetEnvironment(simulator)
+        throw XCTSkip("TrueDepth smoke tests run only on physical iPhone hardware")
+#endif
+        let app = launchDeviceSmokeApp(skipEarML: true, extraArguments: ["ui-test-force-quality-gate-block"])
+        let diagnostics = try saveAndReturnDiagnostics(app: app)
+        XCTAssertTrue(diagnostics.contains("folder="), "Expected save to succeed with forced quality gate: \(diagnostics)")
+        XCTAssertFalse(diagnostics.contains("folder=none"), "Expected saved folder when forced quality gate is enabled: \(diagnostics)")
     }
 
     @MainActor

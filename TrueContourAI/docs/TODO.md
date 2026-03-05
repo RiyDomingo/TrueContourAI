@@ -8,7 +8,7 @@ This file tracks remaining implementation, validation, and hygiene tasks.
   - `TrueContourAITests`
   - `TrueContourAIUITests`
 - [ ] Validate main scan flow end-to-end on device: start scan -> preview -> export -> reopen scan.
-- [x] Verify quality-gate blocked export flow and recovery messaging on device.
+- [ ] Temporary policy: allow saving scans even when quality reports "Try again" / "Scan needs another pass"; re-enable release quality gate before production sign-off.
 - [ ] Validate export settings matrix on device:
   - [x] GLTF on / OBJ on
   - [x] GLTF on / OBJ off
@@ -143,3 +143,5 @@ This file tracks remaining implementation, validation, and hygiene tasks.
 - [ ] 2026-03-05: `swift test --package-path StandardCyborgFusion` fails in this environment while linking package tests with:
   - `ld: framework 'UIKit' not found`
   - this is tracked as an environment/toolchain limitation for SwiftPM package-test execution rather than an app-target runtime regression
+- [x] 2026-03-05: Preview save precheck no longer blocks on scan-quality gate; low-quality scans are currently saveable when mesh and GLTF prerequisites are satisfied.
+- [ ] 2026-03-05: Focused simulator unit run for `ScanPreviewCoordinatorExportTests` still stalled after build completion (`xcodebuild test` + `testmanagerd` remained active without XCTest case output); target builds succeeded and this remains an environment runner blocker.

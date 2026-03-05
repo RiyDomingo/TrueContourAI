@@ -109,7 +109,7 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
         XCTAssertTrue(toasts.contains(L("scan.preview.toast.earUnavailable")))
     }
 
-    func testDebugSavePrecheckBlockedByQualityGate() {
+    func testDebugSavePrecheckIgnoresQualityGateAndAllowsSave() {
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
             scanService: ScanService(scansRootURL: tempDir, defaults: defaults),
@@ -130,7 +130,7 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
             reason: "low quality"
         )
 
-        XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: report, hasMesh: true), "blockedByQualityGate")
+        XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: report, hasMesh: true), "ready")
     }
 
     func testDebugSavePrecheckMeshNotReady() {
@@ -172,7 +172,7 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
         XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: nil, hasMesh: true), "ready")
     }
 
-    func testDebugSavePrecheckPrioritizesQualityGateBeforeMeshReadiness() {
+    func testDebugSavePrecheckPrioritizesMeshReadinessWhenQualityIsLow() {
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
             scanService: ScanService(scansRootURL: tempDir, defaults: defaults),
@@ -193,10 +193,7 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
             reason: "low quality"
         )
 
-        XCTAssertEqual(
-            coordinator.debug_savePrecheck(qualityReport: blocked, hasMesh: false),
-            "blockedByQualityGate"
-        )
+        XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: blocked, hasMesh: false), "meshNotReady")
     }
 
     func testPreviewExportFormatSummaryMatchesSettingsMatrix() {

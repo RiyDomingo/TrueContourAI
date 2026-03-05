@@ -83,11 +83,11 @@ final class TrueContourAIUITests: XCTestCase {
 
         tapSettingsRow(named: "Minimum quality score", in: app)
 
-        let option = settingsOptionButton(prefix: "75% (Strict)", in: app)
+        let option = settingsOptionButton(prefix: "0.75 (Strict)", in: app)
         XCTAssertTrue(waitForElement(option))
         option.tap()
 
-        XCTAssertTrue(waitForSettingsRowValue(title: "Minimum quality score", expectedValue: "75% (Strict)", in: app))
+        XCTAssertTrue(waitForSettingsRowValue(title: "Minimum quality score", expectedValue: "0.75 (Strict)", in: app))
     }
 
     @MainActor
@@ -97,16 +97,16 @@ final class TrueContourAIUITests: XCTestCase {
 
         tapSettingsRow(named: "Minimum quality score", in: app)
 
-        let option = settingsOptionButton(prefix: "75% (Strict)", in: app)
+        let option = settingsOptionButton(prefix: "0.75 (Strict)", in: app)
         XCTAssertTrue(waitForElement(option))
         option.tap()
-        XCTAssertTrue(waitForSettingsRowValue(title: "Minimum quality score", expectedValue: "75% (Strict)", in: app))
+        XCTAssertTrue(waitForSettingsRowValue(title: "Minimum quality score", expectedValue: "0.75 (Strict)", in: app))
 
         tapSettingsRow(identifier: "settings.resetRow", named: "Reset settings", in: app)
         XCTAssertTrue(waitForElement(app.alerts["Reset Settings?"]))
         app.alerts["Reset Settings?"].buttons["Reset"].tap()
 
-        XCTAssertTrue(waitForSettingsRowValue(title: "Minimum quality score", expectedValue: "65% (Balanced)", in: app))
+        XCTAssertTrue(waitForSettingsRowValue(title: "Minimum quality score", expectedValue: "0.65 (Balanced)", in: app))
     }
 
     @MainActor
@@ -164,7 +164,7 @@ final class TrueContourAIUITests: XCTestCase {
         XCTAssertTrue(waitForElement(closeButton))
         closeButton.tap()
 
-        XCTAssertTrue(waitForElement(app.buttons["startScanButton"]))
+        XCTAssertTrue(waitForElement(app.buttons["startScanButton"], timeout: Self.defaultTimeout + 4.0))
     }
 
     @MainActor

@@ -32,6 +32,9 @@ import UIKit
     
     /** Gives us a hook to know the textured mesh is generated. */
     @objc public var onTexturedMeshGenerated: ((SCMesh) -> Void)?
+
+    /** Gives us a hook to observe meshing progress (0...1). */
+    @objc public var onMeshingProgressUpdated: ((Float) -> Void)?
     
     override public var preferredStatusBarStyle: UIStatusBarStyle { .default }
     
@@ -126,6 +129,12 @@ import UIKit
     @objc public let meshingProgressView: UIProgressView = {
         let progressView = UIProgressView()
         progressView.progress = 0
+        progressView.trackTintColor = UIColor.white.withAlphaComponent(0.28)
+        progressView.progressTintColor = UIColor.systemBlue
+        progressView.layer.cornerRadius = 4
+        progressView.clipsToBounds = true
+        progressView.transform = CGAffineTransform(scaleX: 1, y: 2.0)
+        progressView.accessibilityIdentifier = "meshingProgressBar"
         return progressView
     }()
 
@@ -251,6 +260,7 @@ import UIKit
                 switch meshingStatus {
                 case .inProgress(let progress):
                     self.meshingProgressView.setProgress(progress, animated: false)
+                    self.onMeshingProgressUpdated?(progress)
                 case .failure(let error):
                     self.meshingProgressView.isHidden = true
                     completion(.failure(error))    // Error is guaranteed to be set for the failure case

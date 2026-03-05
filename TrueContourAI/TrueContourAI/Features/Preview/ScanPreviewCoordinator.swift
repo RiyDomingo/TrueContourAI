@@ -38,7 +38,6 @@ final class ScanPreviewCoordinator {
     }
 
     private enum SavePrecheckResult: Equatable {
-        case blockedByQualityGate
         case gltfExportRequired
         case meshNotReady
         case ready
@@ -282,6 +281,16 @@ final class ScanPreviewCoordinator {
             meshingStatusLabel: meshingStatusLabel,
             meshingActivityIndicator: meshingActivityIndicator
         )
+        vc.onMeshingProgressUpdated = { [weak self] progress in
+            DispatchQueue.main.async {
+                guard let self, self.isCurrentPreviewSession(previewSessionID) else { return }
+                let clamped = max(0, min(1, progress))
+                let percent = clamped * 100
+                self.saveExportViewState.setMeshingStatusText(
+                    String(format: L("scan.preview.meshing.progressFormat"), percent)
+                )
+            }
+        }
 
         vc.onTexturedMeshGenerated = { [weak self, weak vc] mesh in
             DispatchQueue.main.async {
@@ -336,20 +345,21 @@ final class ScanPreviewCoordinator {
     @objc private func dismissPreviewTapped() {
         Log.ui.info("Dismissed preview")
         invalidatePreviewSession()
-        removeVerifyEarUI()
-        cancelMeshingTimeout()
-        scanFlowState.setPhase(.idle)
-        previewViewModel.setPhase(.idle)
-        scanFlowState.currentlyPreviewedFolderURL = nil
-        activePreviewVC = nil
-        previewContainerVC = nil
-        scenePreviewVC = nil
-        dismissActivePreview(animated: true)
+        dismissActivePreview(animated: true) { [weak self] in
+            guard let self else { return }
+            self.removeVerifyEarUI()
+            self.cancelMeshingTimeout()
+            self.scanFlowState.setPhase(.idle)
+            self.previewViewModel.setPhase(.idle)
+            self.scanFlowState.currentlyPreviewedFolderURL = nil
+            self.activePreviewVC = nil
+            self.previewContainerVC = nil
+            self.scenePreviewVC = nil
+        }
     }
 
     @objc private func shareOpenedScanTapped() {
-        guard let presenter else { return }
-        let presentingVC = activePreviewVC ?? presenter
+        guard let presentingVC = activePreviewVC ?? presenter else { return }
         let forceMissing = ProcessInfo.processInfo.arguments.contains("ui-test-force-missing-folder")
         guard let folder = forceMissing ? nil : (scanFlowState.currentlyPreviewedFolderURL ?? scanService.resolveLastScanFolderURL()) else {
             alertPresenter.presentAlert(
@@ -363,7 +373,7 @@ final class ScanPreviewCoordinator {
         let source: UIView? = scenePreviewVC?.rightButton
         let av = UIActivityViewController(activityItems: scanService.shareItems(for: folder), applicationActivities: nil)
         if let pop = av.popoverPresentationController {
-            let src = source ?? presenter.view
+            let src = source ?? presentingVC.view
             pop.sourceView = src
             pop.sourceRect = src?.bounds ?? .zero
         }
@@ -477,23 +487,6 @@ final class ScanPreviewCoordinator {
         DesignSystem.hapticPrimary()
 
         let precheck = savePrecheck(qualityReport: latestQualityReport, meshAvailable: previewViewModel.meshForExport != nil)
-        if precheck == .blockedByQualityGate, let qualityReport = latestQualityReport {
-            previewVC.present(
-                alertPresenter.makeAlert(
-                    title: L("scan.quality.gate.title"),
-                    message: String(
-                        format: L("scan.quality.gate.message"),
-                        qualityReport.reason,
-                        qualityReport.advice.message
-                    ),
-                    identifier: "qualityGateAlert"
-                ),
-                animated: true
-            )
-            saveExportViewState.setMeshingStatusText(L("scan.preview.qualityNeedsAttention"))
-            Log.export.error("Export blocked by quality gate: \(qualityReport.reason, privacy: .public)")
-            return
-        }
         if precheck == .gltfExportRequired {
             previewVC.present(
                 alertPresenter.makeAlert(
@@ -639,9 +632,7 @@ final class ScanPreviewCoordinator {
     }
 
     private func savePrecheck(qualityReport: ScanQualityReport?, meshAvailable: Bool) -> SavePrecheckResult {
-        if let qualityReport, !qualityReport.isExportRecommended {
-            return .blockedByQualityGate
-        }
+        _ = qualityReport
         if !settingsStore.hasRequiredExportFormatsEnabled {
             return .gltfExportRequired
         }
@@ -820,8 +811,6 @@ final class ScanPreviewCoordinator {
 
     func debug_savePrecheck(qualityReport: ScanQualityReport?, hasMesh: Bool) -> String {
         switch savePrecheck(qualityReport: qualityReport, meshAvailable: hasMesh) {
-        case .blockedByQualityGate:
-            return "blockedByQualityGate"
         case .gltfExportRequired:
             return "gltfExportRequired"
         case .meshNotReady:

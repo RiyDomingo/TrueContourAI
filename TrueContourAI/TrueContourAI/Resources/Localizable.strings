@@ -229,6 +229,7 @@
 "scan.preview.exportFormat.none" = "No file exports";
 "scan.preview.toast.earUnavailable" = "Saved without ear overlay.";
 "scan.preview.meshing" = "Meshing…";
+"scan.preview.meshing.progressFormat" = "Meshing… %.0f%%";
 "scan.preview.meshing.accessibility" = "Meshing in progress";
 "scan.preview.readyToSave" = "Ready to save your scan";
 "scan.preview.exporting" = "Exporting your files…";
@@ -290,6 +291,9 @@
 "scanning.prompt.initial" = "Keep your head STILL.\nMove the phone around your head slowly.";
 "scanning.focusHint" = "Tap to focus before scanning";
 "scanning.progress" = "Scanning…";
+"scanning.progress.capturing" = "Capturing";
+"scanning.progress.framesFormat" = "Captured: %d frames";
+"scanning.progress.timeFormat" = "Captured: %d / %d s";
 "scanning.prompt.1" = "Keep your head STILL.\nMove the phone around your head.";
 "scanning.prompt.2" = "Move SLOWLY.\nIf you see overlap, pause for 1–2 seconds.";
 "scanning.prompt.3" = "Front view → move to LEFT side.\n(Phone moves, head stays still.)";
@@ -302,6 +306,15 @@
 "scanning.guidance.poorTracking" = "Tracking is weak. Keep face in view and move slowly";
 "scanning.guidance.goodTracking" = "Great tracking. Continue rotating";
 "scanning.guidance.trackingLost" = "Tracking lost. Pause briefly, then continue";
+"scanning.guidance.short.start" = "Move around your head slowly";
+"scanning.guidance.short.motion" = "Move slower";
+"scanning.guidance.short.poorTracking" = "Keep face in frame";
+"scanning.guidance.short.goodTracking" = "Tracking good";
+"scanning.guidance.short.trackingLost" = "Tracking lost";
+"scanning.guidance.status.good" = "Good";
+"scanning.guidance.status.caution" = "Caution";
+"scanning.guidance.status.lost" = "Lost";
+"scanning.guidance.status.accessibility" = "Scan status %@. %@";
 "scanning.thermal.title" = "iPhone is too warm";
 "scanning.thermal.message" = "Let your device cool down, then try scanning again.";
 
