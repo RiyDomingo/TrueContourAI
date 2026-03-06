@@ -245,12 +245,10 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
     }
 
     @MainActor
-    private func waitUntil(timeout: TimeInterval, poll: TimeInterval = 0.1, condition: @escaping () -> Bool) -> Bool {
-        let end = Date().addingTimeInterval(timeout)
-        while Date() < end {
-            if condition() { return true }
-            RunLoop.current.run(until: Date().addingTimeInterval(poll))
-        }
-        return condition()
+    private func waitUntil(timeout: TimeInterval, condition: @escaping () -> Bool) -> Bool {
+        let predicate = NSPredicate { _, _ in condition() }
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: nil)
+        let result = XCTWaiter.wait(for: [expectation], timeout: timeout)
+        return result == .completed
     }
 }
