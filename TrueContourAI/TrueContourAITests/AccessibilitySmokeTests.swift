@@ -94,6 +94,23 @@ final class AccessibilitySmokeTests: XCTestCase {
         overlay.setDeveloperModeEnabled(true)
         XCTAssertEqual(overlay.debug_currentSnapPoint(), .collapsed)
     }
+
+    func testPreviewSheetFrameRatioStaysWithinViewportCaps() {
+        let smallPhone = UIView(frame: CGRect(x: 0, y: 0, width: 375, height: 667))
+        let smallFrame = PreviewOverlayUIController()
+            .debug_sheetFrame(on: smallPhone, developerModeEnabled: false)
+        XCTAssertLessThanOrEqual(smallFrame.height / smallPhone.bounds.height, 0.22)
+
+        let regularPhone = UIView(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        let regularFrame = PreviewOverlayUIController()
+            .debug_sheetFrame(on: regularPhone, developerModeEnabled: false)
+        XCTAssertLessThanOrEqual(regularFrame.height / regularPhone.bounds.height, 0.20)
+
+        let largePad = UIView(frame: CGRect(x: 0, y: 0, width: 820, height: 1180))
+        let padFrame = PreviewOverlayUIController()
+            .debug_sheetFrame(on: largePad, developerModeEnabled: true)
+        XCTAssertLessThanOrEqual(padFrame.height / largePad.bounds.height, 0.18)
+    }
 }
 
 private extension UIView {

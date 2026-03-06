@@ -555,5 +555,12 @@ final class PreviewOverlayUIController {
     func debug_currentSnapPoint() -> BottomSheetSnapPoint {
         bottomSheet.currentSnapPoint
     }
+
+    func debug_sheetFrame(on hostView: UIView, developerModeEnabled: Bool) -> CGRect {
+        ensureSheet(on: hostView)
+        setDeveloperModeEnabled(developerModeEnabled)
+        hostView.layoutIfNeeded()
+        return bottomSheet.containerView.frame
+    }
 #endif
 }
