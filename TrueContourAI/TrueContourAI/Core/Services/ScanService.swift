@@ -2,6 +2,76 @@ import Foundation
 import UIKit
 import StandardCyborgFusion
 
+protocol ScanListing {
+    func listScansAsync(completion: @escaping ([ScanService.ScanItem]) -> Void)
+    func resolveScanSummary(from folder: URL) -> ScanService.ScanSummary?
+    func resolveLastScanItem() -> ScanService.ScanItem?
+    func resolveLastScanGLTFURL() -> URL?
+}
+
+protocol ScanSummaryReading {
+    func resolveScanSummary(from folder: URL) -> ScanService.ScanSummary?
+}
+
+protocol LastScanReading {
+    func resolveLastScanItem() -> ScanService.ScanItem?
+}
+
+protocol ScansRootEnsuring {
+    func ensureScansRootFolder() -> Result<Void, Error>
+}
+
+protocol ScanFolderSharing {
+    func shareItems(for folderURL: URL) -> [Any]
+    func shareItemsForScansRoot() -> [Any]
+    func resolveOBJFromFolder(_ folder: URL) -> URL?
+}
+
+protocol ScanItemListing {
+    func listScans() -> [ScanService.ScanItem]
+}
+
+protocol ScanFolderEditing {
+    func renameScanFolder(_ item: ScanService.ScanItem, to newNameRaw: String) -> ScanService.RenameResult
+    func deleteScanFolder(_ item: ScanService.ScanItem) -> Result<Void, Error>
+}
+
+protocol ScanLibraryManaging:
+    ScansRootEnsuring,
+    ScanFolderSharing,
+    ScanItemListing,
+    ScanSummaryReading,
+    LastScanReading,
+    ScanFolderEditing {}
+
+protocol HomeScanManaging:
+    ScansRootEnsuring,
+    ScanFolderSharing,
+    ScanItemListing,
+    ScanSummaryReading,
+    LastScanReading,
+    ScanFolderEditing {}
+
+protocol ScanHistoryReading: ScanItemListing, ScanSummaryReading {}
+
+protocol PreviewScanLibraryReading:
+    ScanSummaryReading,
+    LastScanReading,
+    ScanFolderSharing {}
+
+protocol ScanRootSharing: ScansRootEnsuring, ScanFolderSharing {}
+
+protocol ScanStorageManaging: ScansRootEnsuring, LastScanReading {}
+
+extension ScanService:
+    ScanListing,
+    ScanLibraryManaging,
+    HomeScanManaging,
+    ScanHistoryReading,
+    PreviewScanLibraryReading,
+    ScanRootSharing,
+    ScanStorageManaging {}
+
 final class ScanService {
     struct ScanSummary: Codable, Equatable {
         struct ProcessingProfile: Codable, Equatable {
@@ -121,6 +191,7 @@ final class ScanService {
 
     let scansRootURL: URL
     private let defaults: UserDefaults
+    private let environment: AppEnvironment
     private let lastScanFolderPathKey = "tc_last_scan_folder_path"
     private static let timestampFormatter: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
@@ -128,8 +199,39 @@ final class ScanService {
         return f
     }()
 
-    init(scansRootURL: URL? = nil, defaults: UserDefaults = .standard) {
+    private var storageRepository: ScanStorageRepository {
+        ScanStorageRepository(
+            scansRootURL: scansRootURL,
+            defaults: defaults,
+            lastScanFolderPathKey: lastScanFolderPathKey
+        )
+    }
+
+    private var folderExporter: ScanFolderExporter {
+        ScanFolderExporter(
+            scansRootURL: scansRootURL,
+            timestampFormatter: Self.timestampFormatter,
+            writeOBJ: { mesh, url in try self.writeOBJWithoutUV(mesh: mesh, to: url) },
+            writeEarArtifacts: { folderURL, artifacts in self.writeEarArtifacts(folderURL: folderURL, artifacts: artifacts) },
+            writeScanSummary: { folderURL, summary in self.writeScanSummary(folderURL: folderURL, summary: summary) },
+            cleanupFolder: { folderURL in self.cleanupIncompleteExportFolder(folderURL) }
+        )
+    }
+
+    private var uiTestSeedRepository: ScanUITestSeedRepository {
+        ScanUITestSeedRepository(
+            scansRootURL: scansRootURL,
+            fileManager: .default
+        )
+    }
+
+    init(
+        scansRootURL: URL? = nil,
+        defaults: UserDefaults = .standard,
+        environment: AppEnvironment = .current
+    ) {
         self.defaults = defaults
+        self.environment = environment
         if let scansRootURL {
             self.scansRootURL = scansRootURL
         } else {
@@ -147,26 +249,11 @@ final class ScanService {
 
     @discardableResult
     func ensureScansRootFolder() -> Result<Void, Error> {
-        var isDirectory: ObjCBool = false
-        if FileManager.default.fileExists(atPath: scansRootURL.path, isDirectory: &isDirectory) {
-            if !isDirectory.boolValue {
-                let error = NSError(
-                    domain: "ScanService",
-                    code: 1,
-                    userInfo: [NSLocalizedDescriptionKey: "Scans root path exists but is not a directory."]
-                )
-                Log.persistence.error("Scans root exists but is not a directory: \(self.scansRootURL.path, privacy: .public)")
-                return .failure(error)
-            }
-            return .success(())
+        let result = storageRepository.ensureScansRootFolder()
+        if case .failure(let error) = result {
+            Log.persistence.error("Failed to ensure scans root folder: \(error.localizedDescription, privacy: .public)")
         }
-        do {
-            try FileManager.default.createDirectory(at: scansRootURL, withIntermediateDirectories: true)
-            return .success(())
-        } catch {
-            Log.persistence.error("Failed to create scans root folder: \(error.localizedDescription, privacy: .public)")
-            return .failure(error)
-        }
+        return result
     }
 
     func resolveGLTFFromFolder(_ folder: URL) -> URL? {
@@ -196,47 +283,15 @@ final class ScanService {
             return []
         }
 
-        let fm = FileManager.default
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("ui-test-seed-scan") {
-            _seedScanForUITestIfNeeded(fileManager: fm)
+        if environment.seedsScan {
+            uiTestSeedRepository.seedPreviewableScanIfNeeded()
         }
-        if ProcessInfo.processInfo.arguments.contains("ui-test-seed-missing-scene") {
-            _seedMissingSceneScanForUITestIfNeeded(fileManager: fm)
+        if environment.seedsMissingSceneScan {
+            uiTestSeedRepository.seedMissingSceneScanIfNeeded()
         }
         #endif
-        let urls = (try? fm.contentsOfDirectory(
-            at: scansRootURL,
-            includingPropertiesForKeys: [.contentModificationDateKey],
-            options: [.skipsHiddenFiles]
-        )) ?? []
-
-        var items: [ScanItem] = []
-
-        for folder in urls where folder.hasDirectoryPath {
-            let values = try? folder.resourceValues(forKeys: [.contentModificationDateKey])
-            let date = values?.contentModificationDate ?? Date.distantPast
-            let displayName = folder.lastPathComponent
-
-            let overlay = folder.appendingPathComponent("thumbnail_ear_overlay.png")
-            let thumb = folder.appendingPathComponent("thumbnail.png")
-            let thumbURL: URL?
-            if fm.fileExists(atPath: overlay.path) { thumbURL = overlay }
-            else if fm.fileExists(atPath: thumb.path) { thumbURL = thumb }
-            else { thumbURL = nil }
-
-            let gltfURL = resolveGLTFFromFolder(folder)
-
-            items.append(.init(
-                folderURL: folder,
-                displayName: displayName,
-                date: date,
-                thumbnailURL: thumbURL,
-                sceneGLTFURL: gltfURL
-            ))
-        }
-
-        items.sort { $0.date > $1.date }
+        let items = storageRepository.listScans()
         Log.scan.info("Listed scans: \(items.count, privacy: .public)")
         return items
     }
@@ -249,37 +304,6 @@ final class ScanService {
                 completion(items)
             }
         }
-    }
-
-    private func _seedScanForUITestIfNeeded(fileManager fm: FileManager) {
-        let seedFolder = scansRootURL.appendingPathComponent("UITest-Seed", isDirectory: true)
-        if fm.fileExists(atPath: seedFolder.path) { return }
-        try? fm.createDirectory(at: seedFolder, withIntermediateDirectories: true)
-        let gltfURL = seedFolder.appendingPathComponent("scene.gltf")
-        let gltf = """
-        {"asset":{"version":"2.0"},"scene":0,"scenes":[{"nodes":[]}]}
-        """
-        try? gltf.data(using: .utf8)?.write(to: gltfURL, options: [.atomic])
-    }
-
-    private func _seedMissingSceneScanForUITestIfNeeded(fileManager fm: FileManager) {
-        let seedFolder = scansRootURL.appendingPathComponent("UITest-MissingScene", isDirectory: true)
-        if fm.fileExists(atPath: seedFolder.path) { return }
-        try? fm.createDirectory(at: seedFolder, withIntermediateDirectories: true)
-        let thumbURL = seedFolder.appendingPathComponent("thumbnail.png")
-        if let png = _makeUITestThumbnailPNG() {
-            try? png.write(to: thumbURL, options: [.atomic])
-        }
-    }
-
-    private func _makeUITestThumbnailPNG() -> Data? {
-        let size = CGSize(width: 2, height: 2)
-        UIGraphicsBeginImageContextWithOptions(size, false, 1.0)
-        UIColor.systemTeal.setFill()
-        UIRectFill(CGRect(origin: .zero, size: size))
-        let image = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        return image?.pngData()
     }
 
     func sceneForScan(_ item: ScanItem) -> SCScene? {
@@ -298,27 +322,7 @@ final class ScanService {
     }
 
     func resolveLastScanFolderURL() -> URL? {
-        if let path = defaults.string(forKey: lastScanFolderPathKey) {
-            let url = URL(fileURLWithPath: path, isDirectory: true)
-            if FileManager.default.fileExists(atPath: url.path) { return url }
-        }
-        let urls = (try? FileManager.default.contentsOfDirectory(
-            at: scansRootURL,
-            includingPropertiesForKeys: [.contentModificationDateKey],
-            options: [.skipsHiddenFiles]
-        )) ?? []
-
-        var newestURL: URL?
-        var newestDate = Date.distantPast
-        for folder in urls where folder.hasDirectoryPath {
-            let values = try? folder.resourceValues(forKeys: [.contentModificationDateKey])
-            let date = values?.contentModificationDate ?? Date.distantPast
-            if date > newestDate {
-                newestDate = date
-                newestURL = folder
-            }
-        }
-        return newestURL
+        storageRepository.resolveLastScanFolderURL()
     }
 
     func resolveLastScanGLTFURL() -> URL? {
@@ -334,19 +338,15 @@ final class ScanService {
     }
 
     func setLastScanFolder(_ folderURL: URL) {
-        defaults.set(folderURL.path, forKey: lastScanFolderPathKey)
+        storageRepository.setLastScanFolder(folderURL)
     }
 
     func clearLastScanFolderIfMatches(_ folderURL: URL) {
-        if defaults.string(forKey: lastScanFolderPathKey) == folderURL.path {
-            defaults.removeObject(forKey: lastScanFolderPathKey)
-        }
+        storageRepository.clearLastScanFolderIfMatches(folderURL)
     }
 
     func updateLastScanFolderIfMatches(oldURL: URL, newURL: URL) {
-        if defaults.string(forKey: lastScanFolderPathKey) == oldURL.path {
-            setLastScanFolder(newURL)
-        }
+        storageRepository.updateLastScanFolderIfMatches(oldURL: oldURL, newURL: newURL)
     }
 
     enum RenameResult {
@@ -376,45 +376,23 @@ final class ScanService {
             return .nameExists
         }
 
-        do {
-            try FileManager.default.moveItem(at: item.folderURL, to: newURL)
-            updateLastScanFolderIfMatches(oldURL: item.folderURL, newURL: newURL)
+        switch storageRepository.renameScanFolder(item, to: newURL) {
+        case .success:
             return .success(newURL: newURL)
-        } catch {
+        case .failure(let error):
             return .failure(error)
         }
     }
 
     func deleteScanFolder(_ item: ScanItem) -> Result<Void, Error> {
-        do {
-            try FileManager.default.removeItem(at: item.folderURL)
-            clearLastScanFolderIfMatches(item.folderURL)
-            return .success(())
-        } catch {
-            let nsError = error as NSError
-            if nsError.domain == NSCocoaErrorDomain,
-               nsError.code == NSFileNoSuchFileError {
-                clearLastScanFolderIfMatches(item.folderURL)
-                return .success(())
-            }
-            return .failure(error)
-        }
+        storageRepository.deleteScanFolder(item)
     }
 
     func deleteAllScans() -> Result<Void, Error> {
         if case .failure(let error) = ensureScansRootFolder() {
             return .failure(error)
         }
-        do {
-            let contents = try FileManager.default.contentsOfDirectory(at: scansRootURL, includingPropertiesForKeys: nil)
-            for url in contents {
-                try FileManager.default.removeItem(at: url)
-            }
-            defaults.removeObject(forKey: lastScanFolderPathKey)
-            return .success(())
-        } catch {
-            return .failure(error)
-        }
+        return storageRepository.deleteAllScans()
     }
 
     func exportScanFolder(
@@ -429,66 +407,15 @@ final class ScanService {
         if case .failure(let error) = ensureScansRootFolder() {
             return .failure(String(format: L("scan.service.createFolderFailed"), error.localizedDescription))
         }
-        guard includeGLTF else {
-            return .failure(L("settings.export.minimum.message"))
-        }
-
-        let timestamp = Self.timestampFormatter.string(from: Date()).replacingOccurrences(of: ":", with: "-")
-        let folderURL = scansRootURL.appendingPathComponent(timestamp, isDirectory: true)
-
-        do {
-            try FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true)
-        } catch {
-            Log.export.error("Failed to create scan folder: \(error.localizedDescription, privacy: .public)")
-            return .failure(String(format: L("scan.service.createFolderFailed"), error.localizedDescription))
-        }
-
-        // 1) Save scene.gltf
-        if includeGLTF {
-            let gltfURL = folderURL.appendingPathComponent("scene.gltf")
-            scene.writeToGLTF(atPath: gltfURL.path)
-            if !FileManager.default.fileExists(atPath: gltfURL.path) {
-                Log.export.error("Failed to write scene.gltf at \(gltfURL.path, privacy: .private)")
-                cleanupIncompleteExportFolder(folderURL)
-                return .failure(L("scan.service.writeGLTFFailed"))
-            }
-        }
-
-        // 2) Save thumbnail.png
-        autoreleasepool {
-            if let thumbnail, let png = thumbnail.pngData() {
-                let tURL = folderURL.appendingPathComponent("thumbnail.png")
-                do { try png.write(to: tURL, options: [.atomic]) }
-                catch {
-                    Log.export.error("Failed to write thumbnail.png: \(error.localizedDescription, privacy: .public)")
-                }
-            }
-        }
-
-        // 3) Save OBJ
-        if includeOBJ {
-            let objURL = folderURL.appendingPathComponent("head_mesh.obj")
-            do {
-                try writeOBJWithoutUV(mesh: mesh, to: objURL)
-            } catch {
-                Log.export.error("Failed to write OBJ: \(error.localizedDescription, privacy: .public)")
-                cleanupIncompleteExportFolder(folderURL)
-                return .failure(String(format: L("scan.service.writeOBJFailed"), error.localizedDescription))
-            }
-        }
-
-        // 4) Ear verification artifacts (user-driven only)
-        if let artifacts = earArtifacts {
-            Log.ml.info("Writing ear artifacts")
-            writeEarArtifacts(folderURL: folderURL, artifacts: artifacts)
-        }
-
-        if let scanSummary {
-            writeScanSummary(folderURL: folderURL, summary: scanSummary)
-        }
-
-        Log.export.info("Export completed: \(folderURL.lastPathComponent, privacy: .public)")
-        return .success(folderURL: folderURL)
+        return folderExporter.export(
+            mesh: mesh,
+            scene: scene,
+            thumbnail: thumbnail,
+            earArtifacts: earArtifacts,
+            scanSummary: scanSummary,
+            includeGLTF: includeGLTF,
+            includeOBJ: includeOBJ
+        )
     }
 
     private func writeEarArtifacts(folderURL: URL, artifacts: EarArtifacts) {

@@ -270,6 +270,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     private let metalLayer = CAMetalLayer()
     private let countdownLabel = UILabel()
     private let dismissButton = UIButton(type: .system)
+    private let manualFinishButton = UIButton(type: .system)
     private let shutterButton = ShutterButton()
     private let bottomSheet = BottomSheetController()
     private let sheetStack = UIStackView()
@@ -383,12 +384,17 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     private let cameraManager: CameraManaging
     private let hapticEngine: ScanningHapticFeedbackProviding
     private let motionManager = CMMotionManager()
+    private let scanStateLock = NSLock()
+    private var activeScanningState = false
 
     private var latestViewMatrix = matrix_identity_float4x4
     private var assimilatedFrameIndex = 0
     private var consecutiveFailedCount = 0
     private var state: State = .default {
-        didSet { updateUI() }
+        didSet {
+            setActiveScanningState(state == .scanning)
+            updateUI()
+        }
     }
 
     private var countdownTimer: Timer?
@@ -462,6 +468,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         view.addSubview(countdownLabel)
         view.addSubview(guidanceStatusChip)
         view.addSubview(dismissButton)
+        view.addSubview(manualFinishButton)
         bottomSheet.install(in: view, bottomInset: Layout.sheetBottomInset)
         sheetStack.translatesAutoresizingMaskIntoConstraints = false
         sheetStack.axis = .vertical
@@ -526,6 +533,13 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         NSLayoutConstraint.activate([
             dismissButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 12),
             dismissButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8)
+        ])
+
+        manualFinishButton.isHidden = true
+        manualFinishButton.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            manualFinishButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -12),
+            manualFinishButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8)
         ])
 
         shutterButton.addTarget(self, action: #selector(shutterTapped(_:)), for: .touchUpInside)
@@ -603,6 +617,18 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     @objc private func dismissTapped() {
         stopScanning(reason: .canceled)
         dismiss(animated: true)
+    }
+
+    func configureManualFinishButton(title: String, target: Any?, action: Selector) {
+        DesignSystem.applyButton(manualFinishButton, title: title, style: .primary, size: .regular)
+        manualFinishButton.accessibilityIdentifier = "finishScanNowButton"
+        manualFinishButton.accessibilityLabel = title
+        manualFinishButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+        manualFinishButton.removeTarget(nil, action: nil, for: .allEvents)
+        manualFinishButton.addTarget(target, action: action, for: .touchUpInside)
+        manualFinishButton.isEnabled = true
+        DesignSystem.updateButtonEnabled(manualFinishButton, style: .primary)
+        updateManualFinishButtonVisibility()
     }
 
     @objc func shutterTapped(_ sender: UIButton?) {
@@ -736,13 +762,23 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         motionManager.stopDeviceMotionUpdates()
     }
 
+    private func setActiveScanningState(_ isActive: Bool) {
+        scanStateLock.lock()
+        activeScanningState = isActive
+        scanStateLock.unlock()
+    }
+
+    private func isActiveScanningState() -> Bool {
+        scanStateLock.lock()
+        let isActive = activeScanningState
+        scanStateLock.unlock()
+        return isActive
+    }
+
     // MARK: - CameraManagerDelegate
 
     func cameraDidOutput(colorBuffer: CVPixelBuffer, depthBuffer: CVPixelBuffer, depthCalibrationData: AVCameraCalibrationData) {
-        var isScanning = false
-        DispatchQueue.main.sync {
-            isScanning = self.state == .scanning
-        }
+        let isScanning = isActiveScanningState()
         let pointCloud: SCPointCloud
 
         if isScanning {
@@ -842,6 +878,18 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
             if currentHUDState == .idlePrompts || currentHUDState == .countdown {
                 currentHUDState = .capturing
             }
+        }
+        updateManualFinishButtonVisibility()
+    }
+
+    private func updateManualFinishButtonVisibility() {
+        let shouldShow = requiresManualFinish && state == .scanning
+        manualFinishButton.isHidden = !shouldShow
+        manualFinishButton.alpha = shouldShow ? 1.0 : 0.0
+        manualFinishButton.isEnabled = shouldShow
+        DesignSystem.updateButtonEnabled(manualFinishButton, style: .primary)
+        if shouldShow {
+            view.bringSubviewToFront(manualFinishButton)
         }
     }
 

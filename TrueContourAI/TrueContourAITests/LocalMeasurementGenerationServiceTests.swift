@@ -1,4 +1,5 @@
 import XCTest
+import ObjectiveC.runtime
 import StandardCyborgFusion
 @testable import TrueContourAI
 
@@ -25,10 +26,10 @@ final class LocalMeasurementGenerationServiceTests: XCTestCase {
         )
 
         wait(for: [exp], timeout: 2.0)
-        XCTAssertEqual(progressValues, [0.1, 0.5])
+        XCTAssertEqual(progressValues, [0])
     }
 
-    func testGenerateReturnsValidatedStatusForHighConfidenceMeasurement() {
+    func testGenerateReturnsHeuristicStatusForHighConfidenceMeasurement() {
         let measurement = HeadMeasurements(
             sliceHeightNormalized: 0.62,
             circumferenceMm: 650,
@@ -44,7 +45,7 @@ final class LocalMeasurementGenerationServiceTests: XCTestCase {
             completion: { result in
                 switch result {
                 case .success(let summary):
-                    XCTAssertEqual(summary.status, "validated")
+                    XCTAssertEqual(summary.status, "heuristic")
                     XCTAssertGreaterThanOrEqual(summary.confidence, 0.75)
                 case .failure(let error):
                     XCTFail("Unexpected error: \(error)")
@@ -56,7 +57,7 @@ final class LocalMeasurementGenerationServiceTests: XCTestCase {
         wait(for: [exp], timeout: 2.0)
     }
 
-    func testGenerateReturnsEstimatedStatusForLowerConfidenceMeasurement() {
+    func testGenerateReturnsHeuristicStatusForLowerConfidenceMeasurement() {
         let measurement = HeadMeasurements(
             sliceHeightNormalized: 0.62,
             circumferenceMm: 470,
@@ -72,7 +73,7 @@ final class LocalMeasurementGenerationServiceTests: XCTestCase {
             completion: { result in
                 switch result {
                 case .success(let summary):
-                    XCTAssertEqual(summary.status, "estimated")
+                    XCTAssertEqual(summary.status, "heuristic")
                     XCTAssertLessThan(summary.confidence, 0.75)
                 case .failure(let error):
                     XCTFail("Unexpected error: \(error)")
@@ -102,7 +103,7 @@ final class LocalMeasurementGenerationServiceTests: XCTestCase {
         )
 
         wait(for: [exp], timeout: 2.0)
-        XCTAssertEqual(observed, [0.1, 0.5, 1.0])
+        XCTAssertEqual(observed, [0, 1.0])
     }
 
     func testProgressAndCompletionAreDeliveredOnMainThread() {
@@ -127,16 +128,15 @@ final class LocalMeasurementGenerationServiceTests: XCTestCase {
         )
 
         wait(for: [exp], timeout: 2.0)
-        XCTAssertEqual(progressThreadsAreMain, [true, true, true])
+        XCTAssertEqual(progressThreadsAreMain, [true, true])
         XCTAssertTrue(completionOnMain)
     }
 
     private func placeholderPointCloud() -> SCPointCloud {
         // Tests only validate service branching/progress, not point cloud internals.
-        placeholderObject(SCPointCloud.self)
-    }
-
-    private func placeholderObject<T: AnyObject>(_ type: T.Type) -> T {
-        unsafeBitCast(NSObject(), to: T.self)
+        guard let placeholder = class_createInstance(SCPointCloud.self, 0) as? SCPointCloud else {
+            fatalError("Failed to allocate SCPointCloud test placeholder")
+        }
+        return placeholder
     }
 }

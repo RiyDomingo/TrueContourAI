@@ -7,6 +7,14 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
     private var defaults: UserDefaults!
     private var suiteName: String!
 
+    private func makeRepository() -> ScanRepository {
+        ScanRepository(scansRootURL: tempDir, defaults: defaults)
+    }
+
+    private func makeExporter() -> ScanExporterService {
+        ScanExporterService(scansRootURL: tempDir, defaults: defaults)
+    }
+
     override func setUp() {
         super.setUp()
         tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -30,7 +38,8 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
     }
 
     func testDebugExportSuccessSetsIdleAndEmitsToast() {
-        let scanService = ScanService(scansRootURL: tempDir, defaults: defaults)
+        let scanRepository = makeRepository()
+        let scanExporter = makeExporter()
         let flowState = ScanFlowState()
         flowState.setPhase(.saving)
 
@@ -40,9 +49,10 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
 
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: scanService,
+            scanService: scanRepository,
             settingsStore: SettingsStore(defaults: defaults),
             scanFlowState: flowState,
+            scanExporter: scanExporter,
             onToast: { toasts.append($0) },
             onExportResult: { exportEvents.append($0) }
         )
@@ -65,7 +75,8 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
     }
 
     func testDebugExportFailureSetsPreviewAndNoToast() {
-        let scanService = ScanService(scansRootURL: tempDir, defaults: defaults)
+        let scanRepository = makeRepository()
+        let scanExporter = makeExporter()
         let flowState = ScanFlowState()
         flowState.setPhase(.saving)
 
@@ -74,9 +85,10 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
 
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: scanService,
+            scanService: scanRepository,
             settingsStore: SettingsStore(defaults: defaults),
             scanFlowState: flowState,
+            scanExporter: scanExporter,
             onToast: { toasts.append($0) },
             onExportResult: { exportEvents.append($0) }
         )
@@ -89,16 +101,18 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
     }
 
     func testDebugExportSuccessWithUnavailableEarEmitsWarningToast() {
-        let scanService = ScanService(scansRootURL: tempDir, defaults: defaults)
+        let scanRepository = makeRepository()
+        let scanExporter = makeExporter()
         let flowState = ScanFlowState()
         flowState.setPhase(.saving)
 
         var toasts: [String] = []
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: scanService,
+            scanService: scanRepository,
             settingsStore: SettingsStore(defaults: defaults),
             scanFlowState: flowState,
+            scanExporter: scanExporter,
             onToast: { toasts.append($0) }
         )
 
@@ -112,9 +126,10 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
     func testDebugSavePrecheckIgnoresQualityGateAndAllowsSave() {
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: ScanService(scansRootURL: tempDir, defaults: defaults),
+            scanService: makeRepository(),
             settingsStore: SettingsStore(defaults: defaults),
             scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter(),
             onToast: nil
         )
 
@@ -136,9 +151,10 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
     func testDebugSavePrecheckMeshNotReady() {
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: ScanService(scansRootURL: tempDir, defaults: defaults),
+            scanService: makeRepository(),
             settingsStore: SettingsStore(defaults: defaults),
             scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter(),
             onToast: nil
         )
 
@@ -151,9 +167,10 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
         settings.exportOBJ = true
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: ScanService(scansRootURL: tempDir, defaults: defaults),
+            scanService: makeRepository(),
             settingsStore: settings,
             scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter(),
             onToast: nil
         )
 
@@ -163,9 +180,10 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
     func testDebugSavePrecheckReady() {
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: ScanService(scansRootURL: tempDir, defaults: defaults),
+            scanService: makeRepository(),
             settingsStore: SettingsStore(defaults: defaults),
             scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter(),
             onToast: nil
         )
 
@@ -175,9 +193,10 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
     func testDebugSavePrecheckPrioritizesMeshReadinessWhenQualityIsLow() {
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: ScanService(scansRootURL: tempDir, defaults: defaults),
+            scanService: makeRepository(),
             settingsStore: SettingsStore(defaults: defaults),
             scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter(),
             onToast: nil
         )
 
@@ -214,9 +233,10 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
             var events: [ScanPreviewCoordinator.ExportResultEvent] = []
             let coordinator = ScanPreviewCoordinator(
                 presenter: UIViewController(),
-                scanService: ScanService(scansRootURL: tempDir, defaults: defaults),
+                scanService: makeRepository(),
                 settingsStore: settings,
                 scanFlowState: flowState,
+                scanExporter: makeExporter(),
                 onToast: nil,
                 onExportResult: { events.append($0) }
             )

@@ -56,9 +56,11 @@ final class ScanTimingTests: XCTestCase {
     }
 
     private func makeViewController() -> HomeViewController {
-        let scanService = ScanService(scansRootURL: tempDir, defaults: defaults)
+        let scanRepository = ScanRepository(scansRootURL: tempDir, defaults: defaults)
+        let scanExporter = ScanExporterService(scansRootURL: tempDir, defaults: defaults)
         let deps = AppDependencies(
-            scanService: scanService,
+            scanRepository: scanRepository,
+            scanExporter: scanExporter,
             settingsStore: SettingsStore(),
             earServiceFactory: { nil }
         )

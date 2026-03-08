@@ -6,11 +6,9 @@ final class ScanFlowStateTests: XCTestCase {
 
     func testResetForNewScanClearsState() {
         let state = ScanFlowState()
-        state.currentlyPreviewedFolderURL = URL(fileURLWithPath: "/tmp/scan")
 
         state.resetForNewScan()
 
-        XCTAssertNil(state.currentlyPreviewedFolderURL)
         XCTAssertEqual(state.phase, .scanning)
     }
 
@@ -32,11 +30,10 @@ final class ScanFlowStateTests: XCTestCase {
         state.startScanSession()
         XCTAssertEqual(state.phase, .scanning)
 
-        let metrics = state.completeScanSession(estimatedConfidence: 0.85)
+        let metrics = state.completeScanSession()
 
         XCTAssertNotNil(metrics)
         XCTAssertEqual(state.phase, .completed)
-        XCTAssertEqual(metrics?.overallConfidence, 0.85)
         XCTAssertGreaterThanOrEqual(metrics?.durationSeconds ?? 0, 0)
     }
 
@@ -62,6 +59,36 @@ final class ScanFlowStateTests: XCTestCase {
 }
 
 final class PreviewViewModelTests: XCTestCase {
+    func testPreviewSessionStateTracksCurrentPreviewedFolder() {
+        let state = PreviewSessionState()
+        let folderURL = URL(fileURLWithPath: "/tmp/scan")
+
+        state.currentPreviewedFolderURL = folderURL
+
+        XCTAssertEqual(state.currentPreviewedFolderURL, folderURL)
+    }
+
+    func testBeginningPreviewSessionRotatesSessionIdentifierAndResetsArtifacts() {
+        let viewModel = PreviewViewModel()
+        let firstSessionID = viewModel.beginExistingScanSession()
+        viewModel.setMeasurementSummary(
+            .init(
+                sliceHeightNormalized: 0.62,
+                circumferenceMm: 560,
+                widthMm: 150,
+                depthMm: 190,
+                confidence: 0.7,
+                status: "heuristic"
+            )
+        )
+
+        let secondSessionID = viewModel.beginPreviewSession(sessionMetrics: nil)
+
+        XCTAssertNotEqual(firstSessionID, secondSessionID)
+        XCTAssertTrue(viewModel.isCurrentSession(secondSessionID))
+        XCTAssertNil(viewModel.measurementSummary)
+    }
+
     func testVerificationRequiresAllArtifacts() {
         let viewModel = PreviewViewModel()
         XCTAssertFalse(viewModel.hasVerifiedEar)
@@ -84,11 +111,14 @@ final class PreviewViewModelTests: XCTestCase {
 
     func testPhaseChanges() {
         let viewModel = PreviewViewModel()
+        let sessionID = viewModel.sessionID
         XCTAssertEqual(viewModel.phase, .preview)
         viewModel.setPhase(.saving)
         XCTAssertEqual(viewModel.phase, .saving)
         viewModel.setPhase(.idle)
         XCTAssertEqual(viewModel.phase, .idle)
+        viewModel.invalidateSession()
+        XCTAssertFalse(viewModel.isCurrentSession(sessionID))
     }
 
     func testEvaluateScanQualityThresholds() {

@@ -1,6 +1,20 @@
 import Foundation
 
 final class HomeViewModel {
+    struct ViewState {
+        let scans: [ScanService.ScanItem]
+        let totalScanCount: Int
+        let isEmpty: Bool
+        let canViewLast: Bool
+        let sortMode: ScanSortMode
+        let filterMode: ScanFilterMode
+        let trend: HomeTrend?
+
+        var isFilteredEmpty: Bool {
+            isEmpty && totalScanCount > 0 && filterMode == .goodPlus
+        }
+    }
+
     struct ScanQualityBadge {
         enum Tier {
             case high
@@ -44,7 +58,7 @@ final class HomeViewModel {
         let kind: Kind
     }
 
-    private let scanService: ScanService
+    private let scanService: ScanListing
     var onChange: (() -> Void)?
     private var refreshGeneration: Int = 0
 
@@ -60,7 +74,7 @@ final class HomeViewModel {
     private(set) var sortMode: ScanSortMode = .dateNewest
     private(set) var filterMode: ScanFilterMode = .all
 
-    init(scanService: ScanService) {
+    init(scanService: ScanListing) {
         self.scanService = scanService
     }
 
@@ -111,6 +125,18 @@ final class HomeViewModel {
 
     func qualityBadge(for item: ScanService.ScanItem) -> ScanQualityBadge? {
         qualityBadgeByFolderPath[item.folderURL.path]
+    }
+
+    func makeViewState() -> ViewState {
+        .init(
+            scans: scans,
+            totalScanCount: totalScanCount,
+            isEmpty: isEmpty,
+            canViewLast: canViewLast,
+            sortMode: sortMode,
+            filterMode: filterMode,
+            trend: trend
+        )
     }
 
     private func buildSummaries(for items: [ScanService.ScanItem]) -> [String: ScanService.ScanSummary] {

@@ -42,12 +42,9 @@ final class LocalMeasurementGenerationService {
         completion: @escaping (Result<ResultSummary, Error>) -> Void
     ) {
         dispatchToMain {
-            progress(0.1)
+            progress(0)
         }
         DispatchQueue.global(qos: .userInitiated).async {
-            self.dispatchToMain {
-                progress(0.5)
-            }
             guard let measurement = self.estimator(pointCloud) else {
                 self.dispatchToMain {
                     completion(.failure(LocalMeasurementGenerationError.insufficientPointCloudData))
@@ -62,7 +59,7 @@ final class LocalMeasurementGenerationService {
                 widthMm: measurement.widthMm,
                 depthMm: measurement.depthMm,
                 confidence: confidence,
-                status: confidence >= 0.75 ? "validated" : "estimated"
+                status: "heuristic"
             )
 
             self.dispatchToMain {

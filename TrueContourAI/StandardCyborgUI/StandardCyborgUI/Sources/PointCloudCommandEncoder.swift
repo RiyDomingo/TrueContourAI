@@ -25,11 +25,11 @@ private struct SharedUniforms {
 /** Submits Metal commands onto a command buffer to render a point cloud */
 public class PointCloudCommandEncoder {
     private let _device: MTLDevice
-    private let _pipelineState: MTLRenderPipelineState
-    private let _depthStencilState: MTLDepthStencilState
-    private let _sharedUniformsBuffer: MTLBuffer
+    private let _pipelineState: MTLRenderPipelineState?
+    private let _depthStencilState: MTLDepthStencilState?
+    private let _sharedUniformsBuffer: MTLBuffer?
     private var _depthTexture: MTLTexture?
-    private let _matcapTexture: MTLTexture
+    private let _matcapTexture: MTLTexture?
 
     // MARK: - MetalVisualization
 
@@ -56,17 +56,17 @@ public class PointCloudCommandEncoder {
         
         let textureLoader = MTKTextureLoader(device: _device)
         let bundle = Bundle.scuiResourcesBundle
-        /*
-        guard let matcapURL = bundle.url(forResource: "matcap", withExtension: "png") else {
-            fatalError("Couldn't find matcap.png in \(bundle)")
+        do {
+            _matcapTexture = try textureLoader.newTexture(
+                name: "matcap",
+                scaleFactor: 1,
+                bundle: bundle,
+                options: [MTKTextureLoader.Option.SRGB: NSNumber(booleanLiteral: false)]
+            )
+        } catch {
+            _matcapTexture = nil
+            NSLog("PointCloudCommandEncoder matcap load failed: %@", error.localizedDescription)
         }
-        
-        _matcapTexture = try! textureLoader.newTexture(URL: matcapURL, options: [MTKTextureLoader.Option.SRGB: NSNumber(booleanLiteral: false)])
-         */
-        _matcapTexture = try! textureLoader.newTexture(name: "matcap",
-                                                       scaleFactor: 1,
-                                                       bundle: bundle,
-                                                       options: [MTKTextureLoader.Option.SRGB: NSNumber(booleanLiteral: false)])
 
         
         let vertexFunction = library.makeFunction(name: "RenderSCPointCloudVertex")
@@ -84,13 +84,18 @@ public class PointCloudCommandEncoder {
         depthStencilDescriptor.depthCompareFunction = MTLCompareFunction.less
         depthStencilDescriptor.isDepthWriteEnabled = true
         depthStencilDescriptor.label = "PointCloudCommandEncoder._depthStencilState"
-        _depthStencilState = _device.makeDepthStencilState(descriptor: depthStencilDescriptor)!
-        
-        _pipelineState = try! device.makeRenderPipelineState(descriptor: pipelineDescriptor)
-        
+        _depthStencilState = _device.makeDepthStencilState(descriptor: depthStencilDescriptor)
+
+        do {
+            _pipelineState = try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
+        } catch {
+            _pipelineState = nil
+            NSLog("PointCloudCommandEncoder pipeline creation failed: %@", error.localizedDescription)
+        }
+
         _sharedUniformsBuffer = device.makeBuffer(length: MemoryLayout<SharedUniforms>.size,
-                                                  options: [MTLResourceOptions.cpuCacheModeWriteCombined])!
-        _sharedUniformsBuffer.label = "PointCloudCommandEncoder._sharedUniformsBuffer"
+                                                  options: [MTLResourceOptions.cpuCacheModeWriteCombined])
+        _sharedUniformsBuffer?.label = "PointCloudCommandEncoder._sharedUniformsBuffer"
     }
 
     public func encodeCommands(onto commandBuffer: MTLCommandBuffer,
@@ -101,7 +106,13 @@ public class PointCloudCommandEncoder {
                                flipsInputHorizontally: Bool = false,
                                outputTexture: MTLTexture)
     {
-        guard pointCloud.pointCount > 0 else { return }
+        guard
+            pointCloud.pointCount > 0,
+            let pipelineState = _pipelineState,
+            let depthStencilState = _depthStencilState,
+            let sharedUniformsBuffer = _sharedUniformsBuffer,
+            let matcapTexture = _matcapTexture
+        else { return }
         
         if _depthTexture == nil {
             let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: MTLPixelFormat.depth32Float,
@@ -136,17 +147,17 @@ public class PointCloudCommandEncoder {
         let commandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: passDescriptor)!
         commandEncoder.label = "PointCloudCommandEncoder.commandEncoder"
         
-        commandEncoder.setRenderPipelineState(_pipelineState)
+        commandEncoder.setRenderPipelineState(pipelineState)
         commandEncoder.setViewport(MTLViewport(originX: 0, originY: 0,
                                                width: Double(outputTexture.width),
                                                height: Double(outputTexture.height),
                                                znear: -1, zfar: 1))
-        commandEncoder.setDepthStencilState(_depthStencilState)
+        commandEncoder.setDepthStencilState(depthStencilState)
         commandEncoder.setFrontFacing(MTLWinding.counterClockwise)
         commandEncoder.setCullMode(MTLCullMode.back)
-        commandEncoder.setVertexTexture(_matcapTexture, index: 0)
+        commandEncoder.setVertexTexture(matcapTexture, index: 0)
         commandEncoder.setVertexBuffer(pointsBuffer, offset: 0, index: 0)
-        commandEncoder.setVertexBuffer(_sharedUniformsBuffer, offset: 0, index: 1)
+        commandEncoder.setVertexBuffer(sharedUniformsBuffer, offset: 0, index: 1)
         commandEncoder.drawPrimitives(type: MTLPrimitiveType.point, vertexStart: 0, vertexCount: pointCloud.pointCount)
         
         commandEncoder.endEncoding()
@@ -249,7 +260,8 @@ public class PointCloudCommandEncoder {
                                             pointSize: pointSize,
                                             __memoryPadding: simd_float2(repeating: 0))
         
-        memcpy(_sharedUniformsBuffer.contents(), &sharedUniforms, MemoryLayout<SharedUniforms>.size)
+        guard let sharedUniformsBuffer = _sharedUniformsBuffer else { return }
+        memcpy(sharedUniformsBuffer.contents(), &sharedUniforms, MemoryLayout<SharedUniforms>.size)
     }
     
 }

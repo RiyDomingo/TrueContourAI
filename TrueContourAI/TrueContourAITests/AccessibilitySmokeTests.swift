@@ -3,14 +3,23 @@ import XCTest
 
 final class AccessibilitySmokeTests: XCTestCase {
 
+    private func makeRepository(scansRootURL: URL? = nil) -> ScanRepository {
+        ScanRepository(scansRootURL: scansRootURL ?? FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true))
+    }
+
+    private func makeExporter(scansRootURL: URL? = nil) -> ScanExporterService {
+        let root = scansRootURL ?? FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        return ScanExporterService(scansRootURL: root)
+    }
+
     func testHomeButtonsHaveAccessibilityLabels() {
         let tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
 
-        let scanService = ScanService(scansRootURL: tempDir)
         let deps = AppDependencies(
-            scanService: scanService,
+            scanRepository: ScanRepository(scansRootURL: tempDir),
+            scanExporter: makeExporter(scansRootURL: tempDir),
             settingsStore: SettingsStore(),
             earServiceFactory: { nil }
         )
@@ -42,9 +51,10 @@ final class AccessibilitySmokeTests: XCTestCase {
     func testPreviewVerifyButtonHasAccessibilityLabelAndHint() {
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: ScanService(),
+            scanService: makeRepository(),
             settingsStore: SettingsStore(),
             scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter(),
             onToast: nil
         )
         let verifyButton = coordinator.debug_makeVerifyEarButton()
@@ -60,9 +70,10 @@ final class AccessibilitySmokeTests: XCTestCase {
         settingsOff.developerModeEnabled = false
         let coordinatorOff = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: ScanService(),
+            scanService: makeRepository(),
             settingsStore: settingsOff,
-            scanFlowState: ScanFlowState()
+            scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter()
         )
         XCTAssertFalse(coordinatorOff.debug_addFitControlsIfDeveloperMode(hostView: hostView))
         XCTAssertFalse(coordinatorOff.debug_hasFitBrowSlider())
@@ -72,9 +83,10 @@ final class AccessibilitySmokeTests: XCTestCase {
         settingsOn.developerModeEnabled = true
         let coordinatorOn = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: ScanService(),
+            scanService: makeRepository(),
             settingsStore: settingsOn,
-            scanFlowState: ScanFlowState()
+            scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter()
         )
         XCTAssertTrue(coordinatorOn.debug_addFitControlsIfDeveloperMode(hostView: hostView))
         XCTAssertTrue(coordinatorOn.debug_hasFitBrowSlider())

@@ -17,6 +17,10 @@ final class HomeCoordinatorTests: XCTestCase {
     private var defaults: UserDefaults!
     private var suiteName: String!
 
+    private func makeRepository(scansRootURL: URL? = nil) -> ScanRepository {
+        ScanRepository(scansRootURL: scansRootURL ?? tempDir, defaults: defaults)
+    }
+
     override func setUp() {
         super.setUp()
         tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -41,13 +45,12 @@ final class HomeCoordinatorTests: XCTestCase {
 
     func testOpenLastScanWhenMissingPresentsAlert() {
         let presenter = TestPresenter()
-        let scanService = ScanService(scansRootURL: tempDir, defaults: defaults)
+        let scanRepository = makeRepository()
         let settingsStore = SettingsStore(defaults: defaults)
-        let flowState = ScanFlowState()
         let coordinator = HomeCoordinator(
-            scanService: scanService,
+            scanService: scanRepository,
             settingsStore: settingsStore,
-            scanFlowState: flowState
+            previewSessionState: PreviewSessionState()
         )
 
         coordinator.openLastScan(from: presenter)
@@ -59,13 +62,12 @@ final class HomeCoordinatorTests: XCTestCase {
 
     func testOpenLastScanUsesStoredScanItemMetadata() throws {
         let presenter = TestPresenter()
-        let scanService = ScanService(scansRootURL: tempDir, defaults: defaults)
+        let scanRepository = makeRepository()
         let settingsStore = SettingsStore(defaults: defaults)
-        let flowState = ScanFlowState()
         let coordinator = HomeCoordinator(
-            scanService: scanService,
+            scanService: scanRepository,
             settingsStore: settingsStore,
-            scanFlowState: flowState
+            previewSessionState: PreviewSessionState()
         )
         let folder = tempDir.appendingPathComponent("sample", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -75,7 +77,7 @@ final class HomeCoordinatorTests: XCTestCase {
         try Data("{\"asset\":{\"version\":\"2.0\"}}".utf8).write(to: gltfURL, options: [.atomic])
         let date = Date(timeIntervalSince1970: 1234)
         try FileManager.default.setAttributes([.modificationDate: date], ofItemAtPath: folder.path)
-        scanService.setLastScanFolder(folder)
+        scanRepository.setLastScanFolder(folder)
 
         var openedItem: ScanService.ScanItem?
         coordinator.onOpenScan = { openedItem = $0 }
@@ -91,13 +93,12 @@ final class HomeCoordinatorTests: XCTestCase {
 
     func testPresentScanActionsIncludesExpectedOrderAndLabels() throws {
         let presenter = TestPresenter()
-        let scanService = ScanService(scansRootURL: tempDir, defaults: defaults)
+        let scanRepository = makeRepository()
         let settingsStore = SettingsStore(defaults: defaults)
-        let flowState = ScanFlowState()
         let coordinator = HomeCoordinator(
-            scanService: scanService,
+            scanService: scanRepository,
             settingsStore: settingsStore,
-            scanFlowState: flowState
+            previewSessionState: PreviewSessionState()
         )
 
         let folder = tempDir.appendingPathComponent("sample", isDirectory: true)
@@ -133,13 +134,12 @@ final class HomeCoordinatorTests: XCTestCase {
         let presenter = TestPresenter()
         let badRoot = tempDir.appendingPathComponent("not-a-directory")
         try Data("x".utf8).write(to: badRoot, options: [.atomic])
-        let scanService = ScanService(scansRootURL: badRoot, defaults: defaults)
+        let scanRepository = makeRepository(scansRootURL: badRoot)
         let settingsStore = SettingsStore(defaults: defaults)
-        let flowState = ScanFlowState()
         let coordinator = HomeCoordinator(
-            scanService: scanService,
+            scanService: scanRepository,
             settingsStore: settingsStore,
-            scanFlowState: flowState
+            previewSessionState: PreviewSessionState()
         )
 
         coordinator.presentScansFolderShare(from: presenter, sourceView: presenter.view)

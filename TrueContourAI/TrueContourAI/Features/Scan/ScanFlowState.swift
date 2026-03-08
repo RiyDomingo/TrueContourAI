@@ -14,26 +14,14 @@ final class ScanFlowState {
         let startedAt: Date
         let finishedAt: Date
         let durationSeconds: Double
-        let overallConfidence: Float
-
-        func withOverallConfidence(_ confidence: Float) -> ScanSessionMetrics {
-            ScanSessionMetrics(
-                startedAt: startedAt,
-                finishedAt: finishedAt,
-                durationSeconds: durationSeconds,
-                overallConfidence: max(0, min(1, confidence))
-            )
-        }
     }
 
     private(set) var phase: Phase = .idle
     private(set) var scanStartTime: Date?
 
     var onPhaseChanged: ((Phase) -> Void)?
-    var currentlyPreviewedFolderURL: URL?
 
     func resetForNewScan() {
-        currentlyPreviewedFolderURL = nil
         scanStartTime = nil
         setPhase(.scanning)
     }
@@ -43,7 +31,7 @@ final class ScanFlowState {
         scanStartTime = Date()
     }
 
-    func completeScanSession(estimatedConfidence: Float) -> ScanSessionMetrics? {
+    func completeScanSession() -> ScanSessionMetrics? {
         guard let start = scanStartTime else {
             setPhase(.completed)
             return nil
@@ -54,8 +42,7 @@ final class ScanFlowState {
         let metrics = ScanSessionMetrics(
             startedAt: start,
             finishedAt: finished,
-            durationSeconds: duration,
-            overallConfidence: clamp(estimatedConfidence)
+            durationSeconds: duration
         )
         setPhase(.completed)
         return metrics
@@ -68,9 +55,5 @@ final class ScanFlowState {
     func setPhase(_ newPhase: Phase) {
         phase = newPhase
         onPhaseChanged?(newPhase)
-    }
-
-    private func clamp(_ value: Float) -> Float {
-        max(0, min(1, value))
     }
 }

@@ -1,6 +1,7 @@
 import XCTest
 import AVFoundation
 import CoreMotion
+import ObjectiveC.runtime
 import StandardCyborgFusion
 import StandardCyborgUI
 @testable import TrueContourAI
@@ -345,11 +346,10 @@ private final class ReconstructionManagerFake: ReconstructionManaging {
 
     private func placeholderPointCloud() -> SCPointCloud {
         // Tests only assert callback flow and do not inspect point cloud contents.
-        placeholderObject(SCPointCloud.self)
-    }
-
-    private func placeholderObject<T: AnyObject>(_ type: T.Type) -> T {
-        unsafeBitCast(NSObject(), to: T.self)
+        guard let placeholder = class_createInstance(SCPointCloud.self, 0) as? SCPointCloud else {
+            fatalError("Failed to allocate SCPointCloud test placeholder")
+        }
+        return placeholder
     }
 }
 

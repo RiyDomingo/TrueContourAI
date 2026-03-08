@@ -2,9 +2,11 @@ import UIKit
 
 final class HomeToastPresenter {
     private weak var hostView: UIView?
+    private let environment: AppEnvironment
 
-    init(hostView: UIView) {
+    init(hostView: UIView, environment: AppEnvironment) {
         self.hostView = hostView
+        self.environment = environment
     }
 
     func show(message: String) {
@@ -32,8 +34,7 @@ final class HomeToastPresenter {
         ])
 
         UIView.animate(withDuration: 0.22) { label.alpha = 1 }
-        let args = ProcessInfo.processInfo.arguments
-        let dwellSeconds: TimeInterval = args.contains("ui-test-device-smoke") ? 8.0 : 1.8
+        let dwellSeconds = environment.toastDwellSeconds
         DispatchQueue.main.asyncAfter(deadline: .now() + dwellSeconds) {
             UIView.animate(withDuration: 0.22, animations: { label.alpha = 0 }) { _ in
                 label.removeFromSuperview()

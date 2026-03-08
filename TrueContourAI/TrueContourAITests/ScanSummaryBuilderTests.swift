@@ -40,8 +40,7 @@ final class ScanSummaryBuilderTests: XCTestCase {
         let metrics = ScanFlowState.ScanSessionMetrics(
             startedAt: Date(timeIntervalSince1970: 100),
             finishedAt: Date(timeIntervalSince1970: 110),
-            durationSeconds: 10,
-            overallConfidence: 0.92
+            durationSeconds: 10
         )
         let report = ScanQualityReport(
             pointCount: 100_000,
@@ -84,8 +83,7 @@ final class ScanSummaryBuilderTests: XCTestCase {
         let metrics = ScanFlowState.ScanSessionMetrics(
             startedAt: Date(timeIntervalSince1970: 200),
             finishedAt: Date(timeIntervalSince1970: 230),
-            durationSeconds: 30,
-            overallConfidence: 0.81
+            durationSeconds: 30
         )
         let measurement = LocalMeasurementGenerationService.ResultSummary(
             sliceHeightNormalized: 0.5,

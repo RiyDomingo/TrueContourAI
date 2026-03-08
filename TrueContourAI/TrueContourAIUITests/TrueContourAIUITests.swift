@@ -243,7 +243,6 @@ final class TrueContourAIUITests: XCTestCase {
         app.launchEnvironment["UITESTS_DISABLE_ANIMATIONS"] = "1"
         if seedScan {
             app.launchArguments.append("ui-test-seed-scan")
-            app.launchArguments.append("ui-test-skip-gltf")
         }
         if seedMissingScene {
             app.launchArguments.append("ui-test-seed-missing-scene")

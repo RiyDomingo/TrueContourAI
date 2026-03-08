@@ -4,9 +4,13 @@ import StandardCyborgUI
 final class SaveExportViewStateController: SaveExportUIStateAdapting {
     private weak var previewVC: ScenePreviewViewController?
     private weak var savingOverlayView: UIView?
+    private weak var meshingStatusContainer: UIView?
+    private weak var meshingStatusLabel: UILabel?
+    private weak var meshingSpinner: UIActivityIndicatorView?
 
     func configure(previewVC: ScenePreviewViewController) {
         self.previewVC = previewVC
+        ensureMeshingStatusView(in: previewVC)
     }
 
     func setButtonsEnabled(_ isEnabled: Bool) {
@@ -18,11 +22,19 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
     }
 
     func setMeshingStatusText(_ text: String) {
-        _ = text
+        guard let meshingStatusLabel, let meshingStatusContainer else { return }
+        meshingStatusLabel.text = text
+        meshingStatusContainer.isHidden = text.isEmpty
     }
 
     func setMeshingSpinnerActive(_ isActive: Bool) {
-        _ = isActive
+        guard let meshingSpinner, let meshingStatusContainer else { return }
+        if isActive {
+            meshingSpinner.startAnimating()
+        } else {
+            meshingSpinner.stopAnimating()
+        }
+        meshingStatusContainer.isHidden = !isActive && (meshingStatusLabel?.text?.isEmpty ?? true)
     }
 
     func showSavingToast() {
@@ -112,5 +124,54 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
         previewVC = nil
         savingOverlayView?.removeFromSuperview()
         savingOverlayView = nil
+        meshingStatusContainer?.removeFromSuperview()
+        meshingStatusContainer = nil
+        meshingStatusLabel = nil
+        meshingSpinner = nil
+    }
+
+    private func ensureMeshingStatusView(in previewVC: ScenePreviewViewController) {
+        guard meshingStatusContainer == nil else { return }
+
+        let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        container.backgroundColor = DesignSystem.Colors.overlayCard
+        container.layer.cornerRadius = DesignSystem.CornerRadius.medium
+        container.layer.masksToBounds = true
+        container.isHidden = true
+
+        let spinner = UIActivityIndicatorView(style: .medium)
+        spinner.translatesAutoresizingMaskIntoConstraints = false
+        spinner.color = DesignSystem.Colors.textPrimary
+
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.font = DesignSystem.Typography.caption()
+        label.textColor = DesignSystem.Colors.textPrimary
+        label.adjustsFontForContentSizeCategory = true
+        label.numberOfLines = 2
+        label.textAlignment = .left
+
+        container.addSubview(spinner)
+        container.addSubview(label)
+        previewVC.view.addSubview(container)
+
+        NSLayoutConstraint.activate([
+            container.leadingAnchor.constraint(equalTo: previewVC.view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            container.trailingAnchor.constraint(lessThanOrEqualTo: previewVC.view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            container.bottomAnchor.constraint(equalTo: previewVC.view.safeAreaLayoutGuide.bottomAnchor, constant: -92),
+
+            spinner.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+            spinner.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+
+            label.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
+            label.leadingAnchor.constraint(equalTo: spinner.trailingAnchor, constant: 10),
+            label.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            label.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -10)
+        ])
+
+        meshingStatusContainer = container
+        meshingStatusLabel = label
+        meshingSpinner = spinner
     }
 }

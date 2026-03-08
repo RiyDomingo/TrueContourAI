@@ -15,7 +15,7 @@ enum ScanSummaryBuilder {
             startedAt: metrics.startedAt,
             finishedAt: metrics.finishedAt,
             durationSeconds: metrics.durationSeconds,
-            overallConfidence: qualityReport?.qualityScore ?? measurementSummary?.confidence ?? metrics.overallConfidence,
+            overallConfidence: qualityReport?.qualityScore ?? measurementSummary?.confidence ?? 0,
             pointCountEstimate: qualityReport?.validPointCount ?? 0,
             hadEarVerification: hadEarVerification,
             processingProfile: nil,

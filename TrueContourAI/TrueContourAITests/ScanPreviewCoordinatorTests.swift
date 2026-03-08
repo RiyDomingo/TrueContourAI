@@ -17,6 +17,14 @@ final class ScanPreviewCoordinatorTests: XCTestCase {
     private var defaults: UserDefaults!
     private var suiteName: String!
 
+    private func makeRepository() -> ScanRepository {
+        ScanRepository(scansRootURL: tempDir, defaults: defaults)
+    }
+
+    private func makeExporter() -> ScanExporterService {
+        ScanExporterService(scansRootURL: tempDir, defaults: defaults)
+    }
+
     override func setUp() {
         super.setUp()
         tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -41,14 +49,16 @@ final class ScanPreviewCoordinatorTests: XCTestCase {
 
     func testPresentExistingScanMissingScenePresentsAlert() {
         let presenter = TestPresenter()
-        let scanService = ScanService(scansRootURL: tempDir, defaults: defaults)
+        let scanRepository = makeRepository()
+        let scanExporter = makeExporter()
         let settingsStore = SettingsStore(defaults: defaults)
         let flowState = ScanFlowState()
         let coordinator = ScanPreviewCoordinator(
             presenter: presenter,
-            scanService: scanService,
+            scanService: scanRepository,
             settingsStore: settingsStore,
             scanFlowState: flowState,
+            scanExporter: scanExporter,
             onToast: nil
         )
 

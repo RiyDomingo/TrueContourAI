@@ -11,6 +11,7 @@ Use this checklist before a serious handoff, TestFlight build, or tagged release
 ## Tests
 - [x] Run `TrueContourAITests` and record pass/fail summary.
 - [x] Run `TrueContourAIUITests` and record pass/fail summary.
+- [ ] Re-run focused/unit validation after any package-rendering hardening or runtime-environment refactor that changes scan/preview bootstrap behavior.
 - [ ] Run `StandardCyborgFusion` tests if fusion/package code changed, scan-quality behavior changed unexpectedly, or a dependency update touched that package.
 - [ ] Do not treat `StandardCyborgFusion` tests as a mandatory gate for UI-only or app-orchestration-only releases.
 - [x] Classify any failure as product bug, test bug, device/environment issue, or hardware-gated skip.
@@ -24,6 +25,7 @@ Use this checklist before a serious handoff, TestFlight build, or tagged release
 - [ ] Reopen saved scan from Home
 - [x] Manual finish path is stable
 - [x] Quality-gate blocked export flow is validated
+- [ ] Device smoke rerun after UI-test harness changes that remove synthetic preview shortcuts
 - [x] Evidence for each validated device flow is recorded in `docs/TODO.md`.
 
 ## Export Artifact Verification
