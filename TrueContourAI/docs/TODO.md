@@ -13,17 +13,64 @@ This file tracks remaining implementation, validation, and hygiene tasks.
     - `testDeviceSmokeScanHUDCountdownProgressAndControls`
     - `testDeviceSmokeSaveReportsExportArtifactPresence`
     - `testDeviceSmokeGLTFDisableLaunchArgIsIgnored`
-    - `testDeviceSmokeForcedQualityGateStillAllowsSave`
+    - `testDeviceSmokeForcedQualityGateBlocksSave`
     - `testDeviceSmokeSaveThenReopenFromHome`
-- [ ] Temporary policy: allow saving scans even when quality reports "Try again" / "Scan needs another pass"; re-enable release quality gate before production sign-off.
+- [x] Re-enable the release quality gate so scans that score "Try again" / "Scan needs another pass" are blocked from saving when the gate is enabled.
+  - 2026-03-09: `PreviewExportWorkflow.savePrecheck(...)` now returns `qualityGateBlocked` for non-recommended scans when the quality gate is enabled.
+  - 2026-03-09: focused device validation passed on `Riy's iPhone` for:
+    - `testDeviceSmokeForcedQualityGateBlocksSave`
+    - `testDeviceSmokeSaveThenReopenFromHome`
 - [ ] Validate export settings matrix on device:
   - [x] GLTF on / OBJ on
   - [x] GLTF on / OBJ off
   - [x] `GLTF off / OBJ on` is prevented (`SettingsViewController` guard + device-smoke launch-arg hardening keeps GLTF enabled)
   - [x] `GLTF off / OBJ off` is prevented in Settings and from preview-save precheck
-- [ ] Re-run the full `TrueContourAIUITests` suite on the connected iPhone and capture a final pass/fail summary after the decimate-ratio fix landed.
-- [ ] Re-run the full `TrueContourAIUITests` suite on the connected iPhone and capture a final pass/fail summary after the latest preview/service refactors.
+- [x] Re-run the full `TrueContourAIUITests` suite on the connected iPhone and capture a final pass/fail summary after the latest preview/service refactors.
   - 2026-03-08 attempt: `xcodebuild test -scheme TrueContourAIUITests` on `Riy's iPhone` stayed active without returning a final XCTest summary and had to be terminated; treat this as a runner instability blocker, not as a failed product signal.
+  - 2026-03-09 final rerun: `TrueContourAIDeviceSmokeTests` passed with 8 tests, `TrueContourAIUITests` passed with 14 tests, combined `TrueContourAIUITests.xctest` passed with 22 tests and 0 failures on `Riy's iPhone`.
+  - note: `devicectl diagnose` still failed while collecting post-run diagnostics, but XCTest itself completed with `** TEST SUCCEEDED **`
+- [x] Re-run focused physical-device smoke after the `ScanSessionController` runtime slice once device automation is stable again.
+  - 2026-03-08 attempt 1: `testDeviceSmokeSaveThenReopenFromHome` failed before test execution with `Timed out while enabling automation mode`.
+  - 2026-03-08 attempt 2: same focused rerun failed before test execution with CoreDevice/Mercury remote-process invalidation.
+  - 2026-03-09 retry: `testDeviceSmokeSaveThenReopenFromHome` passed on `Riy's iPhone`.
+- [x] Re-run focused physical-device smoke after the package/runtime hardening slice in `StandardCyborgUI`.
+  - 2026-03-09: `testDeviceSmokeSaveThenReopenFromHome` passed on `Riy's iPhone`.
+- [x] Re-run focused physical-device smoke after making `ScanExporterService` standalone and removing the remaining preview/settings `ScanService` protocol adapters.
+  - 2026-03-09: `testDeviceSmokeSaveThenReopenFromHome` passed on `Riy's iPhone`.
+- [x] Re-run focused physical-device smoke after moving the scan domain models into `ScanModels.swift` and leaving `ScanService` on compatibility aliases.
+  - 2026-03-09: `testDeviceSmokeSaveThenReopenFromHome` passed on `Riy's iPhone`.
+- [x] Re-run the broader `TrueContourAIDeviceSmokeTests` suite on the connected iPhone after the standalone scan-model extraction.
+  - 2026-03-09: `TrueContourAIDeviceSmokeTests` passed on `Riy's iPhone` with 8 tests and 0 failures:
+    - `testDeviceSmokeForcedQualityGateBlocksSave`
+    - `testDeviceSmokeGLTFDisableLaunchArgIsIgnored`
+    - `testDeviceSmokeSaveReportsExportArtifactPresence`
+    - `testDeviceSmokeSaveReportsGLTFOnlyArtifacts`
+    - `testDeviceSmokeSaveThenReopenFromHome`
+    - `testDeviceSmokeScanHUDCountdownProgressAndControls`
+    - `testDeviceSmokeStartScanCancelReturnsHome`
+    - `testDeviceSmokeStartScanFinishShowsPreview`
+- [x] Re-run focused physical-device smoke after removing the remaining production `ScanService.*` model namespace usage from Home / Preview / repository / exporter code.
+  - 2026-03-09: `testDeviceSmokeSaveThenReopenFromHome` passed on `Riy's iPhone`.
+- [x] Re-run focused physical-device smoke after moving exporter-only test hooks off `ScanService` and migrating `ScanServiceTests` toward `ScanRepository` / `ScanExporterService`.
+  - 2026-03-09: initial rerun hit a transient `TrueDepth Not Available` alert and timed out waiting for the shutter; the shared device-smoke helper was hardened to dismiss/retry that alert path.
+  - 2026-03-09: retry passed with `testDeviceSmokeSaveThenReopenFromHome` on `Riy's iPhone`.
+- [x] Re-run focused physical-device smoke after removing the default `ScanService` fixture from `ScanServiceTests`, leaving only explicit compatibility-only constructions.
+  - 2026-03-09: `TrueContourAI` build passed and `testDeviceSmokeSaveThenReopenFromHome` passed on `Riy's iPhone`.
+- [x] Re-run focused physical-device smoke after introducing `HomeFeedbackController` and moving Home toast/diagnostics/storage alert handling out of `HomeViewController`.
+  - 2026-03-09: `TrueContourAI` build passed and `testDeviceSmokeSaveThenReopenFromHome` passed on `Riy's iPhone`.
+- [x] Re-run focused physical-device smoke after introducing `SettingsFeedbackController` and moving Settings option-sheet/error/reset/delete confirmation presentation out of `SettingsViewController`.
+  - 2026-03-09: `TrueContourAI` build passed and `testDeviceSmokeSaveThenReopenFromHome` passed on `Riy's iPhone`.
+- [x] Re-run focused quality-gate validation after restoring the production save precheck.
+  - 2026-03-09: real-device focused smoke passed on `Riy's iPhone` for:
+    - `testDeviceSmokeForcedQualityGateBlocksSave`
+    - `testDeviceSmokeSaveThenReopenFromHome`
+  - 2026-03-09: focused simulator rerun for `ScanPreviewCoordinatorExportTests` no longer showed a product assertion failure, but XCTest remained vulnerable to simulator-runner hangs after build completion; treat that as environment instability, not a failed quality-gate implementation signal.
+- [x] Re-run focused physical-device smoke after introducing `PreviewCoordinatorComponents` and moving preview collaborator assembly out of `ScanPreviewCoordinator`.
+  - 2026-03-09: `TrueContourAI` build passed and `testDeviceSmokeSaveThenReopenFromHome` passed on `Riy's iPhone`.
+- [x] Re-check repository hygiene before release closeout.
+  - 2026-03-09: active-scope duplicate-name scan found no duplicate app/review files outside expected third-party dependency filenames.
+  - 2026-03-09: `git status --short` showed only source/doc changes for the refactor and no generated artifacts staged unintentionally.
+  - 2026-03-09: `.gitignore` already covered `.DS_Store`, `.build`, `.xcresult`, `build/`, and derived-data clutter.
 
 ## Next
 - [ ] Confirm no accidental staged legacy/archive content before next commit.
@@ -38,14 +85,35 @@ This file tracks remaining implementation, validation, and hygiene tasks.
 
 ## Architecture / Code Quality
 - [ ] Reduce view-controller orchestration when touching Home/Scan/Preview flows; prefer pushing UI state and side effects behind focused helpers/controllers.
+- [x] Move Home toast handling, storage-unavailable alert presentation, and device-smoke diagnostics behind `HomeFeedbackController`.
+- [x] Move Settings option-sheet/error/reset/delete confirmation presentation behind `SettingsFeedbackController`.
+- [x] Move scan thermal/idle-timer lifecycle behind `ScanRuntimeController`.
+- [x] Move scan HUD guidance/prompt/progress state behind `ScanHUDController`.
+- [x] Replace the remaining practical package/runtime force unwraps in `StandardCyborgUI` with guarded fallback paths:
+  - `DefaultScanningViewRenderer` command-buffer creation
+  - `PointCloudCommandEncoder` render-command-encoder creation
+  - `AspectFillTextureCommandEncoder` compute-command-encoder creation
+  - `AspectFillTextureCommandEncoder` `CVMetalTexture` unwrap
+  - `CameraManager` capture-session input insertion
 - [ ] Keep protocol seams for high-risk dependencies when modifying those areas:
   - scan runtime
   - export orchestration
   - settings side effects
 - [ ] Add tests for any new branch introduced in scan/preview/settings code as part of the same change.
-- [ ] Finish splitting `ScanPreviewCoordinator` into narrower collaborators; current refactor moved session/export state out of the worst hotspots but did not finish the decomposition.
-- [ ] Keep reducing `ScanService` public breadth after the internal storage/export split.
-- [ ] Finish removing remaining compatibility/test setup paths that still rely on the legacy `ScanService` facade where concrete repository/exporter services now exist.
+- [ ] Finish splitting `ScanPreviewCoordinator` into narrower collaborators; current refactor moved session/export/reset/action state out of the worst hotspots but did not finish the decomposition.
+- [x] Re-run focused physical-device smoke after introducing `PreviewResetController` and removing the remaining coordinator-owned preview reset glue.
+  - 2026-03-09: `TrueContourAI` build passed and `testDeviceSmokeSaveThenReopenFromHome` passed on `Riy's iPhone`.
+- [x] Re-run focused physical-device smoke after introducing `PreviewActionController` and moving preview close/save target actions out of `ScanPreviewCoordinator`.
+  - 2026-03-09: `TrueContourAI` build passed and `testDeviceSmokeSaveThenReopenFromHome` passed on `Riy's iPhone`.
+- [x] Re-run focused physical-device smoke after introducing `PreviewSceneUIController` and moving scene-specific preview UI setup out of `ScanPreviewCoordinator`.
+  - 2026-03-09: `TrueContourAI` build passed and `testDeviceSmokeSaveThenReopenFromHome` passed on `Riy's iPhone`.
+- [x] Re-run focused physical-device smoke after moving the last test-only simulated export-failure helper off `ScanService` and onto `ScanExporterService`.
+  - 2026-03-09: `TrueContourAI` build passed and `testDeviceSmokeSaveThenReopenFromHome` passed on `Riy's iPhone`.
+- [x] Keep reducing `ScanService` public breadth after the internal storage/export split.
+  - 2026-03-09: removed the last non-essential exporter compatibility initializer and shifted the remaining repository-failure test onto `ScanRepository`.
+  - 2026-03-09: moved the last test-only simulated export-failure helper from `ScanService` onto `ScanExporterService`, leaving `ScanService` even narrower as a compatibility-only sidecar.
+- [x] Finish removing the remaining non-compatibility/test setup paths that still rely on the legacy `ScanService` facade where concrete repository/exporter services now exist.
+  - 2026-03-09: normal app composition and feature/test setup now use `ScanRepository` / `ScanExporterService`; remaining `ScanService` construction is compatibility-only.
 - [ ] Run `StandardCyborgFusion` tests only when fusion/package code changes, scan-quality behavior regresses, or that dependency is updated; do not block UI-only releases on that suite.
 - [x] Keep unit and UI test schemes separated cleanly.
 
@@ -157,6 +225,8 @@ This file tracks remaining implementation, validation, and hygiene tasks.
   - `ld: framework 'UIKit' not found`
   - this is tracked as an environment/toolchain limitation for SwiftPM package-test execution rather than an app-target runtime regression
 - [x] 2026-03-05: Preview save precheck no longer blocks on scan-quality gate; low-quality scans are currently saveable when mesh and GLTF prerequisites are satisfied.
+- [x] 2026-03-09: Preview save precheck once again blocks low-quality saves when `scanQualityConfig.gateEnabled` is on, while device-smoke export-artifact tests continue to disable the gate explicitly unless they are validating the blocked-save path.
+- [x] 2026-03-09: Introduced `PreviewResetController` and removed the remaining coordinator-owned preview reset / teardown glue from `ScanPreviewCoordinator`; app build passed and focused physical-device rerun passed for `testDeviceSmokeSaveThenReopenFromHome`.
 - [ ] 2026-03-05: Focused simulator unit run for `ScanPreviewCoordinatorExportTests` still stalled after build completion (`xcodebuild test` + `testmanagerd` remained active without XCTest case output); target builds succeeded and this remains an environment runner blocker.
 - [x] 2026-03-07: Runtime hardening/refactor landed:
   - `AppEnvironment` now centralizes UI-test/debug runtime behavior
@@ -174,6 +244,7 @@ This file tracks remaining implementation, validation, and hygiene tasks.
   - `TrueContourAIUITests` target builds cleanly on generic iOS Simulator
   - one full `TrueContourAITests` run succeeded earlier in the refactor sequence after runtime-environment cleanup
 - [ ] 2026-03-07: A later focused simulator `TrueContourAITests` rerun for changed areas was started after additional preview/export, service, and package hardening changes, but the current session has not yet produced a final XCTest summary in this environment.
+- [ ] 2026-03-09: A fresh focused simulator `TrueContourAITests` rerun was attempted after the latest preview-composition closeout and again advanced through build/link/app validation before hanging without a final XCTest summary; treat this as the same simulator-runner environment blocker unless a future rerun produces a clean result.
 - [x] 2026-03-07: Continued preview/export decomposition:
   - preview session identity moved out of `ScanPreviewCoordinator` and into `PreviewViewModel`
   - preview save precheck/context/format summary logic moved into a dedicated export workflow
@@ -242,6 +313,10 @@ This file tracks remaining implementation, validation, and hygiene tasks.
 - [x] 2026-03-08: Continued service-layer cleanup:
   - `ScanExporterService` now supports direct construction from `scansRootURL` + `UserDefaults`
   - remaining feature-test exporter setup paths were migrated off direct `ScanService` construction
+  - post-change app build passed on generic iOS
+  - physical-device rerun passed for `testDeviceSmokeSaveThenReopenFromHome`
+- [x] 2026-03-08: Continued service-layer cleanup:
+  - `AppDependencies` now composes `ScanRepository` and `ScanExporterService` directly from root/environment configuration instead of constructing a legacy `ScanService` for the normal app path
   - post-change app build passed on generic iOS
   - physical-device rerun passed for `testDeviceSmokeSaveThenReopenFromHome`
 - [x] 2026-03-08: Continued service-layer cleanup:

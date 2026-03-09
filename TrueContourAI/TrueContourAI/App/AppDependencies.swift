@@ -86,16 +86,21 @@ struct AppDependencies {
 
     init(
         environment: AppEnvironment = .current,
-        scanService: ScanService? = nil,
         scanRepository: ScanRepository? = nil,
         scanExporter: ScanExporterService? = nil,
         settingsStore: SettingsStore = SettingsStore(),
         earServiceFactory: (() -> EarLandmarksService?)? = nil
     ) {
         self.environment = environment
-        let resolvedScanService = scanService ?? AppDependencies.makeScanService(environment: environment)
-        self.scanRepository = scanRepository ?? AppDependencies.makeScanRepository(scanService: resolvedScanService, environment: environment)
-        self.scanExporter = scanExporter ?? AppDependencies.makeScanExporter(scanService: resolvedScanService)
+        let resolvedScansRootURL = AppDependencies.makeScansRootURL(environment: environment)
+        self.scanRepository = scanRepository ?? AppDependencies.makeScanRepository(
+            scansRootURL: resolvedScansRootURL,
+            environment: environment
+        )
+        self.scanExporter = scanExporter ?? AppDependencies.makeScanExporter(
+            scansRootURL: resolvedScansRootURL,
+            environment: environment
+        )
         self.settingsStore = settingsStore
         self.earServiceFactory = earServiceFactory ?? AppDependencies.makeEarServiceFactory(environment: environment)
         applyRuntimeOverrides()
@@ -131,9 +136,17 @@ struct AppDependencies {
 #endif
     }
 
-    private static func makeScanService(environment: AppEnvironment) -> ScanService {
+    private static func makeScansRootURL(environment: AppEnvironment) -> URL {
         guard environment.usesDedicatedScansRoot else {
-            return ScanService(environment: environment)
+            let documentsURL: URL
+            if let resolvedDocumentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                documentsURL = resolvedDocumentsURL
+            } else {
+                let fallback = FileManager.default.temporaryDirectory
+                Log.persistence.error("Document directory unavailable; using temporary directory for scans root: \(fallback.path, privacy: .public)")
+                documentsURL = fallback
+            }
+            return documentsURL.appendingPathComponent("Scans", isDirectory: true)
         }
 
         let documentsURL: URL
@@ -149,14 +162,14 @@ struct AppDependencies {
         if environment.resetsDedicatedScansRootOnLaunch {
             try? FileManager.default.removeItem(at: testRoot)
         }
-        return ScanService(scansRootURL: testRoot, environment: environment)
+        return testRoot
     }
 
-    private static func makeScanRepository(scanService: ScanService, environment: AppEnvironment) -> ScanRepository {
+    private static func makeScanRepository(scansRootURL: URL, environment: AppEnvironment) -> ScanRepository {
         let testSeedService: ScanTestSeedService?
         if environment.seedsScan || environment.seedsMissingSceneScan {
             testSeedService = ScanTestSeedService(
-                scansRootURL: scanService.scansRootURL,
+                scansRootURL: scansRootURL,
                 environment: environment
             )
         } else {
@@ -164,13 +177,17 @@ struct AppDependencies {
         }
 
         return ScanRepository(
-            scansRootURL: scanService.scansRootURL,
+            scansRootURL: scansRootURL,
             testSeedService: testSeedService
         )
     }
 
-    private static func makeScanExporter(scanService: ScanService) -> ScanExporterService {
-        ScanExporterService(scanService: scanService)
+    private static func makeScanExporter(
+        scansRootURL: URL,
+        environment: AppEnvironment
+    ) -> ScanExporterService {
+        _ = environment
+        return ScanExporterService(scansRootURL: scansRootURL)
     }
 
     private static func makeEarServiceFactory(environment: AppEnvironment) -> () -> EarLandmarksService? {

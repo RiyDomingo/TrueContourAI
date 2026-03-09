@@ -64,7 +64,7 @@ final class ScanPreviewCoordinatorTests: XCTestCase {
 
         let scanFolder = tempDir.appendingPathComponent("scan-missing-scene", isDirectory: true)
         try? FileManager.default.createDirectory(at: scanFolder, withIntermediateDirectories: true)
-        let item = ScanService.ScanItem(
+        let item = ScanItem(
             folderURL: scanFolder,
             displayName: "scan-missing-scene",
             date: Date(),

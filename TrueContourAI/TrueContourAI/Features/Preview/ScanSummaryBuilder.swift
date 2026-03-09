@@ -7,10 +7,10 @@ enum ScanSummaryBuilder {
         qualityReport: ScanQualityReport?,
         measurementSummary: LocalMeasurementGenerationService.ResultSummary?,
         hadEarVerification: Bool
-    ) -> ScanService.ScanSummary? {
+    ) -> ScanSummary? {
         guard let metrics else { return nil }
 
-        return ScanService.ScanSummary(
+        return ScanSummary(
             schemaVersion: settingsStore.scanSummarySchemaVersion,
             startedAt: metrics.startedAt,
             finishedAt: metrics.finishedAt,
@@ -20,7 +20,7 @@ enum ScanSummaryBuilder {
             hadEarVerification: hadEarVerification,
             processingProfile: nil,
             derivedMeasurements: measurementSummary.map {
-                ScanService.ScanSummary.DerivedMeasurements(
+                ScanSummary.DerivedMeasurements(
                     sliceHeightNormalized: $0.sliceHeightNormalized,
                     circumferenceMm: $0.circumferenceMm,
                     widthMm: $0.widthMm,

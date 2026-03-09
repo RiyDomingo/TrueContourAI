@@ -6,8 +6,6 @@ protocol SettingsScanServicing {
     func deleteAllScans() -> Result<Void, Error>
 }
 
-extension ScanService: SettingsScanServicing {}
-
 final class SettingsStorageWorkflow {
     private let scanService: SettingsScanServicing
 

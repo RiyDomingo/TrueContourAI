@@ -17,7 +17,7 @@ final class MathAndFormattingTests: XCTestCase {
     }
 
     func testOBJFormattingUsesDotDecimal() {
-        let s = ScanService._formatOBJVectorForTest(prefix: "v", x: 1.25, y: 2.5, z: 3.75)
+        let s = ScanExporterService._formatOBJVectorForTest(prefix: "v", x: 1.25, y: 2.5, z: 3.75)
         XCTAssertTrue(s.hasPrefix("v "))
         XCTAssertTrue(s.contains("1.250000"))
         XCTAssertFalse(s.contains(","))
@@ -145,9 +145,9 @@ final class MathAndFormattingTests: XCTestCase {
     private func makeSummary(
         overallConfidence: Float,
         pointCountEstimate: Int,
-        derivedMeasurements: ScanService.ScanSummary.DerivedMeasurements?
-    ) -> ScanService.ScanSummary {
-        ScanService.ScanSummary(
+        derivedMeasurements: ScanSummary.DerivedMeasurements?
+    ) -> ScanSummary {
+        ScanSummary(
             schemaVersion: 2,
             startedAt: Date(timeIntervalSince1970: 0),
             finishedAt: Date(timeIntervalSince1970: 5),

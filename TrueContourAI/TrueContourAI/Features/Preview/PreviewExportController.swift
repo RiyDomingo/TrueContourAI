@@ -31,10 +31,9 @@ final class PreviewExportController {
         onToast: onToast,
         onExportResult: onExportResult,
         onScansChanged: onScansChanged,
-        dismissActivePreview: dismissActivePreview,
-        resetPreviewState: resetPreviewState,
-        invalidatePreviewSession: invalidatePreviewSession,
-        isCurrentPreviewSession: isCurrentPreviewSession,
+        previewSessionController: previewSessionController,
+        presentationController: presentationController,
+        resetController: resetController,
         exportFormatSummary: { [weak self] in
             self?.exportFormatSummary() ?? L("scan.preview.exportFormat.none")
         }
@@ -45,10 +44,9 @@ final class PreviewExportController {
     private let saveExportViewState: SaveExportUIStateAdapting
     private let alertPresenter: PreviewAlertPresenter
     private let environment: AppEnvironment
-    private let dismissActivePreview: (_ animated: Bool, _ completion: (() -> Void)?) -> Void
-    private let resetPreviewState: () -> Void
-    private let invalidatePreviewSession: () -> Void
-    private let isCurrentPreviewSession: (UUID) -> Bool
+    private let previewSessionController: PreviewSessionController
+    private let presentationController: PreviewPresentationController
+    private let resetController: PreviewResetController
 
     init(
         previewViewModel: PreviewViewModel,
@@ -61,10 +59,9 @@ final class PreviewExportController {
         onToast: ((String) -> Void)?,
         onExportResult: ((PreviewExportResultEvent) -> Void)?,
         onScansChanged: (() -> Void)?,
-        dismissActivePreview: @escaping (_ animated: Bool, _ completion: (() -> Void)?) -> Void,
-        resetPreviewState: @escaping () -> Void,
-        invalidatePreviewSession: @escaping () -> Void,
-        isCurrentPreviewSession: @escaping (UUID) -> Bool
+        previewSessionController: PreviewSessionController,
+        presentationController: PreviewPresentationController,
+        resetController: PreviewResetController
     ) {
         self.previewViewModel = previewViewModel
         self.settingsStore = settingsStore
@@ -76,10 +73,9 @@ final class PreviewExportController {
         self.onToast = onToast
         self.onExportResult = onExportResult
         self.onScansChanged = onScansChanged
-        self.dismissActivePreview = dismissActivePreview
-        self.resetPreviewState = resetPreviewState
-        self.invalidatePreviewSession = invalidatePreviewSession
-        self.isCurrentPreviewSession = isCurrentPreviewSession
+        self.previewSessionController = previewSessionController
+        self.presentationController = presentationController
+        self.resetController = resetController
     }
 
     func performSave(previewVC: ScenePreviewViewController, previewSessionID: UUID, earServiceUnavailable: Bool) {
@@ -88,7 +84,9 @@ final class PreviewExportController {
             previewSessionID: previewSessionID,
             exportWorkflow: exportWorkflow,
             earServiceUnavailable: earServiceUnavailable,
-            isCurrentPreviewSession: isCurrentPreviewSession,
+            isCurrentPreviewSession: { [weak self] sessionID in
+                self?.previewSessionController.isCurrentSession(sessionID) ?? false
+            },
             onFailure: { [weak self] message in
                 guard let self else { return }
                 self.exportResultWorkflow.handleFailure(message: message, previewVC: previewVC)
@@ -109,7 +107,7 @@ final class PreviewExportController {
     }
 
     #if DEBUG
-    func debugHandleExportResult(_ result: ScanService.ExportResult, isEarServiceUnavailable: Bool) {
+    func debugHandleExportResult(_ result: ScanExportResult, isEarServiceUnavailable: Bool) {
         switch result {
         case .failure(let message):
             onExportResult?(.failure(message: message))
@@ -133,11 +131,13 @@ final class PreviewExportController {
 
     func debugSavePrecheck(qualityReport: ScanQualityReport?, hasMesh: Bool) -> String {
         _ = qualityReport
-        switch exportWorkflow.savePrecheck(meshAvailable: hasMesh) {
+        switch exportWorkflow.savePrecheck(qualityReport: qualityReport, meshAvailable: hasMesh) {
         case .gltfExportRequired:
             return "gltfExportRequired"
         case .meshNotReady:
             return "meshNotReady"
+        case .qualityGateBlocked:
+            return "qualityGateBlocked"
         case .ready:
             return "ready"
         }

@@ -1,8 +1,6 @@
 import UIKit
 
 final class HomeRecentScansController: NSObject {
-    typealias ScanItem = ScanService.ScanItem
-
     private weak var hostViewController: UIViewController?
     private let homeViewModel: HomeViewModel
     private let homeCoordinator: HomeCoordinator

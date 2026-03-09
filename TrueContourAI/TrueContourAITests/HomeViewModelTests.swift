@@ -99,7 +99,7 @@ final class HomeViewModelTests: XCTestCase {
         let folder = tempDir.appendingPathComponent(name, isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         try FileManager.default.setAttributes([.modificationDate: modifiedAt], ofItemAtPath: folder.path)
-        let summary = ScanService.ScanSummary(
+        let summary = ScanSummary(
             schemaVersion: 2,
             startedAt: modifiedAt,
             finishedAt: modifiedAt.addingTimeInterval(5),

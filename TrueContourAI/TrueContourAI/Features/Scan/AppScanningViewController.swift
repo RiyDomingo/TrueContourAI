@@ -134,6 +134,9 @@ protocol AppScanningViewControllerDelegate: AnyObject {
 }
 
 final class AppScanningViewController: UIViewController, CameraManagerDelegate, SCReconstructionManagerDelegate {
+    typealias ScanningTerminationReason = AppScanningTerminationReason
+    private typealias State = AppScanningSessionState
+
     private enum Layout {
         static let topStatusInset: CGFloat = 10
         static let instructionToProgressSpacing: CGFloat = 8
@@ -148,11 +151,6 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         let collapsed: CGFloat
         let half: CGFloat
         let full: CGFloat
-    }
-
-    enum ScanningTerminationReason {
-        case canceled
-        case finished
     }
 
     weak var delegate: AppScanningViewControllerDelegate?
@@ -172,99 +170,6 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     }
     var texturedMeshColorBufferSaveInterval: Int = 8
     let meshTexturing = SCMeshTexturing()
-
-    private enum State: Equatable {
-        case `default`
-        case countdown(Int)
-        case scanning
-    }
-
-    private enum HUDState: Equatable {
-        case idlePrompts
-        case countdown
-        case capturing
-        case warning
-        case critical
-    }
-
-    private struct HUDVisibility {
-        let promptHidden: Bool
-        let progressHidden: Bool
-        let progressBarHidden: Bool
-        let statusHidden: Bool
-        let autoFinishHidden: Bool
-        let focusHintHidden: Bool
-    }
-
-    private enum GuidanceState {
-        case start
-        case moveSlower
-        case poorTracking
-        case goodTracking
-        case trackingLost
-
-        var message: String {
-            switch self {
-            case .start:
-                return L("scanning.guidance.short.start")
-            case .moveSlower:
-                return L("scanning.guidance.short.motion")
-            case .poorTracking:
-                return L("scanning.guidance.short.poorTracking")
-            case .goodTracking:
-                return L("scanning.guidance.short.goodTracking")
-            case .trackingLost:
-                return L("scanning.guidance.short.trackingLost")
-            }
-        }
-
-        var priority: Int {
-            switch self {
-            case .start:
-                return 0
-            case .goodTracking:
-                return 1
-            case .moveSlower:
-                return 2
-            case .poorTracking:
-                return 3
-            case .trackingLost:
-                return 4
-            }
-        }
-    }
-
-    private enum GuidanceStatus {
-        case good
-        case caution
-        case lost
-
-        var title: String {
-            switch self {
-            case .good:
-                return L("scanning.guidance.status.good")
-            case .caution:
-                return L("scanning.guidance.status.caution")
-            case .lost:
-                return L("scanning.guidance.status.lost")
-            }
-        }
-
-        var backgroundColor: UIColor {
-            switch self {
-            case .good:
-                return UIColor.systemGreen.withAlphaComponent(0.86)
-            case .caution:
-                return UIColor.systemOrange.withAlphaComponent(0.9)
-            case .lost:
-                return UIColor.systemRed.withAlphaComponent(0.9)
-            }
-        }
-
-        var textColor: UIColor {
-            UIColor.white
-        }
-    }
 
     private let metalContainerView = UIView()
     private let metalLayer = CAMetalLayer()
@@ -383,6 +288,9 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     private let reconstructionManagerFactory: (MTLDevice, MTLCommandQueue, Int32) -> ReconstructionManaging
     private let cameraManager: CameraManaging
     private let hapticEngine: ScanningHapticFeedbackProviding
+    private lazy var sessionController = makeSessionController()
+    private lazy var runtimeController = makeRuntimeController()
+    private let hudController = ScanHUDController()
     private let motionManager = CMMotionManager()
     private let scanStateLock = NSLock()
     private var activeScanningState = false
@@ -390,40 +298,18 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     private var latestViewMatrix = matrix_identity_float4x4
     private var assimilatedFrameIndex = 0
     private var consecutiveFailedCount = 0
-    private var state: State = .default {
-        didSet {
-            setActiveScanningState(state == .scanning)
-            updateUI()
-        }
-    }
-
-    private var countdownTimer: Timer?
     private var promptTimer: Timer?
-    private var promptStep = 0
-    private var autoFinishTimer: Timer?
-    private var autoFinishCountdownTimer: Timer?
-    private var autoFinishRemaining: Int = 0
-    private var lastGuidanceState: GuidanceState?
-    private var lastGuidanceAt: Date = .distantPast
-    private var pendingGuidanceState: GuidanceState?
-    private var pendingGuidanceSince: Date = .distantPast
-    private var currentHUDState: HUDState = .idlePrompts {
+    private var currentHUDState: AppScanHUDState = .idlePrompts {
         didSet { updateHUDVisibility() }
     }
 
     private var volumeView: MPVolumeView?
     private var isObservingVolumeButtons = false
 
-    private let countdownStartCount = 3
-    private let countdownPerSecondDuration: TimeInterval = 0.75
     private let minSucceededFramesForCompletion = 50
     private let maxReconstructionThreadCount: Int32 = 2
     private let unstableMotionThreshold = 0.16
-    private let guidanceCooldown: TimeInterval = 2.0
-    private let warningGuidanceHoldWindow: TimeInterval = 0.6
-    private let recoveryGuidanceHoldWindow: TimeInterval = 0.8
     private let goodTrackingFrameInterval = 40
-    private let goodTrackingMinimumRepeatInterval: TimeInterval = 4.0
 
     private func scanSheetProfile() -> ScanSheetProfile {
         Self.scanSheetProfile(forHeight: view.bounds.height, isPad: traitCollection.userInterfaceIdiom == .pad)
@@ -561,16 +447,44 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         reconstructionManager.delegate = self
         reconstructionManager.includesColorBuffersInMetadata = generatesTexturedMeshes
 
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(thermalStateChanged),
-            name: ProcessInfo.thermalStateDidChangeNotification,
-            object: nil
-        )
+    }
+
+    private func makeSessionController() -> ScanSessionController {
+        let controller = ScanSessionController(hapticEngine: hapticEngine)
+        controller.autoFinishSeconds = autoFinishSeconds
+        controller.onStateChange = { [weak self] state in
+            guard let self else { return }
+            setActiveScanningState(state == .scanning)
+            updateUI()
+        }
+        controller.onAutoFinishRemainingChange = { [weak self] _ in
+            guard let self else { return }
+            if self.state == .scanning {
+                self.updateCaptureProgress()
+                self.updateAutoFinishLabel()
+            }
+        }
+        controller.onAutoFinishTriggered = { [weak self] in
+            self?.finishScanNow()
+        }
+        return controller
+    }
+
+    private func makeRuntimeController() -> ScanRuntimeController {
+        let controller = ScanRuntimeController()
+        controller.onCriticalThermalState = { [weak self] in
+            self?.handleCriticalThermalState()
+        }
+        return controller
+    }
+
+    private var state: State {
+        sessionController.state
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        runtimeController.activate()
         startPromptLoop()
         showFocusHintIfIdle()
         installVolumeShutterIfNeeded()
@@ -587,13 +501,8 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
         promptTimer?.invalidate()
         promptTimer = nil
-        countdownTimer?.invalidate()
-        countdownTimer = nil
-        autoFinishTimer?.invalidate()
-        autoFinishTimer = nil
-        autoFinishCountdownTimer?.invalidate()
-        autoFinishCountdownTimer = nil
-        NotificationCenter.default.removeObserver(self, name: ProcessInfo.thermalStateDidChangeNotification, object: nil)
+        sessionController.invalidate()
+        runtimeController.deactivate()
     }
 
     override func viewDidLayoutSubviews() {
@@ -636,12 +545,11 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
         switch state {
         case .default:
-            startCountdown { [weak self] in
+            sessionController.startCountdown { [weak self] in
                 self?.startScanning()
             }
         case .countdown:
-            hapticEngine.scanningCanceled()
-            cancelCountdown()
+            sessionController.cancelCountdown()
         case .scanning:
             stopScanning(reason: .finished)
         }
@@ -654,35 +562,25 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     }
 
     private func startScanning() {
-        hapticEngine.scanningBegan()
-        state = .scanning
+        sessionController.autoFinishSeconds = autoFinishSeconds
+        sessionController.beginScanning()
         assimilatedFrameIndex = 0
         consecutiveFailedCount = 0
         meshTexturing.reset()
-        autoFinishRemaining = max(0, autoFinishSeconds)
         captureProgressView.progress = 0
-        lastGuidanceState = nil
-        lastGuidanceAt = .distantPast
-        pendingGuidanceState = nil
-        pendingGuidanceSince = .distantPast
+        hudController.resetForNewCapture()
         stopPromptLoop()
-        currentHUDState = .capturing
+        currentHUDState = hudController.currentHUDState
         emitGuidance(.start, force: true)
-        startAutoFinishTimerIfNeeded()
         updateCaptureProgress()
     }
 
     private func stopScanning(reason: ScanningTerminationReason) {
-        guard state == .scanning else { return }
-        state = .default
+        guard sessionController.stopScanning(reason: reason) else { return }
         latestViewMatrix = matrix_identity_float4x4
         meshTexturing.reset()
-        stopAutoFinishTimers()
-        lastGuidanceState = nil
-        lastGuidanceAt = .distantPast
-        pendingGuidanceState = nil
-        pendingGuidanceSince = .distantPast
-        currentHUDState = .idlePrompts
+        hudController.resetAfterCapture()
+        currentHUDState = hudController.currentHUDState
         startPromptLoop()
 
         switch reason {
@@ -766,6 +664,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         scanStateLock.lock()
         activeScanningState = isActive
         scanStateLock.unlock()
+        runtimeController.updateScanningState(isScanning: isActive)
     }
 
     private func isActiveScanningState() -> Bool {
@@ -862,22 +761,21 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     // MARK: - UI helpers
 
     private func updateUI() {
+        hudController.updateForSessionState(state)
         switch state {
         case .default:
             shutterButton.shutterButtonState = .default
             countdownLabel.isHidden = true
-            currentHUDState = .idlePrompts
+            currentHUDState = hudController.currentHUDState
         case .countdown(let seconds):
             shutterButton.shutterButtonState = .countdown
             countdownLabel.text = "\(seconds)"
             countdownLabel.isHidden = false
-            currentHUDState = .countdown
+            currentHUDState = hudController.currentHUDState
         case .scanning:
             shutterButton.shutterButtonState = .scanning
             countdownLabel.isHidden = true
-            if currentHUDState == .idlePrompts || currentHUDState == .countdown {
-                currentHUDState = .capturing
-            }
+            currentHUDState = hudController.currentHUDState
         }
         updateManualFinishButtonVisibility()
     }
@@ -893,36 +791,10 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         }
     }
 
-    private func startCountdown(completion: @escaping () -> Void) {
-        countdownTimer?.invalidate()
-        var remaining = countdownStartCount
-        state = .countdown(remaining)
-
-        countdownTimer = Timer.scheduledTimer(withTimeInterval: countdownPerSecondDuration, repeats: true) { [weak self] timer in
-            guard let self else { return }
-            hapticEngine.countdownCountedDown()
-            remaining -= 1
-            if remaining <= 0 {
-                timer.invalidate()
-                self.countdownTimer = nil
-                self.state = .default
-                completion()
-            } else {
-                self.state = .countdown(remaining)
-            }
-        }
-    }
-
-    private func cancelCountdown() {
-        countdownTimer?.invalidate()
-        countdownTimer = nil
-        state = .default
-    }
-
     private func startPromptLoop() {
         stopPromptLoop()
-        promptStep = 0
-        promptLabel.text = L("scanning.prompt.initial")
+        promptLabel.text = hudController.resetIdlePrompts()
+        currentHUDState = hudController.currentHUDState
     }
 
     private func stopPromptLoop() {
@@ -931,96 +803,32 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     }
 
     @discardableResult
-    private func emitGuidance(_ state: GuidanceState, force: Bool = false) -> Bool {
-        if state == .trackingLost {
-            return applyGuidance(state, now: Date())
-        }
-        let now = Date()
-        if !force, let last = lastGuidanceState {
-            let elapsed = now.timeIntervalSince(lastGuidanceAt)
-            let isPriorityUpgrade = state.priority > last.priority
-            if state == .goodTracking && elapsed < goodTrackingMinimumRepeatInterval {
-                return false
-            }
-            if shouldHoldGuidanceTransition(from: last, to: state, now: now) {
-                return false
-            }
-            if !isPriorityUpgrade && elapsed < guidanceCooldown {
-                return false
-            }
-            if state == last && elapsed < (guidanceCooldown * 1.5) {
-                return false
-            }
-        }
-        return applyGuidance(state, now: now)
-    }
-
-    @discardableResult
-    private func applyGuidance(_ state: GuidanceState, now: Date) -> Bool {
-        pendingGuidanceState = nil
-        let message = state.message
-        promptLabel.text = message
-        applyGuidanceStatus(for: state, message: message)
-        onRealtimeGuidance?(message)
-        lastGuidanceState = state
-        lastGuidanceAt = now
+    private func emitGuidance(_ state: AppScanGuidanceState, force: Bool = false) -> Bool {
+        guard let update = hudController.emitGuidance(state, force: force) else { return false }
+        promptLabel.text = update.message
+        guidanceStatusChip.text = "  \(update.status.title)  "
+        guidanceStatusChip.backgroundColor = update.status.backgroundColor
+        guidanceStatusChip.textColor = update.status.textColor
+        guidanceStatusChip.accessibilityLabel = update.accessibilityLabel
+        currentHUDState = update.hudState
+        onRealtimeGuidance?(update.message)
         return true
     }
 
     private func updateCaptureProgress() {
         guard state == .scanning else { return }
-        if autoFinishSeconds > 0 {
-            let elapsed = max(0, autoFinishSeconds - autoFinishRemaining)
-            let progress = min(max(Float(elapsed) / Float(autoFinishSeconds), 0), 1)
-            progressLabel.text = String(format: L("scanning.progress.timeFormat"), elapsed, autoFinishSeconds)
-            developerDiagnosticsLabel.text = String(format: "Frames: %d · Progress: %d%%", assimilatedFrameIndex, Int(round(progress * 100)))
-        } else {
-            let progress = min(max(Float(assimilatedFrameIndex) / Float(minSucceededFramesForCompletion), 0), 1)
-            progressLabel.text = L("scanning.progress.capturing")
-            developerDiagnosticsLabel.text = String(format: "Frames: %d · Progress: %d%%", assimilatedFrameIndex, Int(round(progress * 100)))
-        }
-    }
-
-    private func shouldHoldGuidanceTransition(from previous: GuidanceState, to next: GuidanceState, now: Date) -> Bool {
-        if next == previous { return false }
-        let isUpgrade = next.priority > previous.priority
-        let holdWindow = isUpgrade ? warningGuidanceHoldWindow : recoveryGuidanceHoldWindow
-        if pendingGuidanceState != next {
-            pendingGuidanceState = next
-            pendingGuidanceSince = now
-            return true
-        }
-        return now.timeIntervalSince(pendingGuidanceSince) < holdWindow
-    }
-
-    private func applyGuidanceStatus(for guidance: GuidanceState, message: String) {
-        let status: GuidanceStatus
-        switch guidance {
-        case .trackingLost:
-            status = .lost
-            currentHUDState = .critical
-        case .poorTracking, .moveSlower:
-            status = .caution
-            currentHUDState = .warning
-        case .goodTracking:
-            status = .good
-            currentHUDState = .capturing
-        case .start:
-            status = .caution
-            currentHUDState = .capturing
-        }
-        guidanceStatusChip.text = "  \(status.title)  "
-        guidanceStatusChip.backgroundColor = status.backgroundColor
-        guidanceStatusChip.textColor = status.textColor
-        guidanceStatusChip.accessibilityLabel = String(
-            format: L("scanning.guidance.status.accessibility"),
-            status.title,
-            message
+        let update = hudController.progressUpdate(
+            autoFinishSeconds: autoFinishSeconds,
+            autoFinishRemaining: sessionController.autoFinishRemaining,
+            assimilatedFrameIndex: assimilatedFrameIndex,
+            minSucceededFramesForCompletion: minSucceededFramesForCompletion
         )
+        progressLabel.text = update.text
+        developerDiagnosticsLabel.text = update.diagnostics
     }
 
     private func updateHUDVisibility() {
-        let visibility = hudVisibility(for: currentHUDState)
+        let visibility = hudController.visibility(for: currentHUDState, autoFinishSeconds: autoFinishSeconds)
         promptLabel.isHidden = visibility.promptHidden
         progressLabel.isHidden = visibility.progressHidden
         captureProgressView.isHidden = visibility.progressBarHidden
@@ -1038,55 +846,10 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         }
     }
 
-    private func hudVisibility(for state: HUDState) -> HUDVisibility {
-        // Visibility matrix (single source of truth):
-        // idlePrompts => prompt + focus hint only
-        // countdown   => countdown only
-        // capturing/* => prompt + status + progress text (+ auto-finish when enabled)
-        switch state {
-        case .idlePrompts:
-            return HUDVisibility(
-                promptHidden: false,
-                progressHidden: true,
-                progressBarHidden: true,
-                statusHidden: true,
-                autoFinishHidden: true,
-                focusHintHidden: false
-            )
-        case .countdown:
-            return HUDVisibility(
-                promptHidden: true,
-                progressHidden: true,
-                progressBarHidden: true,
-                statusHidden: true,
-                autoFinishHidden: true,
-                focusHintHidden: true
-            )
-        case .capturing, .warning, .critical:
-            return HUDVisibility(
-                promptHidden: false,
-                progressHidden: false,
-                progressBarHidden: true,
-                statusHidden: false,
-                autoFinishHidden: autoFinishSeconds <= 0,
-                focusHintHidden: true
-            )
-        }
-    }
-
     @discardableResult
     private func applyNextIdlePromptIfNeeded() -> Bool {
-        guard state == .default else { return false }
-        let prompts = [
-            L("scanning.prompt.1"),
-            L("scanning.prompt.2"),
-            L("scanning.prompt.3"),
-            L("scanning.prompt.4"),
-            L("scanning.prompt.5"),
-            L("scanning.prompt.6")
-        ]
-        promptLabel.text = prompts[promptStep % prompts.count]
-        promptStep += 1
+        guard let prompt = hudController.nextIdlePromptIfNeeded(for: state) else { return false }
+        promptLabel.text = prompt
         return true
     }
 
@@ -1101,53 +864,15 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         }
     }
 
-    private func startAutoFinishTimerIfNeeded() {
-        stopAutoFinishTimers()
-        guard autoFinishSeconds > 0 else { return }
-        autoFinishRemaining = autoFinishSeconds
-        autoFinishLabel.isHidden = false
-        updateAutoFinishLabel()
-        autoFinishTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval(autoFinishSeconds), repeats: false) { [weak self] _ in
-            self?.finishScanNow()
-        }
-        autoFinishCountdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            autoFinishRemaining = max(0, autoFinishRemaining - 1)
-            updateCaptureProgress()
-            updateAutoFinishLabel()
-            if autoFinishRemaining <= 0 {
-                autoFinishCountdownTimer?.invalidate()
-                autoFinishCountdownTimer = nil
-            }
-        }
-    }
-
-    private func stopAutoFinishTimers() {
-        autoFinishTimer?.invalidate()
-        autoFinishTimer = nil
-        autoFinishCountdownTimer?.invalidate()
-        autoFinishCountdownTimer = nil
-        autoFinishLabel.isHidden = true
-        if state == .scanning {
-            updateCaptureProgress()
-        }
-    }
-
     private func updateAutoFinishLabel() {
-        autoFinishLabel.text = String(format: L("scanning.autofinish"), autoFinishRemaining)
+        autoFinishLabel.isHidden = autoFinishSeconds <= 0 || state != .scanning
+        autoFinishLabel.text = String(format: L("scanning.autofinish"), sessionController.autoFinishRemaining)
     }
 
     @objc private func focusOnTap(_ gesture: UITapGestureRecognizer) {
         guard state != .scanning else { return }
         let location = gesture.location(in: metalContainerView)
         cameraManager.focusOnTap(at: location)
-    }
-
-    @objc private func thermalStateChanged(_ notification: Notification) {
-        guard let processInfo = notification.object as? ProcessInfo else { return }
-        if processInfo.thermalState == .serious || processInfo.thermalState == .critical {
-            handleCriticalThermalState()
-        }
     }
 
     private func handleCriticalThermalState() {
@@ -1217,11 +942,11 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     }
 
     func debug_setStateScanning() {
-        state = .scanning
+        sessionController.debug_setStateScanning()
     }
 
     func debug_setStateDefault() {
-        state = .default
+        sessionController.debug_setStateDefault()
     }
 
     @discardableResult
@@ -1273,7 +998,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
     func debug_setAutoFinishForProgress(seconds: Int, remaining: Int) {
         autoFinishSeconds = seconds
-        autoFinishRemaining = remaining
+        sessionController.debug_setAutoFinish(seconds: seconds, remaining: remaining)
     }
 
     func debug_setAssimilatedFramesForProgress(_ frames: Int) {
@@ -1285,7 +1010,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     }
 
     func debug_setStateCountdown(seconds: Int) {
-        state = .countdown(seconds)
+        sessionController.debug_setStateCountdown(seconds: seconds)
     }
 
     func debug_stopScanning(reason: ScanningTerminationReason) {

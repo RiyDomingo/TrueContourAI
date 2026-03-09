@@ -1,9 +1,9 @@
 import UIKit
 
 final class ScanDetailsViewController: UIViewController {
-    private let item: ScanService.ScanItem
-    private let summary: ScanService.ScanSummary?
-    private let previousSummary: ScanService.ScanSummary?
+    private let item: ScanItem
+    private let summary: ScanSummary?
+    private let previousSummary: ScanSummary?
 
     private let scrollView: UIScrollView = {
         let view = UIScrollView()
@@ -25,7 +25,7 @@ final class ScanDetailsViewController: UIViewController {
         return stack
     }()
 
-    init(item: ScanService.ScanItem, summary: ScanService.ScanSummary?, previousSummary: ScanService.ScanSummary?) {
+    init(item: ScanItem, summary: ScanSummary?, previousSummary: ScanSummary?) {
         self.item = item
         self.summary = summary
         self.previousSummary = previousSummary

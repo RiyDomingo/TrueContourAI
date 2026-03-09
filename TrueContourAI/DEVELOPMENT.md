@@ -41,6 +41,11 @@ xcodebuild test -project TrueContourAI.xcodeproj -scheme TrueContourAIUITests -d
   - device locked
   - signing/provisioning issue
   - host cache/DerivedData issue
+- Prefer physical-device UI evidence over simulator evidence for:
+  - scan start/finish/cancel
+  - preview save/export
+  - save -> return home -> reopen
+  - quality-gate blocked export
 
 ### Hardware smoke tests
 - Run selected tests on connected iPhone when touching scan engine paths.
@@ -60,6 +65,7 @@ xcodebuild test -project TrueContourAI.xcodeproj -scheme TrueContourAIUITests -d
 - Unit and UI tests are run, not only built, when behavior has changed materially.
 - No accidental dependency path breakage.
 - No legacy folder reintroduction into active app target.
+- If scan/preview bootstrap changes, rerun focused smoke on the connected iPhone before treating the slice as complete.
 
 ## Coding Expectations
 - Keep UI programmatic.
@@ -67,6 +73,13 @@ xcodebuild test -project TrueContourAI.xcodeproj -scheme TrueContourAIUITests -d
 - Do not add hardcoded user-facing strings in view/controller files.
 - Use services/coordinators instead of pushing orchestration into view controllers.
 - Prefer protocol seams for high-risk runtime dependencies.
+- Prefer concrete feature collaborators over adding more helper methods inside the same oversized coordinator/controller file.
+
+## Current Architecture Direction
+- `HomeViewController` should mainly bind and forward intents.
+- `AppScanningViewController` should mainly bind scan UI and camera callbacks, not own all runtime state directly.
+- `ScanPreviewCoordinator` is now composition-focused; new preview behavior should land in preview collaborators first, not back in the coordinator.
+- New scan persistence/export work should target `ScanRepository` / `ScanExporterService`, not expand the legacy `ScanService` compatibility facade.
 
 ## Logging and Diagnostics
 - Use existing structured `Log.*` channels.

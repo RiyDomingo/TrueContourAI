@@ -4,6 +4,7 @@ final class SettingsViewController: UITableViewController {
     private let store: SettingsStore
     private let scanService: SettingsScanServicing
     private lazy var storageWorkflow = SettingsStorageWorkflow(scanService: scanService)
+    private lazy var feedbackController = SettingsFeedbackController(presenter: self)
     var onScansChanged: (() -> Void)?
     private var sections: [SettingsSection] = []
     private var storageUsageText = L("settings.calculating")
@@ -54,8 +55,8 @@ final class SettingsViewController: UITableViewController {
         sections = SettingsSectionBuilder(
             store: store,
             storageUsageText: storageUsageText,
-            onDeleteAll: { [weak self] in self?.confirmDeleteAllScans() },
-            onReset: { [weak self] in self?.confirmReset() }
+            onDeleteAll: { [weak self] in self?.presentDeleteAllConfirmation() },
+            onReset: { [weak self] in self?.presentResetConfirmation() }
         ).build()
     }
 
@@ -138,7 +139,11 @@ final class SettingsViewController: UITableViewController {
         case .action(let handler):
             handler()
         case .option(let options, let selected, let setSelected):
-            presentOptionSheet(title: row.title, options: options, selected: selected(), setSelected: setSelected)
+            feedbackController.presentOptionSheet(title: row.title, options: options, selected: selected()) { [weak self] value in
+                setSelected(value)
+                self?.buildSections()
+                self?.tableView.reloadData()
+            }
         default:
             break
         }
@@ -153,7 +158,7 @@ final class SettingsViewController: UITableViewController {
             if toggleIdentifier == "settings.exportGLTF",
                sender.isOn == false {
                 sender.setOn(true, animated: true)
-                showError(
+                feedbackController.showError(
                     title: L("settings.export.minimum.title"),
                     message: L("settings.export.minimum.message")
                 )
@@ -161,26 +166,6 @@ final class SettingsViewController: UITableViewController {
             }
             setOn(sender.isOn)
         }
-    }
-
-    private func presentOptionSheet(title: String, options: [SettingsOption], selected: Int, setSelected: @escaping (Int) -> Void) {
-        let alert = UIAlertController(title: title, message: nil, preferredStyle: .actionSheet)
-        for option in options {
-            let optionTitle = option.value == selected
-                ? option.title + L("settings.option.currentSuffix")
-                : option.title
-            alert.addAction(UIAlertAction(title: optionTitle, style: .default, handler: { [weak self] _ in
-                setSelected(option.value)
-                self?.buildSections()
-                self?.tableView.reloadData()
-            }))
-        }
-        alert.addAction(UIAlertAction(title: L("common.cancel"), style: .cancel))
-        if let pop = alert.popoverPresentationController {
-            pop.sourceView = view
-            pop.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
-        }
-        present(alert, animated: true)
     }
 
     private func refreshStorageUsage() {
@@ -220,33 +205,19 @@ final class SettingsViewController: UITableViewController {
         }
     }
 
-    private func confirmReset() {
-        let alert = UIAlertController(
-            title: L("settings.reset.confirm.title"),
-            message: L("settings.reset.confirm.message"),
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: L("common.cancel"), style: .cancel))
-        alert.addAction(UIAlertAction(title: L("settings.reset.action"), style: .destructive, handler: { [weak self] _ in
+    private func presentResetConfirmation() {
+        feedbackController.confirmReset { [weak self] in
             self?.store.resetToDefaults()
             self?.buildSections()
             self?.tableView.reloadData()
             self?.refreshStorageUsage()
-        }))
-        present(alert, animated: true)
+        }
     }
 
-    private func confirmDeleteAllScans() {
-        let alert = UIAlertController(
-            title: L("settings.deleteAll.confirm.title"),
-            message: L("settings.deleteAll.confirm.message"),
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: L("common.cancel"), style: .cancel))
-        alert.addAction(UIAlertAction(title: L("common.delete"), style: .destructive, handler: { [weak self] _ in
+    private func presentDeleteAllConfirmation() {
+        feedbackController.confirmDeleteAllScans { [weak self] in
             self?.deleteAllScansConfirmed()
-        }))
-        present(alert, animated: true)
+        }
     }
 
     private func deleteAllScansConfirmed() {
@@ -257,15 +228,9 @@ final class SettingsViewController: UITableViewController {
                 self.refreshStorageUsage()
                 self.onScansChanged?()
             case .failure(let error):
-                self.showError(title: L("settings.delete.failed"), message: error.localizedDescription)
+                self.feedbackController.showError(title: L("settings.delete.failed"), message: error.localizedDescription)
             }
         }
-    }
-
-    private func showError(title: String, message: String) {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: L("common.ok"), style: .default))
-        present(alert, animated: true)
     }
 
 #if DEBUG
@@ -274,7 +239,7 @@ final class SettingsViewController: UITableViewController {
     }
 
     func debug_confirmDeleteAllScans() {
-        confirmDeleteAllScans()
+        presentDeleteAllConfirmation()
     }
 
     func debug_deleteAllScansConfirmed() {

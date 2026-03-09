@@ -79,7 +79,7 @@ final class HomeCoordinatorTests: XCTestCase {
         try FileManager.default.setAttributes([.modificationDate: date], ofItemAtPath: folder.path)
         scanRepository.setLastScanFolder(folder)
 
-        var openedItem: ScanService.ScanItem?
+        var openedItem: ScanItem?
         coordinator.onOpenScan = { openedItem = $0 }
 
         coordinator.openLastScan(from: presenter)
@@ -103,7 +103,7 @@ final class HomeCoordinatorTests: XCTestCase {
 
         let folder = tempDir.appendingPathComponent("sample", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let item = ScanService.ScanItem(
+        let item = ScanItem(
             folderURL: folder,
             displayName: "sample",
             date: Date(),

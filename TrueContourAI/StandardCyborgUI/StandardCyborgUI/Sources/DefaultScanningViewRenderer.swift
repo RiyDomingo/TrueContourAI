@@ -39,10 +39,12 @@ public class DefaultScanningViewRenderer: ScanningViewRenderer {
                      into metalLayer: CAMetalLayer)
     {
         autoreleasepool {
-            let commandBuffer = _commandQueue.makeCommandBuffer()!
-            commandBuffer.label = "ScanningViewRenderer.commandBuffer"
-            
             guard let drawable = metalLayer.nextDrawable() else { return }
+            guard let commandBuffer = _commandQueue.makeCommandBuffer() else {
+                NSLog("DefaultScanningViewRenderer could not create command buffer")
+                return
+            }
+            commandBuffer.label = "ScanningViewRenderer.commandBuffer"
             let outputTexture = drawable.texture
             
             if let colorBuffer = colorBuffer {

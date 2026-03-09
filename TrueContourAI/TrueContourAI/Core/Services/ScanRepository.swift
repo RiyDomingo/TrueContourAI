@@ -55,19 +55,19 @@ final class ScanRepository:
         return FileManager.default.fileExists(atPath: obj.path) ? obj : nil
     }
 
-    func resolveScanSummary(from folder: URL) -> ScanService.ScanSummary? {
+    func resolveScanSummary(from folder: URL) -> ScanSummary? {
         let summaryURL = folder.appendingPathComponent("scan_summary.json")
         guard FileManager.default.fileExists(atPath: summaryURL.path) else { return nil }
         do {
             let data = try Data(contentsOf: summaryURL)
-            return try JSONDecoder().decode(ScanService.ScanSummary.self, from: data)
+            return try JSONDecoder().decode(ScanSummary.self, from: data)
         } catch {
             Log.export.error("Failed to decode scan summary: \(error.localizedDescription, privacy: .public)")
             return nil
         }
     }
 
-    func listScans() -> [ScanService.ScanItem] {
+    func listScans() -> [ScanItem] {
         if case .failure = ensureScansRootFolder() {
             return []
         }
@@ -79,7 +79,7 @@ final class ScanRepository:
         return items
     }
 
-    func listScansAsync(completion: @escaping ([ScanService.ScanItem]) -> Void) {
+    func listScansAsync(completion: @escaping ([ScanItem]) -> Void) {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
             let items = self.listScans()
@@ -89,7 +89,7 @@ final class ScanRepository:
         }
     }
 
-    func sceneForScan(_ item: ScanService.ScanItem) -> SCScene? {
+    func sceneForScan(_ item: ScanItem) -> SCScene? {
         let gltfURL = item.sceneGLTFURL ?? resolveGLTFFromFolder(item.folderURL)
         guard let gltfURL else { return nil }
         return SCScene(gltfAtPath: gltfURL.path)
@@ -113,7 +113,7 @@ final class ScanRepository:
         return resolveGLTFFromFolder(folder)
     }
 
-    func resolveLastScanItem() -> ScanService.ScanItem? {
+    func resolveLastScanItem() -> ScanItem? {
         guard let folder = resolveLastScanFolderURL() else { return nil }
         return listScans().first { $0.folderURL == folder }
     }
@@ -138,7 +138,7 @@ final class ScanRepository:
         return cleaned.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
     }
 
-    func renameScanFolder(_ item: ScanService.ScanItem, to newNameRaw: String) -> ScanService.RenameResult {
+    func renameScanFolder(_ item: ScanItem, to newNameRaw: String) -> ScanRenameResult {
         let newName = sanitizeFolderName(newNameRaw)
         guard !newName.isEmpty else { return .invalidName }
 
@@ -158,7 +158,7 @@ final class ScanRepository:
         }
     }
 
-    func deleteScanFolder(_ item: ScanService.ScanItem) -> Result<Void, Error> {
+    func deleteScanFolder(_ item: ScanItem) -> Result<Void, Error> {
         storageRepository.deleteScanFolder(item)
     }
 

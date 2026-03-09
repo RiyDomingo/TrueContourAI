@@ -49,6 +49,11 @@ xcodebuild test -project TrueContourAI.xcodeproj -scheme TrueContourAITests -des
 xcodebuild test -project TrueContourAI.xcodeproj -scheme TrueContourAIUITests -destination 'id=<DEVICE_ID>'
 ```
 
+Focused physical-device smoke:
+```bash
+xcodebuild test -project TrueContourAI.xcodeproj -scheme TrueContourAIUITests -destination 'id=<DEVICE_ID>' -only-testing:TrueContourAIUITests/TrueContourAIDeviceSmokeTests/testDeviceSmokeSaveThenReopenFromHome
+```
+
 Keep the connected iPhone unlocked during `xcodebuild test` runs. Xcode will block UI-test launch at destination preflight if the device locks mid-run.
 
 ## Saved Scan Artifacts
@@ -90,6 +95,24 @@ Physical-device validation should confirm the artifact set matches the active ex
 - Update last scan
 - Refresh home list
 
+## Current Runtime Shape
+- App startup routes through `AppCoordinator` and `AppEnvironment`.
+- Home flow is thinner than before and now delegates scan session/flow, recent-scan table behavior, and user feedback into dedicated controllers.
+- Scan runtime delegates session timing/state and HUD/runtime lifecycle concerns into dedicated runtime helpers.
+- Preview flow no longer depends on a single oversized coordinator for all behavior:
+  - session
+  - presentation
+  - routing
+  - export
+  - interaction
+  - reset
+  - scene-specific preview UI
+  are now split into concrete collaborators.
+- Scan storage/export behavior is no longer centered only on `ScanService`; the active app path now uses:
+  - `ScanRepository`
+  - `ScanExporterService`
+  - `ScanTestSeedService` for UI-test seeding
+
 ## Key Dependencies
 - Local Swift packages:
   - `StandardCyborgFusion`
@@ -112,3 +135,4 @@ Physical-device validation should confirm the artifact set matches the active ex
 ## Current Important Constraint
 - Real scan testing must be performed on physical hardware with TrueDepth.
 - Simulator is not accepted as scan-runtime validation for capture/finalize/export behavior.
+- The strongest current release evidence is the full `TrueContourAIUITests` run on `Riy's iPhone` plus repeated focused `save -> reopen` smoke validation on the same device.

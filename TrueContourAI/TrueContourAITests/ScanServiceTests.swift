@@ -7,7 +7,8 @@ final class ScanServiceTests: XCTestCase {
     private var tempDir: URL!
     private var defaults: UserDefaults!
     private var suiteName: String!
-    private var service: ScanService!
+    private var repository: ScanRepository!
+    private var exporter: ScanExporterService!
 
     override func setUp() {
         super.setUp()
@@ -16,7 +17,8 @@ final class ScanServiceTests: XCTestCase {
         suiteName = "ScanServiceTests.\(UUID().uuidString)"
         defaults = UserDefaults(suiteName: suiteName)
         defaults.removePersistentDomain(forName: suiteName)
-        service = ScanService(scansRootURL: tempDir, defaults: defaults)
+        repository = ScanRepository(scansRootURL: tempDir, defaults: defaults)
+        exporter = ScanExporterService(scansRootURL: tempDir, defaults: defaults)
     }
 
     override func tearDown() {
@@ -26,7 +28,8 @@ final class ScanServiceTests: XCTestCase {
         if let suiteName {
             defaults.removePersistentDomain(forName: suiteName)
         }
-        service = nil
+        exporter = nil
+        repository = nil
         defaults = nil
         tempDir = nil
         suiteName = nil
@@ -80,21 +83,21 @@ final class ScanServiceTests: XCTestCase {
 
     func testSanitizeFolderName() {
         let input = "  My/Scan?  "
-        let cleaned = service.sanitizeFolderName(input)
+        let cleaned = repository.sanitizeFolderName(input)
         XCTAssertEqual(cleaned, "My-Scan-")
     }
 
     func testListScansEmptyReturnsEmpty() {
-        let items = service.listScans()
+        let items = repository.listScans()
         XCTAssertTrue(items.isEmpty)
     }
 
     func testEnsureScansRootFolderFailureIsReported() throws {
         let fileURL = tempDir.appendingPathComponent("not-a-directory")
         try Data("x".utf8).write(to: fileURL, options: [.atomic])
-        let badService = ScanService(scansRootURL: fileURL, defaults: defaults)
+        let badRepository = ScanRepository(scansRootURL: fileURL, defaults: defaults)
 
-        let result = badService.ensureScansRootFolder()
+        let result = badRepository.ensureScansRootFolder()
         switch result {
         case .success:
             XCTFail("Expected ensureScansRootFolder to fail when scans root is a file")
@@ -109,7 +112,7 @@ final class ScanServiceTests: XCTestCase {
         _ = try makeScanFolder(name: "older", date: oldDate)
         _ = try makeScanFolder(name: "newer", date: newDate)
 
-        let items = service.listScans()
+        let items = repository.listScans()
         XCTAssertEqual(items.first?.folderURL.lastPathComponent, "newer")
         XCTAssertEqual(items.last?.folderURL.lastPathComponent, "older")
     }
@@ -118,7 +121,7 @@ final class ScanServiceTests: XCTestCase {
         let date = Date(timeIntervalSince1970: 100)
         let folder = try makeScanFolder(name: "scan", date: date, withOverlay: true, withThumbnail: true)
 
-        let items = service.listScans()
+        let items = repository.listScans()
         XCTAssertEqual(items.count, 1)
         XCTAssertEqual(items.first?.thumbnailURL?.lastPathComponent, "thumbnail_ear_overlay.png")
         XCTAssertEqual(items.first?.folderURL, folder)
@@ -128,7 +131,7 @@ final class ScanServiceTests: XCTestCase {
         let date = Date(timeIntervalSince1970: 150)
         _ = try makeScanFolder(name: "scan", date: date, withOverlay: false, withThumbnail: true)
 
-        let items = service.listScans()
+        let items = repository.listScans()
         XCTAssertEqual(items.count, 1)
         XCTAssertEqual(items.first?.thumbnailURL?.lastPathComponent, "thumbnail.png")
     }
@@ -137,7 +140,7 @@ final class ScanServiceTests: XCTestCase {
         let date = Date(timeIntervalSince1970: 160)
         _ = try makeScanFolder(name: "scan", date: date)
 
-        let items = service.listScans()
+        let items = repository.listScans()
         XCTAssertEqual(items.count, 1)
         XCTAssertNil(items.first?.thumbnailURL)
     }
@@ -146,10 +149,10 @@ final class ScanServiceTests: XCTestCase {
         let date = Date(timeIntervalSince1970: 170)
         let folder = try makeScanFolder(name: "scan", date: date)
 
-        let gltf = service.resolveGLTFFromFolder(folder)
+        let gltf = repository.resolveGLTFFromFolder(folder)
         XCTAssertNil(gltf)
 
-        let items = service.listScans()
+        let items = repository.listScans()
         XCTAssertEqual(items.count, 1)
         XCTAssertNil(items.first?.sceneGLTFURL)
     }
@@ -158,7 +161,7 @@ final class ScanServiceTests: XCTestCase {
         let date = Date(timeIntervalSince1970: 175)
         let folder = try makeScanFolder(name: "scan", date: date, withScene: true)
 
-        let items = service.listScans()
+        let items = repository.listScans()
         XCTAssertEqual(items.count, 1)
         XCTAssertEqual(items.first?.folderURL, folder)
         XCTAssertEqual(items.first?.sceneGLTFURL?.lastPathComponent, "scene.gltf")
@@ -167,18 +170,18 @@ final class ScanServiceTests: XCTestCase {
     func testResolveLastScanGLTFURLReturnsNilWhenMissing() throws {
         let date = Date(timeIntervalSince1970: 178)
         let folder = try makeScanFolder(name: "scan", date: date)
-        service.setLastScanFolder(folder)
+        repository.setLastScanFolder(folder)
 
-        XCTAssertNil(service.resolveLastScanGLTFURL())
+        XCTAssertNil(repository.resolveLastScanGLTFURL())
     }
 
     func testResolveLastScanItemReturnsStoredScanMetadata() throws {
         let date = Date(timeIntervalSince1970: 179)
         let folder = try makeScanFolder(name: "scan", date: date, withThumbnail: true, withScene: true)
         try FileManager.default.setAttributes([.modificationDate: date], ofItemAtPath: folder.path)
-        service.setLastScanFolder(folder)
+        repository.setLastScanFolder(folder)
 
-        let item = service.resolveLastScanItem()
+        let item = repository.resolveLastScanItem()
         XCTAssertEqual(item?.folderURL, folder)
         XCTAssertEqual(item?.displayName, "scan")
         XCTAssertEqual(item?.thumbnailURL?.lastPathComponent, "thumbnail.png")
@@ -189,7 +192,7 @@ final class ScanServiceTests: XCTestCase {
     func testRenameScanFolderSanitizesName() throws {
         let date = Date(timeIntervalSince1970: 190)
         let folder = try makeScanFolder(name: "scan", date: date)
-        let item = ScanService.ScanItem(
+        let item = ScanItem(
             folderURL: folder,
             displayName: "scan",
             date: date,
@@ -197,7 +200,7 @@ final class ScanServiceTests: XCTestCase {
             sceneGLTFURL: nil
         )
 
-        let result = service.renameScanFolder(item, to: "Bad/Name")
+        let result = repository.renameScanFolder(item, to: "Bad/Name")
         switch result {
         case .success(let newURL):
             XCTAssertEqual(newURL.lastPathComponent, "Bad-Name")
@@ -213,20 +216,20 @@ final class ScanServiceTests: XCTestCase {
         let newer = try makeScanFolder(name: "newer", date: newDate)
 
         let missing = tempDir.appendingPathComponent("missing", isDirectory: true)
-        service.setLastScanFolder(missing)
+        repository.setLastScanFolder(missing)
 
-        let resolved = service.resolveLastScanFolderURL()
+        let resolved = repository.resolveLastScanFolderURL()
         XCTAssertEqual(resolved, newer)
     }
 
     func testRenameInvalidNameReturnsInvalidName() throws {
         let date = Date(timeIntervalSince1970: 100)
         _ = try makeScanFolder(name: "scan", date: date)
-        let item = service.listScans().first { $0.folderURL.lastPathComponent == "scan" }
+        let item = repository.listScans().first { $0.folderURL.lastPathComponent == "scan" }
         XCTAssertNotNil(item)
 
         if let item {
-            let result = service.renameScanFolder(item, to: "   ")
+            let result = repository.renameScanFolder(item, to: "   ")
             switch result {
             case .invalidName:
                 break
@@ -239,9 +242,9 @@ final class ScanServiceTests: XCTestCase {
     func testSetLastScanFolderPersistsAndResolves() throws {
         let date = Date(timeIntervalSince1970: 100)
         let folder = try makeScanFolder(name: "scan", date: date)
-        service.setLastScanFolder(folder)
+        repository.setLastScanFolder(folder)
 
-        let resolved = service.resolveLastScanFolderURL()
+        let resolved = repository.resolveLastScanFolderURL()
         XCTAssertEqual(resolved, folder)
     }
 
@@ -250,11 +253,11 @@ final class ScanServiceTests: XCTestCase {
         _ = try makeScanFolder(name: "scan-a", date: date)
         _ = try makeScanFolder(name: "scan-b", date: date.addingTimeInterval(10))
 
-        let item = service.listScans().first { $0.folderURL.lastPathComponent == "scan-a" }
+        let item = repository.listScans().first { $0.folderURL.lastPathComponent == "scan-a" }
         XCTAssertNotNil(item)
 
         if let item {
-            let result = service.renameScanFolder(item, to: "scan-b")
+            let result = repository.renameScanFolder(item, to: "scan-b")
             switch result {
             case .nameExists:
                 break
@@ -267,13 +270,13 @@ final class ScanServiceTests: XCTestCase {
     func testDeleteClearsLastScan() throws {
         let date = Date(timeIntervalSince1970: 100)
         let folder = try makeScanFolder(name: "scan-to-delete", date: date)
-        service.setLastScanFolder(folder)
+        repository.setLastScanFolder(folder)
 
-        let item = service.listScans().first { $0.folderURL == folder }
+        let item = repository.listScans().first { $0.folderURL == folder }
         XCTAssertNotNil(item)
 
         if let item {
-            let result = service.deleteScanFolder(item)
+            let result = repository.deleteScanFolder(item)
             switch result {
             case .success:
                 break
@@ -282,13 +285,13 @@ final class ScanServiceTests: XCTestCase {
             }
         }
 
-        XCTAssertNil(service.resolveLastScanFolderURL())
+        XCTAssertNil(repository.resolveLastScanFolderURL())
     }
 
     func testDeleteMissingFolderSucceedsAndClearsLastScan() {
         let missing = tempDir.appendingPathComponent("missing-folder", isDirectory: true)
-        service.setLastScanFolder(missing)
-        let item = ScanService.ScanItem(
+        repository.setLastScanFolder(missing)
+        let item = ScanItem(
             folderURL: missing,
             displayName: "missing-folder",
             date: Date(),
@@ -296,7 +299,7 @@ final class ScanServiceTests: XCTestCase {
             sceneGLTFURL: nil
         )
 
-        let result = service.deleteScanFolder(item)
+        let result = repository.deleteScanFolder(item)
         switch result {
         case .success:
             break
@@ -304,7 +307,7 @@ final class ScanServiceTests: XCTestCase {
             XCTFail("Delete missing folder should succeed: \(error)")
         }
 
-        XCTAssertNil(service.resolveLastScanFolderURL())
+        XCTAssertNil(repository.resolveLastScanFolderURL())
     }
 
     func testWriteEarArtifactsCreatesFiles() throws {
@@ -319,9 +322,9 @@ final class ScanServiceTests: XCTestCase {
             landmarks: [.init(x: 0.1, y: 0.2)],
             usedLeftEarMirroringHeuristic: false
         )
-        let artifacts = ScanService.EarArtifacts(earImage: image, earResult: result, earOverlay: overlay)
+        let artifacts = ScanEarArtifacts(earImage: image, earResult: result, earOverlay: overlay)
 
-        service._writeEarArtifactsForTest(folderURL: folder, artifacts: artifacts)
+        exporter._writeEarArtifactsForTest(folderURL: folder, artifacts: artifacts)
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("ear_view.png").path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("thumbnail_ear_overlay.png").path))
@@ -343,7 +346,7 @@ final class ScanServiceTests: XCTestCase {
         _ = try makeScanFolder(name: "scan", date: date)
 
         let exp = expectation(description: "listScansAsync")
-        service.listScansAsync { items in
+        repository.listScansAsync { items in
             XCTAssertTrue(Thread.isMainThread)
             XCTAssertEqual(items.count, 1)
             exp.fulfill()
@@ -352,7 +355,8 @@ final class ScanServiceTests: XCTestCase {
     }
 
     func testSimulatedExportFailureReturnsFailure() {
-        let result = service._exportScanFolderSimulatedFailure(message: "Simulated failure")
+        let exporter = ScanExporterService(scansRootURL: tempDir, defaults: defaults)
+        let result = exporter._exportScanFolderSimulatedFailure(message: "Simulated failure")
         switch result {
         case .failure(let message):
             XCTAssertEqual(message, "Simulated failure")
@@ -363,7 +367,7 @@ final class ScanServiceTests: XCTestCase {
 
     func testResolveScanSummaryReadsJSON() throws {
         let folder = try makeScanFolder(name: "scan", date: Date())
-        let summary = ScanService.ScanSummary(
+        let summary = ScanSummary(
             schemaVersion: 2,
             startedAt: Date(timeIntervalSince1970: 100),
             finishedAt: Date(timeIntervalSince1970: 130),
@@ -396,7 +400,7 @@ final class ScanServiceTests: XCTestCase {
         let data = try JSONEncoder().encode(summary)
         try data.write(to: summaryURL, options: [.atomic])
 
-        let decoded = service.resolveScanSummary(from: folder)
+        let decoded = repository.resolveScanSummary(from: folder)
         XCTAssertEqual(decoded, summary)
     }
 
@@ -420,7 +424,7 @@ final class ScanServiceTests: XCTestCase {
         let summaryURL = folder.appendingPathComponent("scan_summary.json")
         try data.write(to: summaryURL, options: [.atomic])
 
-        let decoded = service.resolveScanSummary(from: folder)
+        let decoded = repository.resolveScanSummary(from: folder)
         XCTAssertEqual(decoded?.schemaVersion, 1)
         XCTAssertNil(decoded?.processingProfile)
         XCTAssertNil(decoded?.derivedMeasurements)
@@ -434,7 +438,7 @@ final class ScanServiceTests: XCTestCase {
         ]
 
         for entry in matrix {
-            guard let folderURL = service._exportArtifactMatrixForTest(includeGLTF: entry.includeGLTF, includeOBJ: entry.includeOBJ) else {
+            guard let folderURL = exporter._exportArtifactMatrixForTest(includeGLTF: entry.includeGLTF, includeOBJ: entry.includeOBJ) else {
                 XCTFail("Expected test export folder creation")
                 return
             }
@@ -446,17 +450,17 @@ final class ScanServiceTests: XCTestCase {
     }
 
     func testExportArtifactMatrixRejectsMissingGLTF() {
-        XCTAssertNil(service._exportArtifactMatrixForTest(includeGLTF: false, includeOBJ: true))
-        XCTAssertNil(service._exportArtifactMatrixForTest(includeGLTF: false, includeOBJ: false))
+        XCTAssertNil(exporter._exportArtifactMatrixForTest(includeGLTF: false, includeOBJ: true))
+        XCTAssertNil(exporter._exportArtifactMatrixForTest(includeGLTF: false, includeOBJ: false))
     }
 
     func testLastScanPointerUpdatesAcrossRenameThenDeleteSequence() throws {
         let oldDate = Date(timeIntervalSince1970: 100)
         let folder = try makeScanFolder(name: "rename-me", date: oldDate)
-        service.setLastScanFolder(folder)
-        XCTAssertEqual(service.resolveLastScanFolderURL(), folder)
+        repository.setLastScanFolder(folder)
+        XCTAssertEqual(repository.resolveLastScanFolderURL(), folder)
 
-        let item = ScanService.ScanItem(
+        let item = ScanItem(
             folderURL: folder,
             displayName: "rename-me",
             date: oldDate,
@@ -465,28 +469,28 @@ final class ScanServiceTests: XCTestCase {
         )
 
         let renamedURL: URL
-        switch service.renameScanFolder(item, to: "renamed-scan") {
+        switch repository.renameScanFolder(item, to: "renamed-scan") {
         case .success(let url):
             renamedURL = url
         default:
             XCTFail("Expected rename success")
             return
         }
-        XCTAssertEqual(service.resolveLastScanFolderURL(), renamedURL)
+        XCTAssertEqual(repository.resolveLastScanFolderURL(), renamedURL)
 
-        let renamedItem = ScanService.ScanItem(
+        let renamedItem = ScanItem(
             folderURL: renamedURL,
             displayName: "renamed-scan",
             date: oldDate,
             thumbnailURL: nil,
             sceneGLTFURL: nil
         )
-        switch service.deleteScanFolder(renamedItem) {
+        switch repository.deleteScanFolder(renamedItem) {
         case .success:
             break
         case .failure(let error):
             XCTFail("Expected delete success, got \(error)")
         }
-        XCTAssertNil(service.resolveLastScanFolderURL())
+        XCTAssertNil(repository.resolveLastScanFolderURL())
     }
 }

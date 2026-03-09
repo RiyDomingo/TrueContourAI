@@ -144,7 +144,10 @@ public class PointCloudCommandEncoder {
         passDescriptor.depthAttachment.storeAction = MTLStoreAction.dontCare
         passDescriptor.depthAttachment.clearDepth = 1
         
-        let commandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: passDescriptor)!
+        guard let commandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: passDescriptor) else {
+            NSLog("PointCloudCommandEncoder could not create render command encoder")
+            return
+        }
         commandEncoder.label = "PointCloudCommandEncoder.commandEncoder"
         
         commandEncoder.setRenderPipelineState(pipelineState)

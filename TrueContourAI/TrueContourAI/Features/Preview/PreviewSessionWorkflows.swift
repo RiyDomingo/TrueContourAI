@@ -6,11 +6,10 @@ import simd
 
 protocol PreviewScanReading: ScanSummaryReading, LastScanReading, ScanFolderSharing {
     var scansRootURL: URL { get }
-    func sceneForScan(_ item: ScanService.ScanItem) -> SCScene?
+    func sceneForScan(_ item: ScanItem) -> SCScene?
     func resolveLastScanFolderURL() -> URL?
 }
 
-extension ScanService: PreviewScanReading {}
 extension ScanRepository: PreviewScanReading {}
 
 final class PreviewPresentationWorkflow {
@@ -246,35 +245,20 @@ final class PreviewPostScanPresentationWorkflow {
     private let postScanWorkflow: PreviewPostScanWorkflow
     private let meshingWorkflow: PreviewMeshingWorkflow
     private let measurementWorkflow: PreviewMeasurementWorkflow
-    private let previewViewModel: PreviewViewModel
-    private let previewOverlayUI: PreviewOverlayUIController
-    private let addVerifyEarUI: (ScenePreviewViewController) -> Void
-    private let configureFitModelUIIfNeeded: (ScenePreviewViewController) -> Void
-    private let addScanQualityLabel: (ScenePreviewViewController, ScanQuality) -> Void
-    private let renderDerivedMeasurementsIfAvailable: () -> Void
+    private let sceneUIController: PreviewSceneUIController
 
     init(
         presentationWorkflow: PreviewPresentationWorkflow,
         postScanWorkflow: PreviewPostScanWorkflow,
         meshingWorkflow: PreviewMeshingWorkflow,
         measurementWorkflow: PreviewMeasurementWorkflow,
-        previewViewModel: PreviewViewModel,
-        previewOverlayUI: PreviewOverlayUIController,
-        addVerifyEarUI: @escaping (ScenePreviewViewController) -> Void,
-        configureFitModelUIIfNeeded: @escaping (ScenePreviewViewController) -> Void,
-        addScanQualityLabel: @escaping (ScenePreviewViewController, ScanQuality) -> Void,
-        renderDerivedMeasurementsIfAvailable: @escaping () -> Void
+        sceneUIController: PreviewSceneUIController
     ) {
         self.presentationWorkflow = presentationWorkflow
         self.postScanWorkflow = postScanWorkflow
         self.meshingWorkflow = meshingWorkflow
         self.measurementWorkflow = measurementWorkflow
-        self.previewViewModel = previewViewModel
-        self.previewOverlayUI = previewOverlayUI
-        self.addVerifyEarUI = addVerifyEarUI
-        self.configureFitModelUIIfNeeded = configureFitModelUIIfNeeded
-        self.addScanQualityLabel = addScanQualityLabel
-        self.renderDerivedMeasurementsIfAvailable = renderDerivedMeasurementsIfAvailable
+        self.sceneUIController = sceneUIController
     }
 
     func makePresentationContext(
@@ -321,13 +305,7 @@ final class PreviewPostScanPresentationWorkflow {
             isCurrentPreviewSession: isCurrentPreviewSession,
             onPresented: { [weak self] in
                 guard let self else { return }
-                self.addVerifyEarUI(previewVC)
-                self.previewOverlayUI.setMeshingStatus(L("scan.preview.meshing"), percent: nil, spinning: true)
-                self.configureFitModelUIIfNeeded(previewVC)
-                if let quality = self.previewViewModel.scanQuality {
-                    self.addScanQualityLabel(previewVC, quality)
-                }
-                self.renderDerivedMeasurementsIfAvailable()
+                self.sceneUIController.finalizePostScanSceneUI(previewVC: previewVC)
             }
         )
 
@@ -366,14 +344,14 @@ final class PreviewExistingScanWorkflow {
     }
 
     func makePresentation(
-        item: ScanService.ScanItem,
+        item: ScanItem,
         presenter: UIViewController,
         skipGLTF: Bool,
         closeTarget: AnyObject,
         shareTarget: AnyObject,
         onClose: Selector,
         onShare: Selector
-    ) -> (UIViewController, ScenePreviewViewController?, ScanService.ScanSummary?)? {
+    ) -> (UIViewController, ScenePreviewViewController?, ScanSummary?)? {
         let existingSummary = scanReader.resolveScanSummary(from: item.folderURL)
         if skipGLTF {
             Log.ui.info("Presenting test preview for scan: \(item.displayName, privacy: .public)")
@@ -422,9 +400,9 @@ final class PreviewExistingScanWorkflow {
     }
 
     func finalizePresentation(
-        summary: ScanService.ScanSummary?,
+        summary: ScanSummary?,
         previewVC: ScenePreviewViewController,
-        configureFitModelUI: () -> Void
+        configureFitModelUI: (ScenePreviewViewController) -> Void
     ) {
         if let derived = summary?.derivedMeasurements {
             overlayWorkflow.renderDerivedMeasurements(
@@ -439,37 +417,37 @@ final class PreviewExistingScanWorkflow {
                 hostView: previewVC.view
             )
         }
-        configureFitModelUI()
+        configureFitModelUI(previewVC)
     }
 }
 
 final class PreviewLifecycleWorkflow {
     private let scanFlowState: ScanFlowState
     private let previewViewModel: PreviewViewModel
-    private let resetPreviewState: () -> Void
-    private let invalidatePreviewSession: () -> Void
-    private let dismissActivePreview: (_ animated: Bool, _ completion: (() -> Void)?) -> Void
+    private let previewSessionController: PreviewSessionController
+    private let presentationController: PreviewPresentationController
+    private let resetController: PreviewResetController
 
     init(
         scanFlowState: ScanFlowState,
         previewViewModel: PreviewViewModel,
-        resetPreviewState: @escaping () -> Void,
-        invalidatePreviewSession: @escaping () -> Void,
-        dismissActivePreview: @escaping (_ animated: Bool, _ completion: (() -> Void)?) -> Void
+        previewSessionController: PreviewSessionController,
+        presentationController: PreviewPresentationController,
+        resetController: PreviewResetController
     ) {
         self.scanFlowState = scanFlowState
         self.previewViewModel = previewViewModel
-        self.resetPreviewState = resetPreviewState
-        self.invalidatePreviewSession = invalidatePreviewSession
-        self.dismissActivePreview = dismissActivePreview
+        self.previewSessionController = previewSessionController
+        self.presentationController = presentationController
+        self.resetController = resetController
     }
 
     func dismissPreview() {
         Log.ui.info("Dismissed preview")
-        invalidatePreviewSession()
-        dismissActivePreview(true) { [weak self] in
+        previewSessionController.invalidateSession()
+        presentationController.dismissActivePreview(animated: true) { [weak self] in
             guard let self else { return }
-            self.resetPreviewState()
+            self.resetController.reset()
             self.scanFlowState.setPhase(.idle)
             self.previewViewModel.setPhase(.idle)
         }
@@ -525,6 +503,7 @@ final class PreviewSharingWorkflow {
 enum PreviewSavePrecheckResult: Equatable {
     case gltfExportRequired
     case meshNotReady
+    case qualityGateBlocked(ScanQualityReport)
     case ready
 }
 
@@ -532,8 +511,8 @@ struct PreviewExportContext {
     let mesh: SCMesh
     let scene: SCScene
     let thumbnail: UIImage?
-    let earArtifacts: ScanService.EarArtifacts?
-    let scanSummary: ScanService.ScanSummary?
+    let earArtifacts: ScanEarArtifacts?
+    let scanSummary: ScanSummary?
     let includeGLTF: Bool
     let includeOBJ: Bool
     let isEarServiceUnavailable: Bool
@@ -542,12 +521,18 @@ struct PreviewExportContext {
 struct PreviewExportWorkflow {
     let settingsStore: SettingsStore
 
-    func savePrecheck(meshAvailable: Bool) -> PreviewSavePrecheckResult {
+    func savePrecheck(qualityReport: ScanQualityReport?, meshAvailable: Bool) -> PreviewSavePrecheckResult {
         if !settingsStore.hasRequiredExportFormatsEnabled {
             return .gltfExportRequired
         }
         if !meshAvailable {
             return .meshNotReady
+        }
+        let qualityConfig = settingsStore.scanQualityConfig
+        if qualityConfig.gateEnabled,
+           let qualityReport,
+           !qualityReport.isExportRecommended {
+            return .qualityGateBlocked(qualityReport)
         }
         return .ready
     }
@@ -559,7 +544,7 @@ struct PreviewExportWorkflow {
     ) -> PreviewExportContext? {
         guard let mesh = previewViewModel.meshForExport else { return nil }
 
-        let earArtifacts: ScanService.EarArtifacts?
+        let earArtifacts: ScanEarArtifacts?
         if let earImage = previewViewModel.verifiedEarImage,
            let earResult = previewViewModel.verifiedEarResult,
            let earOverlay = previewViewModel.verifiedEarOverlay {
@@ -625,7 +610,10 @@ final class PreviewSaveWorkflow {
         onFailure: @escaping (String) -> Void,
         onSuccess: @escaping (URL, PreviewExportContext) -> Void
     ) {
-        let precheck = exportWorkflow.savePrecheck(meshAvailable: previewViewModel.meshForExport != nil)
+        let precheck = exportWorkflow.savePrecheck(
+            qualityReport: previewViewModel.qualityReport,
+            meshAvailable: previewViewModel.meshForExport != nil
+        )
         if precheck == .gltfExportRequired {
             previewVC.present(
                 alertPresenter.makeAlert(
@@ -636,6 +624,23 @@ final class PreviewSaveWorkflow {
                 animated: true
             )
             Log.export.error("Export blocked: GLTF export disabled")
+            return
+        }
+
+        if case .qualityGateBlocked(let qualityReport) = precheck {
+            previewVC.present(
+                alertPresenter.makeAlert(
+                    title: L("scan.quality.gate.title"),
+                    message: String(
+                        format: L("scan.quality.gate.message"),
+                        qualityReport.reason,
+                        qualityReport.advice.message
+                    ),
+                    identifier: "qualityGateAlert"
+                ),
+                animated: true
+            )
+            Log.export.error("Export blocked: quality gate")
             return
         }
 
@@ -1110,10 +1115,9 @@ final class PreviewExportResultWorkflow {
     private let onToast: ((String) -> Void)?
     private let onExportResult: ((PreviewExportResultEvent) -> Void)?
     private let onScansChanged: (() -> Void)?
-    private let dismissActivePreview: (_ animated: Bool, _ completion: (() -> Void)?) -> Void
-    private let resetPreviewState: () -> Void
-    private let invalidatePreviewSession: () -> Void
-    private let isCurrentPreviewSession: (UUID) -> Bool
+    private let previewSessionController: PreviewSessionController
+    private let presentationController: PreviewPresentationController
+    private let resetController: PreviewResetController
     private let exportFormatSummary: () -> String
 
     init(
@@ -1126,10 +1130,9 @@ final class PreviewExportResultWorkflow {
         onToast: ((String) -> Void)?,
         onExportResult: ((PreviewExportResultEvent) -> Void)?,
         onScansChanged: (() -> Void)?,
-        dismissActivePreview: @escaping (_ animated: Bool, _ completion: (() -> Void)?) -> Void,
-        resetPreviewState: @escaping () -> Void,
-        invalidatePreviewSession: @escaping () -> Void,
-        isCurrentPreviewSession: @escaping (UUID) -> Bool,
+        previewSessionController: PreviewSessionController,
+        presentationController: PreviewPresentationController,
+        resetController: PreviewResetController,
         exportFormatSummary: @escaping () -> String
     ) {
         self.previewViewModel = previewViewModel
@@ -1141,10 +1144,9 @@ final class PreviewExportResultWorkflow {
         self.onToast = onToast
         self.onExportResult = onExportResult
         self.onScansChanged = onScansChanged
-        self.dismissActivePreview = dismissActivePreview
-        self.resetPreviewState = resetPreviewState
-        self.invalidatePreviewSession = invalidatePreviewSession
-        self.isCurrentPreviewSession = isCurrentPreviewSession
+        self.previewSessionController = previewSessionController
+        self.presentationController = presentationController
+        self.resetController = resetController
         self.exportFormatSummary = exportFormatSummary
     }
 
@@ -1179,11 +1181,11 @@ final class PreviewExportResultWorkflow {
         ScanDiagnostics.recordExportArtifacts(folderURL: folderURL)
 #endif
 
-        dismissActivePreview(true) { [weak self] in
-            guard let self, self.isCurrentPreviewSession(previewSessionID) else { return }
-            self.invalidatePreviewSession()
+        presentationController.dismissActivePreview(animated: true) { [weak self] in
+            guard let self, self.previewSessionController.isCurrentSession(previewSessionID) else { return }
+            self.previewSessionController.invalidateSession()
             self.saveExportViewState.hideSavingToast()
-            self.resetPreviewState()
+            self.resetController.reset()
             let feedback = UINotificationFeedbackGenerator()
             feedback.notificationOccurred(.success)
             self.onToast?(String(format: L("scan.preview.toast.savedWithFormats"), folderURL.lastPathComponent, formatSummary))

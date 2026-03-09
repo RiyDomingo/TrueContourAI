@@ -112,7 +112,10 @@ public class AspectFillTextureCommandEncoder {
         
         
         guard let pipelineState = _pipelineState else { return }
-        let commandEncoder = commandBuffer.makeComputeCommandEncoder()!
+        guard let commandEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            NSLog("AspectFillTextureCommandEncoder could not create compute command encoder")
+            return
+        }
         commandEncoder.label = "DrawColorTexture.commandEncoder"
         commandEncoder.setComputePipelineState(pipelineState)
         commandEncoder.setBytes(&_uniforms, length: MemoryLayout<Uniforms>.size, index: 0)
@@ -138,7 +141,8 @@ public class AspectFillTextureCommandEncoder {
                                                   0,
                                                   &texture)
         
-        return texture == nil ? nil : CVMetalTextureGetTexture(texture!)
+        guard let texture else { return nil }
+        return CVMetalTextureGetTexture(texture)
     }
     
     private class func _buildColorPipelineState(withDevice device: MTLDevice, library: MTLLibrary) -> MTLComputePipelineState? {

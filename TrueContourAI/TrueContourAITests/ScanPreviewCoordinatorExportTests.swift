@@ -44,7 +44,7 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
         flowState.setPhase(.saving)
 
         var toasts: [String] = []
-        var exportEvents: [ScanPreviewCoordinator.ExportResultEvent] = []
+        var exportEvents: [PreviewExportResultEvent] = []
         var scansChanged = 0
 
         let coordinator = ScanPreviewCoordinator(
@@ -81,7 +81,7 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
         flowState.setPhase(.saving)
 
         var toasts: [String] = []
-        var exportEvents: [ScanPreviewCoordinator.ExportResultEvent] = []
+        var exportEvents: [PreviewExportResultEvent] = []
 
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
@@ -123,7 +123,7 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
         XCTAssertTrue(toasts.contains(L("scan.preview.toast.earUnavailable")))
     }
 
-    func testDebugSavePrecheckIgnoresQualityGateAndAllowsSave() {
+    func testDebugSavePrecheckBlocksWhenQualityGateRejectsScan() {
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
             scanService: makeRepository(),
@@ -145,7 +145,7 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
             reason: "low quality"
         )
 
-        XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: report, hasMesh: true), "ready")
+        XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: report, hasMesh: true), "qualityGateBlocked")
     }
 
     func testDebugSavePrecheckMeshNotReady() {
@@ -215,6 +215,36 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
         XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: blocked, hasMesh: false), "meshNotReady")
     }
 
+    func testDebugSavePrecheckAllowsLowQualityWhenGateDisabled() {
+        let settings = SettingsStore(defaults: defaults)
+        var config = settings.scanQualityConfig
+        config.gateEnabled = false
+        settings.scanQualityConfig = config
+
+        let coordinator = ScanPreviewCoordinator(
+            presenter: UIViewController(),
+            scanService: makeRepository(),
+            settingsStore: settings,
+            scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter(),
+            onToast: nil
+        )
+
+        let report = ScanQualityReport(
+            pointCount: 120_000,
+            validPointCount: 60_000,
+            widthMeters: 0.2,
+            heightMeters: 0.2,
+            depthMeters: 0.2,
+            qualityScore: 0.4,
+            isExportRecommended: false,
+            advice: .rescanSlowly,
+            reason: "low quality"
+        )
+
+        XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: report, hasMesh: true), "ready")
+    }
+
     func testPreviewExportFormatSummaryMatchesSettingsMatrix() {
         let matrix: [(includeGLTF: Bool, includeOBJ: Bool, expected: String)] = [
             (true, true, "GLTF, OBJ"),
@@ -230,7 +260,7 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
             settings.exportGLTF = entry.includeGLTF
             settings.exportOBJ = entry.includeOBJ
 
-            var events: [ScanPreviewCoordinator.ExportResultEvent] = []
+            var events: [PreviewExportResultEvent] = []
             let coordinator = ScanPreviewCoordinator(
                 presenter: UIViewController(),
                 scanService: makeRepository(),

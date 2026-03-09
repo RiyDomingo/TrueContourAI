@@ -96,14 +96,28 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         XCTAssertTrue(diagnostics.contains("obj=1"), "Expected OBJ artifact in diagnostics: \(diagnostics)")
     }
 
-    func testDeviceSmokeForcedQualityGateStillAllowsSave() throws {
+    func testDeviceSmokeForcedQualityGateBlocksSave() throws {
 #if targetEnvironment(simulator)
         throw XCTSkip("TrueDepth smoke tests run only on physical iPhone hardware")
 #endif
         let app = launchDeviceSmokeApp(skipEarML: true, extraArguments: ["ui-test-force-quality-gate-block"])
-        let diagnostics = try saveAndReturnDiagnostics(app: app)
-        XCTAssertTrue(diagnostics.contains("folder="), "Expected save to succeed with forced quality gate: \(diagnostics)")
-        XCTAssertFalse(diagnostics.contains("folder=none"), "Expected saved folder when forced quality gate is enabled: \(diagnostics)")
+        XCTAssertTrue(waitForElement(app.buttons["startScanButton"]))
+        app.buttons["startScanButton"].tap()
+
+        if app.alerts["TrueDepth Not Available"].waitForExistence(timeout: 2.0) {
+            throw XCTSkip("Connected device does not expose TrueDepth camera")
+        }
+
+        let shutter = try waitForScanShutter(app: app)
+        shutter.tap()
+        let finishButton = try waitForFinishButton(app: app)
+        finishButton.tap()
+        XCTAssertTrue(waitForElement(app.buttons["previewSaveButton"], timeout: 30))
+        XCTAssertTrue(waitUntil(timeout: 25) { app.buttons["previewSaveButton"].isEnabled })
+        app.buttons["previewSaveButton"].tap()
+
+        let qualityAlert = app.alerts["qualityGateAlert"]
+        XCTAssertTrue(waitForElement(qualityAlert, timeout: 10.0), "Expected quality gate alert when forced quality gate is enabled")
     }
 
     func testDeviceSmokeSaveReportsGLTFOnlyArtifacts() throws {
@@ -204,10 +218,8 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
 
         let shutter = try waitForScanShutter(app: app)
         shutter.tap()
-        _ = waitUntil(timeout: 6.0) { app.buttons["finishScanNowButton"].isHittable }
-
-        XCTAssertTrue(waitForElement(app.buttons["finishScanNowButton"], timeout: 12))
-        app.buttons["finishScanNowButton"].tap()
+        let finishButton = try waitForFinishButton(app: app)
+        finishButton.tap()
         XCTAssertTrue(waitForElement(app.buttons["previewSaveButton"], timeout: 30))
         XCTAssertTrue(waitUntil(timeout: 25) { app.buttons["previewSaveButton"].isEnabled })
         app.buttons["previewSaveButton"].tap()
@@ -252,14 +264,52 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
 
     private func waitForScanShutter(app: XCUIApplication) throws -> XCUIElement {
         let shutter = app.buttons["scanShutterButton"]
+        var recoveredFromTrueDepthAlert = false
         let didBecomeHittable = waitUntil(timeout: 20) {
             if app.state != .runningForeground {
                 app.activate()
+            }
+
+            let trueDepthAlert = app.alerts["TrueDepth Not Available"]
+            if trueDepthAlert.exists {
+                if !recoveredFromTrueDepthAlert {
+                    let dismissButton = trueDepthAlert.buttons.firstMatch
+                    if dismissButton.exists {
+                        dismissButton.tap()
+                    }
+                    let startScanButton = app.buttons["startScanButton"]
+                    if startScanButton.exists && startScanButton.isHittable {
+                        startScanButton.tap()
+                    }
+                    recoveredFromTrueDepthAlert = true
+                }
+                return false
             }
             return shutter.exists && shutter.isHittable
         }
         XCTAssertTrue(didBecomeHittable, "Expected scan shutter button to become hittable on device")
         return shutter
+    }
+
+    private func waitForFinishButton(app: XCUIApplication) throws -> XCUIElement {
+        let finishButton = app.buttons["finishScanNowButton"]
+        let didBecomeReady = waitUntil(timeout: 20) {
+            if app.state != .runningForeground {
+                app.activate()
+            }
+
+            if finishButton.exists && finishButton.isHittable {
+                return true
+            }
+
+            let countdownVisible = app.staticTexts["scanCountdownLabel"].exists
+            let progressVisible = app.staticTexts["scanProgressLabel"].exists
+            return (countdownVisible || progressVisible) && finishButton.exists && finishButton.isEnabled
+        }
+
+        XCTAssertTrue(didBecomeReady, "Expected finish button to become available during device smoke flow")
+        XCTAssertTrue(waitForElement(finishButton, timeout: 8), "Expected finish button after scan starts")
+        return finishButton
     }
 
     private func waitForElement(_ element: XCUIElement, timeout: TimeInterval = 8.0) -> Bool {

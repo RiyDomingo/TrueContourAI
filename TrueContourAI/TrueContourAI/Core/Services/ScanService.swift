@@ -3,18 +3,18 @@ import UIKit
 import StandardCyborgFusion
 
 protocol ScanListing {
-    func listScansAsync(completion: @escaping ([ScanService.ScanItem]) -> Void)
-    func resolveScanSummary(from folder: URL) -> ScanService.ScanSummary?
-    func resolveLastScanItem() -> ScanService.ScanItem?
+    func listScansAsync(completion: @escaping ([ScanItem]) -> Void)
+    func resolveScanSummary(from folder: URL) -> ScanSummary?
+    func resolveLastScanItem() -> ScanItem?
     func resolveLastScanGLTFURL() -> URL?
 }
 
 protocol ScanSummaryReading {
-    func resolveScanSummary(from folder: URL) -> ScanService.ScanSummary?
+    func resolveScanSummary(from folder: URL) -> ScanSummary?
 }
 
 protocol LastScanReading {
-    func resolveLastScanItem() -> ScanService.ScanItem?
+    func resolveLastScanItem() -> ScanItem?
 }
 
 protocol ScansRootEnsuring {
@@ -28,12 +28,12 @@ protocol ScanFolderSharing {
 }
 
 protocol ScanItemListing {
-    func listScans() -> [ScanService.ScanItem]
+    func listScans() -> [ScanItem]
 }
 
 protocol ScanFolderEditing {
-    func renameScanFolder(_ item: ScanService.ScanItem, to newNameRaw: String) -> ScanService.RenameResult
-    func deleteScanFolder(_ item: ScanService.ScanItem) -> Result<Void, Error>
+    func renameScanFolder(_ item: ScanItem, to newNameRaw: String) -> ScanRenameResult
+    func deleteScanFolder(_ item: ScanItem) -> Result<Void, Error>
 }
 
 protocol ScanLibraryManaging:
@@ -73,121 +73,11 @@ extension ScanService:
     ScanStorageManaging {}
 
 final class ScanService {
-    struct ScanSummary: Codable, Equatable {
-        struct ProcessingProfile: Codable, Equatable {
-            let outlierSigma: Float
-            let decimateRatio: Float
-            let cropBelowNeck: Bool
-            let meshResolution: Int
-            let meshSmoothness: Int
-        }
-
-        struct PoseRecord: Codable, Equatable {
-            let pose: String
-            let confidence: Float
-            let status: String
-        }
-
-        struct DerivedMeasurements: Codable, Equatable {
-            let sliceHeightNormalized: Float
-            let circumferenceMm: Float
-            let widthMm: Float
-            let depthMm: Float
-            let confidence: Float
-            let status: String
-        }
-
-        let schemaVersion: Int
-        let startedAt: Date
-        let finishedAt: Date
-        let durationSeconds: Double
-        let overallConfidence: Float
-        let completedPoses: Int?
-        let skippedPoses: Int?
-        let poseRecords: [PoseRecord]?
-        let pointCountEstimate: Int
-        let hadEarVerification: Bool
-        let processingProfile: ProcessingProfile?
-        let derivedMeasurements: DerivedMeasurements?
-
-        enum CodingKeys: String, CodingKey {
-            case schemaVersion
-            case startedAt
-            case finishedAt
-            case durationSeconds
-            case overallConfidence
-            case completedPoses
-            case skippedPoses
-            case poseRecords
-            case pointCountEstimate
-            case hadEarVerification
-            case processingProfile
-            case derivedMeasurements
-        }
-
-        init(
-            schemaVersion: Int = 2,
-            startedAt: Date,
-            finishedAt: Date,
-            durationSeconds: Double,
-            overallConfidence: Float,
-            completedPoses: Int? = nil,
-            skippedPoses: Int? = nil,
-            poseRecords: [PoseRecord]? = nil,
-            pointCountEstimate: Int,
-            hadEarVerification: Bool,
-            processingProfile: ProcessingProfile? = nil,
-            derivedMeasurements: DerivedMeasurements? = nil
-        ) {
-            self.schemaVersion = schemaVersion
-            self.startedAt = startedAt
-            self.finishedAt = finishedAt
-            self.durationSeconds = durationSeconds
-            self.overallConfidence = overallConfidence
-            self.completedPoses = completedPoses
-            self.skippedPoses = skippedPoses
-            self.poseRecords = poseRecords
-            self.pointCountEstimate = pointCountEstimate
-            self.hadEarVerification = hadEarVerification
-            self.processingProfile = processingProfile
-            self.derivedMeasurements = derivedMeasurements
-        }
-
-        init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
-            startedAt = try container.decode(Date.self, forKey: .startedAt)
-            finishedAt = try container.decode(Date.self, forKey: .finishedAt)
-            durationSeconds = try container.decode(Double.self, forKey: .durationSeconds)
-            overallConfidence = try container.decode(Float.self, forKey: .overallConfidence)
-            completedPoses = try container.decodeIfPresent(Int.self, forKey: .completedPoses)
-            skippedPoses = try container.decodeIfPresent(Int.self, forKey: .skippedPoses)
-            poseRecords = try container.decodeIfPresent([PoseRecord].self, forKey: .poseRecords)
-            pointCountEstimate = try container.decode(Int.self, forKey: .pointCountEstimate)
-            hadEarVerification = try container.decode(Bool.self, forKey: .hadEarVerification)
-            processingProfile = try container.decodeIfPresent(ProcessingProfile.self, forKey: .processingProfile)
-            derivedMeasurements = try container.decodeIfPresent(DerivedMeasurements.self, forKey: .derivedMeasurements)
-        }
-    }
-
-    struct ScanItem {
-        let folderURL: URL
-        let displayName: String
-        let date: Date
-        let thumbnailURL: URL?
-        let sceneGLTFURL: URL?
-    }
-
-    struct EarArtifacts {
-        let earImage: UIImage
-        let earResult: EarLandmarksResult
-        let earOverlay: UIImage
-    }
-
-    enum ExportResult {
-        case success(folderURL: URL)
-        case failure(String)
-    }
+    typealias ScanSummary = StoredScanSummary
+    typealias ScanItem = StoredScanItem
+    typealias EarArtifacts = StoredScanEarArtifacts
+    typealias ExportResult = StoredScanExportResult
+    typealias RenameResult = StoredScanRenameResult
 
     let scansRootURL: URL
     private let defaults: UserDefaults
@@ -349,13 +239,6 @@ final class ScanService {
         storageRepository.updateLastScanFolderIfMatches(oldURL: oldURL, newURL: newURL)
     }
 
-    enum RenameResult {
-        case success(newURL: URL)
-        case nameExists
-        case invalidName
-        case failure(Error)
-    }
-
     func sanitizeFolderName(_ name: String) -> String {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let invalid = CharacterSet(charactersIn: "/\\:?%*|\"<>")
@@ -455,10 +338,6 @@ final class ScanService {
     }
 
     #if DEBUG
-    func _exportScanFolderSimulatedFailure(message: String) -> ExportResult {
-        .failure(message)
-    }
-
     @discardableResult
     func _exportArtifactMatrixForTest(includeGLTF: Bool, includeOBJ: Bool) -> URL? {
         guard includeGLTF else {

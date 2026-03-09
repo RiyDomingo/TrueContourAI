@@ -24,7 +24,13 @@ final class HomeViewController: UIViewController {
 
     private let settingsStore: SettingsStore
     private lazy var scanSessionController = HomeScanSessionController(environment: environment)
-    private lazy var toastPresenter = HomeToastPresenter(hostView: view, environment: environment)
+    private lazy var feedbackController = HomeFeedbackController(
+        hostViewController: self,
+        environment: environment,
+        diagnosticsTextProvider: { [weak self] in
+            self?.scanSessionController.deviceSmokeDiagnosticsText()
+        }
+    )
     private lazy var scanCoordinator = ScanCoordinator(settingsStore: settingsStore, environment: environment)
     private lazy var homeCoordinator = HomeCoordinator(
         scanService: scanLibrary,
@@ -41,7 +47,7 @@ final class HomeViewController: UIViewController {
         scanExporter: scanExporter,
         earServiceFactory: earServiceFactory,
         onToast: { [weak self] message in
-            self?.showToast(message)
+            self?.feedbackController.handleToast(message)
         }
     )
     private lazy var recentScansController = HomeRecentScansController(
@@ -92,16 +98,6 @@ final class HomeViewController: UIViewController {
     }()
 
     private let headerView = HomeHeaderView()
-    private let deviceSmokeDiagnosticsLabel: UILabel = {
-        let label = UILabel()
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.textColor = DesignSystem.Colors.textSecondary
-        label.font = DesignSystem.Typography.caption()
-        label.numberOfLines = 0
-        label.accessibilityIdentifier = "deviceSmokeDiagnosticsLabel"
-        label.isHidden = true
-        return label
-    }()
     private let startScanCardView = StartScanCardView()
     private let actionRowView = HomeActionRowView()
     private let recentScansView = RecentScansView()
@@ -120,7 +116,7 @@ final class HomeViewController: UIViewController {
         recentScansController.attach(to: recentScansView.tableView)
 
         if case .failure = scanLibrary.ensureScansRootFolder() {
-            presentStorageUnavailableAlert()
+            feedbackController.presentStorageUnavailableAlert()
         }
         homeViewModel.onChange = { [weak self] in
             self?.applyHomeViewModel()
@@ -141,7 +137,7 @@ final class HomeViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         homeViewModel.refresh()
-        refreshDeviceSmokeDiagnosticsIfNeeded()
+        feedbackController.refreshDiagnosticsIfNeeded()
     }
 
     // MARK: - UI Layout
@@ -165,7 +161,7 @@ final class HomeViewController: UIViewController {
         ])
 
         contentView.addSubview(headerView)
-        contentView.addSubview(deviceSmokeDiagnosticsLabel)
+        contentView.addSubview(feedbackController.diagnosticsLabel)
         contentView.addSubview(startScanCardView)
         contentView.addSubview(actionRowView)
         contentView.addSubview(recentScansView)
@@ -175,11 +171,11 @@ final class HomeViewController: UIViewController {
             headerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 18),
             headerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -18),
 
-            deviceSmokeDiagnosticsLabel.topAnchor.constraint(equalTo: headerView.bottomAnchor, constant: 8),
-            deviceSmokeDiagnosticsLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 18),
-            deviceSmokeDiagnosticsLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -18),
+            feedbackController.diagnosticsLabel.topAnchor.constraint(equalTo: headerView.bottomAnchor, constant: 8),
+            feedbackController.diagnosticsLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 18),
+            feedbackController.diagnosticsLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -18),
 
-            startScanCardView.topAnchor.constraint(equalTo: deviceSmokeDiagnosticsLabel.bottomAnchor, constant: 16),
+            startScanCardView.topAnchor.constraint(equalTo: feedbackController.diagnosticsLabel.bottomAnchor, constant: 16),
             startScanCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 18),
             startScanCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -18),
 
@@ -279,58 +275,6 @@ final class HomeViewController: UIViewController {
         actionRowView.viewLastScanButton.isEnabled = viewState.canViewLast
         DesignSystem.updateButtonEnabled(actionRowView.viewLastScanButton, style: .secondary)
     }
-
-    // MARK: - Helpers
-
-    private func showToast(_ message: String) {
-#if DEBUG
-        if message.hasPrefix("diag:") {
-            updateDeviceSmokeDiagnostics(message.replacingOccurrences(of: "diag:", with: ""))
-            return
-        }
-#endif
-        toastPresenter.show(message: message)
-    }
-
-    private func presentStorageUnavailableAlert() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self, self.presentedViewController == nil else { return }
-            let alert = UIAlertController(
-                title: L("scan.storage.unavailable.title"),
-                message: L("scan.storage.unavailable.message"),
-                preferredStyle: .alert
-            )
-            alert.addAction(UIAlertAction(title: L("common.ok"), style: .default))
-            self.present(alert, animated: true)
-        }
-    }
-
-#if DEBUG
-    private func refreshDeviceSmokeDiagnosticsIfNeeded() {
-        guard environment.isDeviceSmokeMode else {
-            deviceSmokeDiagnosticsLabel.isHidden = true
-            deviceSmokeDiagnosticsLabel.text = nil
-            return
-        }
-
-        guard let diagnosticsText = scanSessionController.deviceSmokeDiagnosticsText() else {
-            deviceSmokeDiagnosticsLabel.isHidden = true
-            deviceSmokeDiagnosticsLabel.text = nil
-            return
-        }
-
-        updateDeviceSmokeDiagnostics(diagnosticsText)
-    }
-
-    private func updateDeviceSmokeDiagnostics(_ text: String) {
-        guard environment.isDeviceSmokeMode else { return }
-        deviceSmokeDiagnosticsLabel.text = text
-        deviceSmokeDiagnosticsLabel.accessibilityLabel = text
-        deviceSmokeDiagnosticsLabel.isHidden = false
-    }
-#else
-    private func refreshDeviceSmokeDiagnosticsIfNeeded() {}
-#endif
 
 }
 

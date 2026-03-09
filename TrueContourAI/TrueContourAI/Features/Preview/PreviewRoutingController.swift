@@ -6,34 +6,31 @@ final class PreviewRoutingController {
     private weak var presenter: UIViewController?
     private let environment: AppEnvironment
     private let previewViewModel: PreviewViewModel
+    private let previewSessionController: PreviewSessionController
     private let existingScanWorkflow: PreviewExistingScanWorkflow
     private let postScanPresentationWorkflow: PreviewPostScanPresentationWorkflow
     private let presentationController: PreviewPresentationController
-    private let startPreviewSession: (ScanFlowState.ScanSessionMetrics?) -> UUID
-    private let isCurrentPreviewSession: (UUID) -> Bool
 
     init(
         presenter: UIViewController,
         environment: AppEnvironment,
         previewViewModel: PreviewViewModel,
+        previewSessionController: PreviewSessionController,
         existingScanWorkflow: PreviewExistingScanWorkflow,
         postScanPresentationWorkflow: PreviewPostScanPresentationWorkflow,
-        presentationController: PreviewPresentationController,
-        startPreviewSession: @escaping (ScanFlowState.ScanSessionMetrics?) -> UUID,
-        isCurrentPreviewSession: @escaping (UUID) -> Bool
+        presentationController: PreviewPresentationController
     ) {
         self.presenter = presenter
         self.environment = environment
         self.previewViewModel = previewViewModel
+        self.previewSessionController = previewSessionController
         self.existingScanWorkflow = existingScanWorkflow
         self.postScanPresentationWorkflow = postScanPresentationWorkflow
         self.presentationController = presentationController
-        self.startPreviewSession = startPreviewSession
-        self.isCurrentPreviewSession = isCurrentPreviewSession
     }
 
     func presentExistingScan(
-        _ item: ScanService.ScanItem,
+        _ item: ScanItem,
         closeTarget: AnyObject,
         shareTarget: AnyObject,
         closeAction: Selector,
@@ -41,7 +38,7 @@ final class PreviewRoutingController {
         configureFitModelUI: @escaping (ScenePreviewViewController) -> Void
     ) {
         guard let presenter else { return }
-        let sessionID = startPreviewSession(nil)
+        let sessionID = previewSessionController.beginExistingScanSession()
         guard let presentation = existingScanWorkflow.makePresentation(
             item: item,
             presenter: presenter,
@@ -66,13 +63,11 @@ final class PreviewRoutingController {
         }
 
         presenter.present(vc, animated: true) { [weak self, weak sceneVC] in
-            guard let self, let sceneVC, self.isCurrentPreviewSession(sessionID) else { return }
+            guard let self, let sceneVC, self.previewSessionController.isCurrentSession(sessionID) else { return }
             self.existingScanWorkflow.finalizePresentation(
                 summary: existingSummary,
                 previewVC: sceneVC,
-                configureFitModelUI: {
-                    configureFitModelUI(sceneVC)
-                }
+                configureFitModelUI: configureFitModelUI
             )
         }
         Log.ui.info("Presented existing scan preview: \(item.displayName, privacy: .public)")
@@ -89,7 +84,7 @@ final class PreviewRoutingController {
         saveAction: Selector
     ) {
         guard let presenter else { return }
-        let previewSessionID = startPreviewSession(sessionMetrics)
+        let previewSessionID = previewSessionController.beginPreviewSession(sessionMetrics: sessionMetrics)
 
         Log.scan.info("Presenting preview after scan")
         let context = postScanPresentationWorkflow.makePresentationContext(
@@ -103,7 +98,7 @@ final class PreviewRoutingController {
             onSave: saveAction,
             isCurrentPreviewSession: { [weak self] sessionID in
                 guard let self else { return false }
-                return self.isCurrentPreviewSession(sessionID)
+                return self.previewSessionController.isCurrentSession(sessionID)
             },
             onMeshReady: { [weak self] mesh in
                 self?.previewViewModel.setMeshForExport(mesh)

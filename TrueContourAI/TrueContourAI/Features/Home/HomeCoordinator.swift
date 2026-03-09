@@ -7,7 +7,7 @@ private final class HomeScanDetailsWorkflow {
         self.scanService = scanService
     }
 
-    func presentDetails(for item: ScanService.ScanItem, from presenter: UIViewController) {
+    func presentDetails(for item: ScanItem, from presenter: UIViewController) {
         let loadingVC = ScanDetailsLoadingViewController()
         let nav = UINavigationController(rootViewController: loadingVC)
         nav.modalPresentationStyle = .pageSheet
@@ -25,7 +25,7 @@ private final class HomeScanDetailsWorkflow {
         }
     }
 
-    private func resolvePreviousSummary(for item: ScanService.ScanItem) -> ScanService.ScanSummary? {
+    private func resolvePreviousSummary(for item: ScanItem) -> ScanSummary? {
         let scans = scanService.listScans()
         guard let currentIndex = scans.firstIndex(where: { $0.folderURL == item.folderURL }) else { return nil }
         let previousIndex = currentIndex + 1
@@ -44,7 +44,7 @@ private final class HomeScanLibraryEditWorkflow {
     }
 
     func presentRename(
-        for item: ScanService.ScanItem,
+        for item: ScanItem,
         from presenter: UIViewController,
         onScansChanged: @escaping () -> Void,
         makeAlert: @escaping (String, String) -> UIAlertController
@@ -90,7 +90,7 @@ private final class HomeScanLibraryEditWorkflow {
     }
 
     func presentDelete(
-        for item: ScanService.ScanItem,
+        for item: ScanItem,
         from presenter: UIViewController,
         onScansChanged: @escaping () -> Void,
         makeAlert: @escaping (String, String) -> UIAlertController
@@ -130,7 +130,7 @@ final class HomeCoordinator {
         previewSessionState: previewSessionState
     )
 
-    var onOpenScan: ((ScanService.ScanItem) -> Void)?
+    var onOpenScan: ((ScanItem) -> Void)?
     var onScansChanged: (() -> Void)?
 
     init(
@@ -201,7 +201,7 @@ final class HomeCoordinator {
         presenter.present(vc, animated: true)
     }
 
-    func presentScanActions(for item: ScanService.ScanItem, sourceView: UIView?, from presenter: UIViewController) {
+    func presentScanActions(for item: ScanItem, sourceView: UIView?, from presenter: UIViewController) {
         let alertVC = UIAlertController(title: item.displayName, message: nil, preferredStyle: .actionSheet)
         alertVC.addAction(UIAlertAction(title: L("common.open"), style: .default, handler: { [weak self] _ in
             self?.onOpenScan?(item)

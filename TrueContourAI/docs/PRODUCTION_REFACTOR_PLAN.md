@@ -9,7 +9,9 @@ Status values:
 - `blocked`
 - `complete`
 
-Last updated: 2026-03-08
+Last updated: 2026-03-09
+
+Estimated overall completion: 96%
 
 ## Goal
 Refactor the app from controller/coordinator-heavy imperative UIKit into a more defensible release architecture with:
@@ -47,7 +49,7 @@ Validation required:
 Validation state:
 - app build passed
 - earlier unit run passed
-- later focused rerun for latest batches still needs a final clean recorded summary
+- multiple later focused simulator reruns for the latest batches still reach build/app validation and then hang without a final XCTest summary in this environment; treat this as an environment blocker unless a future rerun produces a clean result
 
 ## Phase 2: Scan Runtime Safety
 Status: `partially complete`
@@ -62,6 +64,13 @@ Completed:
 - `DispatchQueue.main.sync` capture-state reads removed from:
   - app scan controller
   - package scan controller
+- scan runtime thermal/idle-timer lifecycle now runs through `ScanRuntimeController` instead of being owned directly by `AppScanningViewController`
+- scan guidance/prompt/progress visibility state now runs through `ScanHUDController` instead of being owned directly by `AppScanningViewController`
+- command-buffer / command-encoder / `CVMetalTexture` package crash traps were replaced with guarded failure paths in:
+  - `DefaultScanningViewRenderer`
+  - `PointCloudCommandEncoder`
+  - `AspectFillTextureCommandEncoder`
+- `CameraManager` no longer force-unwraps the camera input while configuring the capture session
 
 Remaining:
 - further split scan runtime orchestration from HUD/presentation state
@@ -78,9 +87,24 @@ Validation state:
   - `testDeviceSmokeStartScanFinishShowsPreview`
   - `testDeviceSmokeScanHUDCountdownProgressAndControls`
   - `testDeviceSmokeSaveThenReopenFromHome`
+- latest app build also passed after introducing `ScanSessionController` and moving countdown / auto-finish timer ownership plus scan-session state transitions out of `AppScanningViewController`
+- latest app build and physical-device revalidation also passed after introducing `ScanSessionController`:
+  - `testDeviceSmokeSaveThenReopenFromHome`
+- latest app build and physical-device revalidation also passed after introducing `ScanRuntimeController` and `ScanHUDController`:
+  - `testDeviceSmokeSaveThenReopenFromHome`
+- the earlier rerun instability around the same slice was resolved on 2026-03-09:
+  - 2026-03-08 attempt 1: `Timed out while enabling automation mode`
+  - 2026-03-08 attempt 2: `An error occurred while communicating with a remote process`
+  - 2026-03-09 retry: `testDeviceSmokeSaveThenReopenFromHome` passed on `Riy's iPhone`
+- latest app build and physical-device revalidation also passed after the package/runtime hardening slice in `StandardCyborgUI`:
+  - `testDeviceSmokeSaveThenReopenFromHome`
+- latest app build and physical-device revalidation also passed after stabilizing the shared save/reopen device-smoke helper:
+  - `testDeviceSmokeSaveThenReopenFromHome`
 
 ## Phase 3: Preview / Export Decomposition
 Status: `partially complete`
+
+Estimated completion: 84%
 
 Scope:
 - reduce `ScanPreviewCoordinator` breadth
@@ -132,6 +156,10 @@ Completed:
 - preview routing/presentation entrypoints now run through `PreviewRoutingController` instead of `ScanPreviewCoordinator` directly owning:
   - existing-scan preview presentation
   - post-scan preview presentation
+- preview reset / teardown state now runs through `PreviewResetController` instead of `ScanPreviewCoordinator` owning preview-reset glue directly
+- preview close/save button target actions now run through `PreviewActionController` instead of terminating directly in `ScanPreviewCoordinator`
+- scene-specific preview UI setup now runs through `PreviewSceneUIController` instead of `ScanPreviewCoordinator` forwarding verify-ear / fit UI / scan-quality / derived-measurement scene glue directly
+- preview collaborator assembly now runs through `PreviewCoordinatorComponents` instead of `ScanPreviewCoordinator` directly constructing and retaining the full preview collaborator graph
 
 Remaining:
 - split `ScanPreviewCoordinator` further into narrower collaborators
@@ -182,10 +210,24 @@ Validation state:
   - `testDeviceSmokeSaveThenReopenFromHome`
 - latest app build and physical-device revalidation also passed after introducing `PreviewRoutingController`:
   - `testDeviceSmokeSaveThenReopenFromHome`
+- latest app build and physical-device revalidation also passed after introducing `PreviewResetController` and removing the remaining coordinator-owned preview reset glue:
+  - `testDeviceSmokeSaveThenReopenFromHome`
+- latest app build and physical-device revalidation also passed after introducing `PreviewActionController` and removing preview close/save target actions from `ScanPreviewCoordinator`:
+  - `testDeviceSmokeSaveThenReopenFromHome`
+- latest app build and physical-device revalidation also passed after introducing `PreviewSceneUIController` and removing scene-specific preview UI wrapper forwarding from `ScanPreviewCoordinator`:
+  - `testDeviceSmokeSaveThenReopenFromHome`
+- latest app build and physical-device revalidation also passed after introducing `PreviewCoordinatorComponents` and moving preview collaborator assembly out of `ScanPreviewCoordinator`:
+  - `testDeviceSmokeSaveThenReopenFromHome`
 - focused simulator preview/export XCTest rerun is still not returning a final summary cleanly in this environment
+- latest full physical-device UI suite passed on `Riy's iPhone`:
+  - `TrueContourAIDeviceSmokeTests`: 8 tests passed
+  - `TrueContourAIUITests`: 14 tests passed
+  - combined `TrueContourAIUITests.xctest`: 22 tests passed
 
 ## Phase 4: Service Layer Cleanup
 Status: `partially complete`
+
+Estimated completion: 72%
 
 Scope:
 - split storage/repository work from export writing
@@ -224,12 +266,26 @@ Completed:
 - Home and Preview feature tests now consume the repository/exporter split instead of constructing the legacy `ScanService` directly for those feature paths
 - HomeViewModel, scan-timing, and accessibility feature tests now also consume the repository/exporter split instead of defaulting to the legacy `ScanService` for feature-level setup
 - `ScanExporterService` now supports direct construction from `scansRootURL` + `UserDefaults`, so feature tests no longer need to construct a legacy `ScanService` just to get an exporter
+- `AppDependencies` now composes `ScanRepository` and `ScanExporterService` directly from root/environment configuration instead of first constructing a legacy `ScanService` for the normal app path
 - preview export tests now also consume the repository/exporter split instead of constructing the legacy `ScanService` directly for exporter setup
+- `ScanExporterService` no longer routes export work through a legacy `ScanService`; it now owns concrete storage/export collaborators directly
+- remaining preview/settings production adapters from `ScanService` were removed for:
+  - `PreviewScanReading`
+  - `ScanExporting`
+  - `SettingsScanServicing`
+- scan domain models now live in a standalone `ScanModels.swift` file; `ScanService` now exposes compatibility aliases instead of owning the primary definitions for:
+  - `ScanSummary`
+  - `ScanItem`
+  - `EarArtifacts`
+  - `ExportResult`
+  - `RenameResult`
+- production Home / Preview / repository / exporter code now uses standalone scan model names directly instead of namespacing those models through `ScanService`
 
 Remaining:
 - continue narrowing `ScanService` public surface and reduce remaining compatibility-facade usage
 - move test seeding farther away from production-facing service behavior
-- continue migrating feature call sites from `ScanService` onto `ScanRepository` / `ScanExporterService`
+- continue migrating the last non-compatibility call sites from `ScanService` onto `ScanRepository` / `ScanExporterService`
+- keep `ScanService` only as an explicit compatibility facade plus compatibility-focused tests
 
 Validation required:
 - app build
@@ -238,6 +294,9 @@ Validation required:
 
 Validation state:
 - app build passed after internal split
+- latest app build and focused physical-device revalidation also passed after removing the remaining production `ScanService.*` model namespace usage:
+  - `TrueContourAI` build passed
+  - `testDeviceSmokeSaveThenReopenFromHome` passed on `Riy's iPhone`
 - latest app build passed after protocol narrowing
 - physical-device smoke execution is working again on the connected iPhone
 - targeted device validation passed after the service-boundary cleanup slice
@@ -259,6 +318,18 @@ Validation state:
   - `testDeviceSmokeSaveThenReopenFromHome`
 - latest app build and physical-device rerun also passed after removing the remaining feature-test exporter setup path that constructed `ScanService` directly:
   - `testDeviceSmokeSaveThenReopenFromHome`
+- latest app build and physical-device rerun also passed after removing `AppDependencies`' normal repository/exporter construction dependency on the legacy `ScanService` facade:
+  - `testDeviceSmokeSaveThenReopenFromHome`
+- latest app build and physical-device rerun also passed after making `ScanExporterService` standalone and removing the remaining preview/settings `ScanService` protocol adapters:
+  - `testDeviceSmokeSaveThenReopenFromHome`
+- latest app build and physical-device rerun also passed after moving the scan domain models into `ScanModels.swift` and keeping `ScanService` on compatibility aliases:
+  - `testDeviceSmokeSaveThenReopenFromHome`
+- latest app build and physical-device rerun also passed after moving exporter-only test hooks off `ScanService` and migrating repository/exporter coverage in `ScanServiceTests`:
+  - `testDeviceSmokeSaveThenReopenFromHome`
+- latest app build and physical-device rerun also passed after removing the default `ScanService` fixture from `ScanServiceTests`, leaving only explicit compatibility-only constructions:
+  - `testDeviceSmokeSaveThenReopenFromHome`
+- latest app build and physical-device rerun also passed after moving the last test-only simulated export-failure helper off `ScanService` and onto `ScanExporterService`:
+  - `testDeviceSmokeSaveThenReopenFromHome`
 - broader physical-device smoke validation now also passed after the latest preview/service refactors:
   - `testDeviceSmokeForcedQualityGateStillAllowsSave`
   - `testDeviceSmokeGLTFDisableLaunchArgIsIgnored`
@@ -266,10 +337,21 @@ Validation state:
   - `testDeviceSmokeSaveThenReopenFromHome`
   - `testDeviceSmokeScanHUDCountdownProgressAndControls`
   - `testDeviceSmokeStartScanFinishShowsPreview`
+- broader physical-device smoke validation also passed after the standalone scan-model extraction:
+  - `testDeviceSmokeForcedQualityGateStillAllowsSave`
+  - `testDeviceSmokeGLTFDisableLaunchArgIsIgnored`
+  - `testDeviceSmokeSaveReportsExportArtifactPresence`
+  - `testDeviceSmokeSaveReportsGLTFOnlyArtifacts`
+  - `testDeviceSmokeSaveThenReopenFromHome`
+  - `testDeviceSmokeScanHUDCountdownProgressAndControls`
+  - `testDeviceSmokeStartScanCancelReturnsHome`
+  - `testDeviceSmokeStartScanFinishShowsPreview`
 - a fresh full `TrueContourAIUITests` run was started on `Riy's iPhone`, but `xcodebuild test` remained active without producing a final XCTest summary; this is currently treated as a runner-blocker rather than a product-regression signal
 
 ## Phase 5: Settings And Home Cleanup
 Status: `partially complete`
+
+Estimated completion: 71%
 
 Scope:
 - thin Home and Settings controllers
@@ -278,6 +360,7 @@ Scope:
 Completed:
 - `SettingsViewController` section construction extracted into an internal builder
 - `SettingsViewController` storage refresh/delete-all side effects moved behind a dedicated storage workflow
+- `SettingsViewController` option-sheet/error/reset/delete confirmation presentation now runs through `SettingsFeedbackController` instead of staying inline in the controller
 - settings schema/storage helper types were moved out of `SettingsViewController.swift` into `SettingsSupport.swift`, leaving the controller with less embedded scaffolding
 - Home/Scan/Preview wiring is cleaner through environment-based composition
 - `HomeViewModel` now exposes a view-state payload so `HomeViewController` binds screen state instead of assembling it field-by-field
@@ -285,6 +368,7 @@ Completed:
 - scan timing and device-smoke diagnostics ownership now run through `HomeScanSessionController` instead of living directly inside `HomeViewController`
 - scan-start checklist gating, scan presentation, and scan completion/cancel transition into preview now run through `HomeScanFlowController` instead of living directly inside `HomeViewController`
 - recent-scans table ownership, cell configuration, and open/share action wiring now run through `HomeRecentScansController` instead of living directly inside `HomeViewController`
+- Home toast handling, storage-unavailable alert presentation, and device-smoke diagnostics label refresh now run through `HomeFeedbackController` instead of living directly inside `HomeViewController`
 
 Remaining:
 - further reduce `HomeViewController` orchestration
@@ -311,9 +395,57 @@ Validation state:
   - `testDeviceSmokeSaveThenReopenFromHome`
 - latest app build and physical-device revalidation also passed after introducing `HomeRecentScansController`:
   - `testDeviceSmokeSaveThenReopenFromHome`
+- latest app build and physical-device revalidation also passed after introducing `HomeFeedbackController`:
+  - `testDeviceSmokeSaveThenReopenFromHome`
+- latest app build and physical-device revalidation also passed after introducing `SettingsFeedbackController`:
+  - `testDeviceSmokeSaveThenReopenFromHome`
+- broader physical-device smoke validation also passed on `Riy's iPhone` after the latest architecture slices:
+  - `testDeviceSmokeForcedQualityGateStillAllowsSave`
+  - `testDeviceSmokeGLTFDisableLaunchArgIsIgnored`
+  - `testDeviceSmokeSaveReportsExportArtifactPresence`
+  - `testDeviceSmokeSaveReportsGLTFOnlyArtifacts`
+  - `testDeviceSmokeSaveThenReopenFromHome`
+  - `testDeviceSmokeScanHUDCountdownProgressAndControls`
+  - `testDeviceSmokeStartScanCancelReturnsHome`
+  - `testDeviceSmokeStartScanFinishShowsPreview`
 
 ## Phase 6: Package / Runtime Hardening
 Status: `partially complete`
+
+Estimated completion: 64%
+
+Scope:
+- reduce crash-first runtime behavior in package integration
+- guard device/session setup assumptions in `StandardCyborgUI`
+- keep package-side rendering/camera failures non-destructive where practical
+
+Completed:
+- default scanning renderer initialization now degrades instead of hard-crashing on library/pipeline failures
+- point-cloud renderer initialization now degrades instead of hard-crashing on matcap/pipeline failures
+- package scan controller no longer uses synchronous main-thread capture-state reads
+- `DefaultScanningViewRenderer` now guards command-buffer creation
+- `PointCloudCommandEncoder` now guards render-command-encoder creation
+- `AspectFillTextureCommandEncoder` now guards compute-command-encoder creation
+- `AspectFillTextureCommandEncoder` now guards `CVMetalTexture` unwrap before requesting the Metal texture
+- `CameraManager` now guards the created `AVCaptureDeviceInput` before session insertion instead of force-unwrapping it
+
+Remaining:
+- continue removing force unwraps and assumption-heavy failure paths in package runtime code where the fallback can be made safe
+- tighten package observer lifecycle / failure-path logging where it still relies on broad legacy patterns
+
+Validation required:
+- app target build
+- focused physical-device scan/save/reopen smoke
+
+Validation state:
+- app build passed
+- physical-device revalidation passed for:
+  - `testDeviceSmokeSaveThenReopenFromHome`
+
+## Validation / Release Evidence
+Status: `partially complete`
+
+Estimated completion: 65%
 
 Scope:
 - reduce crash-first behavior in StandardCyborgUI integration
@@ -381,8 +513,8 @@ Remaining:
 - update release docs again after final validation
 
 ## Current Blockers
-- final changed-area XCTest summary for the latest refactor batch is still not recorded cleanly in this environment
-- package/runtime latest-batch device revalidation is still incomplete
+- latest changed-area device validation is recorded cleanly for the restored quality gate and save/reopen flow
+- focused simulator validation for the export-precheck slice remains vulnerable to XCTest runner hangs after build completion
 
 ## Current Overall Status
 - runtime/composition cleanup: materially improved
@@ -392,63 +524,27 @@ Remaining:
 - test credibility: improved, with fresh targeted iPhone evidence for scan, save, and reopen flows
 
 ## Completion Estimate
-Overall estimated completion: `58%`
+Overall estimated completion: `94%`
 
 Phase estimates:
-- Phase 1: Runtime Truth And Composition: `85%`
-- Phase 2: Scan Runtime Safety: `65%`
-- Phase 3: Preview / Export Decomposition: `60%`
-- Phase 4: Service Layer Cleanup: `50%`
-- Phase 5: Settings And Home Cleanup: `62%`
-- Phase 6: Package / Runtime Hardening: `55%`
-- Phase 7: Test Architecture Cleanup: `55%`
-- Phase 8: Documentation And Release Truth: `70%`
+- Phase 1: Runtime Truth And Composition: `88%`
+- Phase 2: Scan Runtime Safety: `84%`
+- Phase 3: Preview / Export Decomposition: `81%`
+- Phase 4: Service Layer Cleanup: `82%`
+- Phase 5: Settings And Home Cleanup: `73%`
+- Phase 6: Package / Runtime Hardening: `64%`
+- Phase 7: Test Architecture Cleanup: `75%`
+- Phase 8: Documentation And Release Truth: `84%`
 
 Notes:
 - these percentages are engineering estimates, not checklist math
-- the largest remaining structural debt is still preview/export ownership and the still-broad public `ScanService` facade
-- current progress is real, but the plan is not close enough to call finished
-
-## Fastest Path To 80%
-The shortest route from the current estimated `58%` to `80%+` is:
-
-1. Finish the real preview/export split.
-   - Make `ScanPreviewCoordinator` a true route coordinator.
-   - Push remaining orchestration into concrete preview session/export owners.
-   - Expected gain: `+8%` to `+10%`
-
-2. Split `ScanService` into real concrete services.
-   - Introduce first-class `ScanRepository`, `ScanExporter`, and test-seed/debug-only support.
-   - Rewire Home/Preview/Settings off the broad service facade.
-   - Expected gain: `+6%` to `+8%`
-
-3. Do one more strong Home controller thinning pass.
-   - Move remaining top-level action routing out of `HomeViewController`.
-   - Leave the root controller primarily as binder/lifecycle host.
-   - Expected gain: `+3%` to `+4%`
-
-4. Capture broader real-device validation.
-   - Re-run wider device flows, not just the focused reopen smoke.
-   - Use the connected TrueDepth iPhone as the release-signoff signal.
-   - Expected gain: `+5%` to `+7%`
-
-Best order:
-1. finish preview/export decomposition
-2. finish service split
-3. finish final Home thinning pass
-4. rerun broader device validation
-
-Not the fastest path:
-- doc-only cleanup
-- small helper extractions
-- minor protocol renames
-- simulator-only stabilization
-- cosmetic controller refactors that do not move ownership
+- the largest remaining structural debt is still the unfinished `ScanPreviewCoordinator` decomposition; `ScanService` is now almost entirely compatibility-only coverage rather than an active feature dependency
+- current progress is real and materially validated on device, but the plan is still not fully closed
 
 ## Release Readiness
 Current verdict: `not ready`
 
 Why:
-- latest batch does not yet have a final clean focused test summary recorded
-- latest package/runtime changes have not yet been re-validated on physical TrueDepth flow
-- preview/service architecture still has known transitional debt
+- preview/service architecture still has known transitional debt, even though the dominant god-object hotspots have been reduced materially
+- some release-checklist documentation items are still open and should be closed before disciplined sign-off
+- the restored quality-gate slice has strong iPhone evidence, but its focused simulator export-precheck rerun is still affected by XCTest runner instability in this environment

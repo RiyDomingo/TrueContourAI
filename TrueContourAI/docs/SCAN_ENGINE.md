@@ -11,9 +11,13 @@ TrueContourAI scan runtime is built on StandardCyborg components and most closel
 
 ## Main Runtime Classes
 - [TrueContourAI/Features/Scan/AppScanningViewController.swift](../TrueContourAI/Features/Scan/AppScanningViewController.swift)
+- [TrueContourAI/Features/Scan/ScanSessionController.swift](../TrueContourAI/Features/Scan/ScanSessionController.swift)
+- [TrueContourAI/Features/Scan/ScanRuntimeController.swift](../TrueContourAI/Features/Scan/ScanRuntimeController.swift)
+- [TrueContourAI/Features/Scan/ScanHUDController.swift](../TrueContourAI/Features/Scan/ScanHUDController.swift)
 - [TrueContourAI/Features/Scan/ScanCoordinator.swift](../TrueContourAI/Features/Scan/ScanCoordinator.swift)
 - [TrueContourAI/Features/Preview/ScanPreviewCoordinator.swift](../TrueContourAI/Features/Preview/ScanPreviewCoordinator.swift)
-- [TrueContourAI/Core/Services/ScanService.swift](../TrueContourAI/Core/Services/ScanService.swift)
+- [TrueContourAI/Core/Services/ScanRepository.swift](../TrueContourAI/Core/Services/ScanRepository.swift)
+- [TrueContourAI/Core/Services/ScanExporterService.swift](../TrueContourAI/Core/Services/ScanExporterService.swift)
 
 ## Lifecycle
 1. `ScanCoordinator.startScanFlow(...)`
@@ -24,6 +28,9 @@ TrueContourAI scan runtime is built on StandardCyborg components and most closel
 - Receives synchronized color + depth frames.
 - Renders live preview.
 - Accumulates frames into reconstruction manager while scanning.
+- Delegates countdown/auto-finish/session timing to `ScanSessionController`.
+- Delegates thermal + idle-timer lifecycle to `ScanRuntimeController`.
+- Delegates guidance/prompt/progress/HUD visibility state to `ScanHUDController`.
 
 3. Reconstruction callbacks
 - Uses `SCReconstructionManagerDelegate` callbacks for tracking state.
@@ -36,9 +43,11 @@ TrueContourAI scan runtime is built on StandardCyborg components and most closel
 - Both finish paths should be validated on a physical TrueDepth device.
 
 5. Preview and export
-- `ScanPreviewCoordinator` receives point cloud + mesh texturing.
+- `ScanPreviewCoordinator` now acts primarily as a preview composition/entrypoint object.
+- Preview session, routing, export, reset, interaction, and scene UI are split into dedicated preview collaborators.
 - Quality gate can block export if thresholds fail.
-- Save flow calls `ScanService.exportScanFolder(...)`.
+- Save flow calls `ScanExporterService.exportScanFolder(...)`.
+- Existing-scan reopen flows load summaries/artifacts through `ScanRepository`.
 - Exported artifact set depends on settings:
   - `Export GLTF` controls `scene.gltf`
   - `Export OBJ` controls `head_mesh.obj`
@@ -65,7 +74,7 @@ Relevant file:
 - [TrueContourAI/Features/Scan/ScanQuality.swift](../TrueContourAI/Features/Scan/ScanQuality.swift)
 
 ## Export Orchestration
-`ScanPreviewCoordinator` does prechecks and state transitions before calling export:
+Preview export flow does prechecks and state transitions before calling export:
 - `blockedByQualityGate`
 - `meshNotReady`
 - `ready`

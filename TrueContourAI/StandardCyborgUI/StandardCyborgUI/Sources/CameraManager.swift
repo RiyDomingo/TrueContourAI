@@ -347,7 +347,11 @@ public extension Notification.Name {
             print("Could not create video device input: \(error)")
             return .configurationFailed
         }
-        guard _captureSession.canAddInput(_videoDeviceInput!) else {
+        guard let videoDeviceInput = _videoDeviceInput else {
+            print("Video device input was nil after creation")
+            return .configurationFailed
+        }
+        guard _captureSession.canAddInput(videoDeviceInput) else {
             print("Could not add video device input to the session")
             return .configurationFailed
         }
@@ -366,7 +370,7 @@ public extension Notification.Name {
         
         _captureSession.beginConfiguration()
         _captureSession.sessionPreset = colorCaptureSessionPreset
-        _captureSession.addInput(_videoDeviceInput!)
+        _captureSession.addInput(videoDeviceInput)
         if !_captureSession.outputs.contains(_videoDataOutput) {
             _captureSession.addOutput(_videoDataOutput)
         }

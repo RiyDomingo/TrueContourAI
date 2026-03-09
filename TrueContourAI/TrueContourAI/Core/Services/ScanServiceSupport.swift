@@ -29,14 +29,14 @@ struct ScanStorageRepository {
         }
     }
 
-    func listScans() -> [ScanService.ScanItem] {
+    func listScans() -> [ScanItem] {
         let urls = (try? fileManager.contentsOfDirectory(
             at: scansRootURL,
             includingPropertiesForKeys: [.contentModificationDateKey],
             options: [.skipsHiddenFiles]
         )) ?? []
 
-        var items: [ScanService.ScanItem] = []
+        var items: [ScanItem] = []
         for folder in urls where folder.hasDirectoryPath {
             let values = try? folder.resourceValues(forKeys: [.contentModificationDateKey])
             let date = values?.contentModificationDate ?? Date.distantPast
@@ -87,7 +87,7 @@ struct ScanStorageRepository {
         }
     }
 
-    func renameScanFolder(_ item: ScanService.ScanItem, to newURL: URL) -> Result<Void, Error> {
+    func renameScanFolder(_ item: ScanItem, to newURL: URL) -> Result<Void, Error> {
         do {
             try fileManager.moveItem(at: item.folderURL, to: newURL)
             updateLastScanFolderIfMatches(oldURL: item.folderURL, newURL: newURL)
@@ -97,7 +97,7 @@ struct ScanStorageRepository {
         }
     }
 
-    func deleteScanFolder(_ item: ScanService.ScanItem) -> Result<Void, Error> {
+    func deleteScanFolder(_ item: ScanItem) -> Result<Void, Error> {
         do {
             try fileManager.removeItem(at: item.folderURL)
             clearLastScanFolderIfMatches(item.folderURL)
@@ -130,19 +130,19 @@ struct ScanFolderExporter {
     let scansRootURL: URL
     let timestampFormatter: ISO8601DateFormatter
     let writeOBJ: (SCMesh, URL) throws -> Void
-    let writeEarArtifacts: (URL, ScanService.EarArtifacts) -> Void
-    let writeScanSummary: (URL, ScanService.ScanSummary) -> Void
+    let writeEarArtifacts: (URL, ScanEarArtifacts) -> Void
+    let writeScanSummary: (URL, ScanSummary) -> Void
     let cleanupFolder: (URL) -> Void
 
     func export(
         mesh: SCMesh,
         scene: SCScene,
         thumbnail: UIImage?,
-        earArtifacts: ScanService.EarArtifacts?,
-        scanSummary: ScanService.ScanSummary?,
+        earArtifacts: ScanEarArtifacts?,
+        scanSummary: ScanSummary?,
         includeGLTF: Bool,
         includeOBJ: Bool
-    ) -> ScanService.ExportResult {
+    ) -> ScanExportResult {
         guard includeGLTF else {
             return .failure(L("settings.export.minimum.message"))
         }
