@@ -42,16 +42,26 @@ final class ScanRuntimeController {
             object: nil
         )
         isObservingThermalState = false
-        idleTimerManager?.isIdleTimerDisabled = false
+        setIdleTimerDisabled(false)
     }
 
     func updateScanningState(isScanning: Bool) {
-        idleTimerManager?.isIdleTimerDisabled = isScanning
+        setIdleTimerDisabled(isScanning)
     }
 
     @objc private func handleThermalStateChanged(_ notification: Notification) {
         guard let processInfo = notification.object as? ProcessInfo else { return }
         guard processInfo.thermalState == .serious || processInfo.thermalState == .critical else { return }
         onCriticalThermalState?()
+    }
+
+    private func setIdleTimerDisabled(_ isDisabled: Bool) {
+        if Thread.isMainThread {
+            idleTimerManager?.isIdleTimerDisabled = isDisabled
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                self?.idleTimerManager?.isIdleTimerDisabled = isDisabled
+            }
+        }
     }
 }

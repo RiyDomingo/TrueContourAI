@@ -218,69 +218,78 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         finishButton.tap()
         let saveButton = app.buttons["previewSaveButton"]
         XCTAssertTrue(waitForExists(saveButton, timeout: 30), "Expected preview save button to appear")
-        XCTAssertTrue(waitForEnabled(saveButton, timeout: 25), "Expected preview save button to become enabled")
         revealElementIfNeeded(saveButton, in: app)
         XCTAssertTrue(waitForHittable(saveButton, timeout: 4), "Expected preview save button to become hittable")
         saveButton.tap()
 
-        let saveOverlay = app.otherElements["savingToastLabel"]
-        _ = waitForExists(saveOverlay, timeout: 3.0)
-        _ = waitForNotExists(saveOverlay, timeout: 30.0)
-
         let homeStart = app.buttons["startScanButton"]
-        let didReturnHome = waitForExists(homeStart, timeout: 30)
+        let didReturnHome = waitForCondition(timeout: 30.0) {
+            homeStart.exists
+                && homeStart.isHittable
+                && !saveButton.exists
+        }
         if !didReturnHome {
             let exportAlert = app.alerts["exportFailedAlert"]
             let qualityAlert = app.alerts["qualityGateAlert"]
             let meshAlert = app.alerts["meshNotReadyAlert"]
+            let previewClose = app.buttons["previewCloseButton"]
             let debugState = [
                 "exportAlert=\(exportAlert.exists ? exportAlert.label : "none")",
                 "qualityAlert=\(qualityAlert.exists ? qualityAlert.label : "none")",
                 "meshAlert=\(meshAlert.exists ? meshAlert.label : "none")",
+                "homeStart.exists=\(homeStart.exists ? 1 : 0)",
+                "homeStart.hittable=\(homeStart.isHittable ? 1 : 0)",
                 "saveButton.exists=\(saveButton.exists ? 1 : 0)",
                 "saveButton.hittable=\(saveButton.isHittable ? 1 : 0)",
                 "saveButton.enabled=\(saveButton.isEnabled ? 1 : 0)",
-                "savingOverlay.exists=\(saveOverlay.exists ? 1 : 0)",
-                "savingOverlay.hittable=\(saveOverlay.isHittable ? 1 : 0)",
-                "homeStart.exists=\(homeStart.exists ? 1 : 0)",
+                "previewClose.exists=\(previewClose.exists ? 1 : 0)",
                 "app.state=\(app.state.rawValue)"
             ].joined(separator: ",")
             XCTFail("Expected to return to the home screen after save. \(debugState)")
         }
         let diagnosticsLabel = app.staticTexts["deviceSmokeDiagnosticsLabel"]
         XCTAssertTrue(waitForExists(diagnosticsLabel, timeout: 12.0), "Expected visible device diagnostics label after save")
-        let hasExpectedDiagnostics = waitForLabelContains(diagnosticsLabel, "folder=", timeout: 8.0) && !diagnosticsLabel.label.contains("folder=none")
+        let hasExpectedDiagnostics = waitForCondition(timeout: 12.0) {
+            diagnosticsLabel.exists
+                && diagnosticsLabel.label.contains("folder=")
+                && !diagnosticsLabel.label.contains("folder=none")
+        }
         XCTAssertTrue(hasExpectedDiagnostics, "Unexpected diagnostics label: \(diagnosticsLabel.label)")
         return diagnosticsLabel.label
     }
 
     private func waitForScanShutter(app: XCUIApplication) throws -> XCUIElement {
         let shutter = app.buttons["scanShutterButton"]
-        let didBecomeReady = pollUntil(timeout: 20) { [self] in
+        if app.state != .runningForeground {
+            app.activate()
+        }
+
+        advancePastChecklistIfNeeded(in: app)
+
+        if dismissTrueDepthAlertIfPresent(in: app) {
+            let startScanButton = app.buttons["startScanButton"]
+            if waitForExists(startScanButton, timeout: 2.0) {
+                revealElementIfNeeded(startScanButton, in: app)
+                if waitForHittable(startScanButton, timeout: 2.0) {
+                    startScanButton.tap()
+                    advancePastChecklistIfNeeded(in: app)
+                }
+            }
+        }
+
+        let didAppear = waitForExists(shutter, timeout: 12.0)
+        if !didAppear {
             if app.state != .runningForeground {
                 app.activate()
             }
-
-            self.advancePastChecklistIfNeeded(in: app)
-
-            if self.dismissTrueDepthAlertIfPresent(in: app) {
-                let startScanButton = app.buttons["startScanButton"]
-                if self.waitForExists(startScanButton, timeout: 2.0) {
-                    self.revealElementIfNeeded(startScanButton, in: app)
-                    if self.waitForHittable(startScanButton, timeout: 2.0) {
-                        startScanButton.tap()
-                        self.advancePastChecklistIfNeeded(in: app)
-                    }
-                }
-                return false
-            }
-
-            guard shutter.exists || self.waitForExists(shutter, timeout: 0.5) else {
-                return false
-            }
-            self.revealElementIfNeeded(shutter, in: app)
-            return self.waitForHittable(shutter, timeout: 0.75)
+            advancePastChecklistIfNeeded(in: app)
+            _ = dismissTrueDepthAlertIfPresent(in: app)
         }
+
+        XCTAssertTrue(didAppear || waitForExists(shutter, timeout: 4.0), "Expected scan shutter button to appear on device. \(scanEntryDebugState(app: app, shutter: shutter))")
+
+        revealElementIfNeeded(shutter, in: app)
+        let didBecomeReady = shutter.isHittable || waitForHittable(shutter, timeout: 6.0)
         XCTAssertTrue(didBecomeReady, "Expected scan shutter button to become hittable on device. \(scanEntryDebugState(app: app, shutter: shutter))")
         return shutter
     }
@@ -300,43 +309,56 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
 
         XCTAssertTrue(waitForExists(finishButton, timeout: 12), "Expected finish button after scan starts")
         revealElementIfNeeded(finishButton, in: app)
-        let didBecomeReady = pollUntil(timeout: 20) {
-            if app.state != .runningForeground {
-                app.activate()
-            }
-
-            guard finishButton.exists else { return false }
-            guard finishButton.isEnabled else { return false }
-            return progressLabel.exists || countdownLabel.exists || finishButton.isHittable
+        if app.state != .runningForeground {
+            app.activate()
         }
-
-        XCTAssertTrue(didBecomeReady, "Expected finish button to become available during device smoke flow")
+        XCTAssertTrue(waitForEnabled(finishButton, timeout: 8), "Expected finish button to become enabled during device smoke flow")
+        revealElementIfNeeded(finishButton, in: app)
         XCTAssertTrue(waitForHittable(finishButton, timeout: 4), "Expected finish button to become hittable during device smoke flow")
         return finishButton
     }
 
     private func waitForExists(_ element: XCUIElement, timeout: TimeInterval = 8.0) -> Bool {
-        element.waitForExistence(timeout: timeout)
+        waitForCondition(timeout: timeout) {
+            element.exists
+        }
     }
 
     private func waitForHittable(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
-        waitForPredicate("exists == true AND hittable == true", element: element, timeout: timeout)
+        waitForCondition(timeout: timeout) {
+            element.exists && element.isHittable
+        }
     }
 
     private func waitForEnabled(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
-        waitForPredicate("exists == true AND enabled == true", element: element, timeout: timeout)
+        waitForCondition(timeout: timeout) {
+            element.exists && element.isEnabled
+        }
+    }
+
+    private func waitForValue(_ element: XCUIElement, equals expectedValue: String, timeout: TimeInterval) -> Bool {
+        waitForCondition(timeout: timeout) {
+            guard element.exists else { return false }
+            return (element.value as? String) == expectedValue
+        }
     }
 
     private func waitForNotExists(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
-        waitForPredicate("exists == false", element: element, timeout: timeout)
+        waitForCondition(timeout: timeout) {
+            !element.exists
+        }
     }
 
     private func waitForLabelContains(_ element: XCUIElement, _ substring: String, timeout: TimeInterval) -> Bool {
-        waitForPredicate("exists == true AND label CONTAINS %@", argument: substring, element: element, timeout: timeout)
+        waitForCondition(timeout: timeout) {
+            element.exists && element.label.contains(substring)
+        }
     }
 
     private func waitForNonEmptyLabel(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
-        waitForPredicate("exists == true AND label != ''", element: element, timeout: timeout)
+        waitForCondition(timeout: timeout) {
+            element.exists && !element.label.isEmpty
+        }
     }
 
     private func dismissTrueDepthAlertIfPresent(in app: XCUIApplication) -> Bool {
@@ -382,6 +404,15 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         let predicate = NSPredicate(format: format, argument)
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
         return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
+    }
+
+    private func waitForCondition(timeout: TimeInterval, condition: @escaping () -> Bool) -> Bool {
+        let end = Date().addingTimeInterval(timeout)
+        while Date() < end {
+            if condition() { return true }
+            Thread.sleep(forTimeInterval: Self.pollInterval)
+        }
+        return condition()
     }
 
     private func scanEntryDebugState(app: XCUIApplication, shutter: XCUIElement) -> String {

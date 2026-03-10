@@ -125,12 +125,14 @@ final class HomeViewController: UIViewController {
 
         homeCoordinator.onScansChanged = { [weak self] in
             self?.homeViewModel.refresh()
+            self?.feedbackController.refreshDiagnosticsIfNeeded()
         }
         homeCoordinator.onOpenScan = { [weak self] item in
             self?.previewCoordinator.presentExistingScan(item)
         }
         previewCoordinator.onScansChanged = { [weak self] in
             self?.homeViewModel.refresh()
+            self?.feedbackController.refreshDiagnosticsIfNeeded()
         }
     }
 

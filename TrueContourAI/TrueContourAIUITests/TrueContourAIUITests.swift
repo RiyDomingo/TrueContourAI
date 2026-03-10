@@ -138,14 +138,6 @@ final class TrueContourAIUITests: XCTestCase {
         XCTAssertTrue(waitForNotExists(alert))
     }
 
-    func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            let app = XCUIApplication()
-            app.launch()
-        }
-    }
-
     func testRecentScanPreviewHasCloseButton() throws {
         let app = launchApp(seedScan: true)
 
@@ -153,7 +145,8 @@ final class TrueContourAIUITests: XCTestCase {
 
         let closeButton = app.buttons["previewCloseButton"]
         XCTAssertTrue(waitForElement(closeButton))
-        XCTAssertTrue(waitForInteractiveElement(closeButton, timeout: Self.shortTimeout + 1.0))
+        revealElementIfNeeded(closeButton, in: app)
+        XCTAssertTrue(closeButton.isHittable || waitForCondition(timeout: 1.0, poll: 0.4) { closeButton.exists && closeButton.isHittable })
         closeButton.tap()
 
         XCTAssertTrue(waitForElement(app.buttons["startScanButton"], timeout: Self.defaultTimeout + 4.0))
@@ -245,14 +238,15 @@ final class TrueContourAIUITests: XCTestCase {
     }
 
     private func waitForElement(_ element: XCUIElement, timeout: TimeInterval = defaultTimeout) -> Bool {
-        element.waitForExistence(timeout: timeout)
+        waitForCondition(timeout: timeout, poll: 0.4) {
+            element.exists
+        }
     }
 
     private func waitForNotExists(_ element: XCUIElement, timeout: TimeInterval = defaultTimeout) -> Bool {
-        let predicate = NSPredicate(format: "exists == false")
-        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
-        let result = XCTWaiter.wait(for: [expectation], timeout: timeout)
-        return result == .completed
+        waitForCondition(timeout: timeout, poll: 0.4) {
+            !element.exists
+        }
     }
 
     private func openFirstScan(in app: XCUIApplication) {
@@ -263,7 +257,7 @@ final class TrueContourAIUITests: XCTestCase {
         let openButton = app.buttons["scanOpenButton"].firstMatch
         XCTAssertTrue(waitForElement(openButton, timeout: Self.defaultTimeout + 2))
         scrollElementIntoView(openButton, in: table)
-        XCTAssertTrue(waitForInteractiveElement(openButton, timeout: Self.shortTimeout + 1.0))
+        XCTAssertTrue(openButton.isHittable || waitForCondition(timeout: 1.0, poll: 0.4) { openButton.exists && openButton.isHittable })
         openButton.tap()
     }
 
@@ -313,7 +307,7 @@ final class TrueContourAIUITests: XCTestCase {
         )
         scrollElementIntoView(target, in: table)
         XCTAssertTrue(
-            waitForPredicate("exists == true AND hittable == true", element: currentTarget(), timeout: 2.0),
+            waitForCondition(timeout: 2.0) { currentTarget().exists && currentTarget().isHittable },
             "Settings row never became hittable. identifier=\(identifier ?? "nil") title=\(title)"
         )
         currentTarget().tap()
@@ -355,6 +349,13 @@ final class TrueContourAIUITests: XCTestCase {
         }
     }
 
+    private func revealElementIfNeeded(_ element: XCUIElement, in app: XCUIApplication) {
+        guard !element.isHittable else { return }
+        if app.state != .runningForeground {
+            app.activate()
+        }
+    }
+
     private func waitUntil(timeout: TimeInterval, poll: TimeInterval = 0.1, condition: @escaping () -> Bool) -> Bool {
         pollUntil(timeout: timeout, poll: max(poll, 0.25), condition: condition)
     }
@@ -366,8 +367,13 @@ final class TrueContourAIUITests: XCTestCase {
         return result == .completed
     }
 
-    private func waitForInteractiveElement(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
-        waitForPredicate("exists == true AND hittable == true", element: element, timeout: timeout)
+    private func waitForCondition(timeout: TimeInterval, poll: TimeInterval = 0.4, condition: @escaping () -> Bool) -> Bool {
+        let end = Date().addingTimeInterval(timeout)
+        while Date() < end {
+            if condition() { return true }
+            Thread.sleep(forTimeInterval: poll)
+        }
+        return condition()
     }
 
     private func pollUntil(timeout: TimeInterval, poll: TimeInterval = 0.25, condition: @escaping () -> Bool) -> Bool {

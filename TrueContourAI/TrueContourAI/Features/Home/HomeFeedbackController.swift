@@ -4,6 +4,7 @@ final class HomeFeedbackController {
     private weak var hostViewController: UIViewController?
     private let environment: AppEnvironment
     private let diagnosticsTextProvider: () -> String?
+    private var diagnosticsObserver: NSObjectProtocol?
     private lazy var toastPresenter = HomeToastPresenter(hostView: diagnosticsLabel.superview ?? hostViewController?.view ?? UIView(), environment: environment)
 
     let diagnosticsLabel: UILabel = {
@@ -25,6 +26,21 @@ final class HomeFeedbackController {
         self.hostViewController = hostViewController
         self.environment = environment
         self.diagnosticsTextProvider = diagnosticsTextProvider
+#if DEBUG
+        diagnosticsObserver = NotificationCenter.default.addObserver(
+            forName: ScanDiagnostics.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.refreshDiagnosticsIfNeeded()
+        }
+#endif
+    }
+
+    deinit {
+        if let diagnosticsObserver {
+            NotificationCenter.default.removeObserver(diagnosticsObserver)
+        }
     }
 
     func handleToast(_ message: String) {

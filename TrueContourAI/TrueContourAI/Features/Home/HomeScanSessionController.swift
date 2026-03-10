@@ -43,6 +43,10 @@ final class HomeScanSessionController {
     func deviceSmokeDiagnosticsText() -> String? {
         guard environment.isDeviceSmokeMode else { return nil }
 
+        if let diagnosticsText = ScanDiagnostics.currentDiagnosticsText() {
+            return diagnosticsText
+        }
+
         let snapshot = ScanDiagnostics.snapshot()
         guard snapshot.lastExportFolderName != nil || snapshot.scanStartTimestamp != nil || snapshot.finalizeCompletionTimestamp != nil else {
             return nil

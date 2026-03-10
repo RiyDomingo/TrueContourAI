@@ -1152,6 +1152,7 @@ final class PreviewExportResultWorkflow {
     }
 
     func handleFailure(message: String, previewVC: ScenePreviewViewController) {
+        saveExportViewState.markSaveFailed()
         previewVC.present(
             alertPresenter.makeAlert(
                 title: L("scan.preview.exportFailed.title"),
@@ -1177,10 +1178,10 @@ final class PreviewExportResultWorkflow {
     ) {
         let formatSummary = exportFormatSummary()
         scanExporter.setLastScanFolder(folderURL)
-        onScansChanged?()
 #if DEBUG
         ScanDiagnostics.recordExportArtifacts(folderURL: folderURL)
 #endif
+        saveExportViewState.markSaveCompleted()
 
         presentationController.dismissActivePreview(animated: true) { [weak self] in
             guard let self, self.previewSessionController.isCurrentSession(previewSessionID) else { return }
@@ -1189,6 +1190,9 @@ final class PreviewExportResultWorkflow {
             self.resetController.reset()
             let feedback = UINotificationFeedbackGenerator()
             feedback.notificationOccurred(.success)
+            DispatchQueue.main.async {
+                self.onScansChanged?()
+            }
             self.onToast?(String(format: L("scan.preview.toast.savedWithFormats"), folderURL.lastPathComponent, formatSummary))
             if exportContext.isEarServiceUnavailable {
                 self.onToast?(L("scan.preview.toast.earUnavailable"))

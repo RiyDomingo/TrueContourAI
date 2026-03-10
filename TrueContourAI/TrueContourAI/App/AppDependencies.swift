@@ -204,12 +204,25 @@ struct AppDependencies {
 
 #if DEBUG
 enum ScanDiagnostics {
+    static let didChangeNotification = Notification.Name("ScanDiagnostics.didChange")
+
+    struct ExportDiagnostics: Equatable {
+        let hasSceneGLTF: Bool
+        let hasHeadMeshOBJ: Bool
+        let lastExportFolderName: String?
+
+        var text: String {
+            "gltf=\(hasSceneGLTF ? 1 : 0),obj=\(hasHeadMeshOBJ ? 1 : 0),folder=\(lastExportFolderName ?? "none")"
+        }
+    }
+
     struct Snapshot: Equatable {
         let scanStartTimestamp: TimeInterval?
         let finalizeCompletionTimestamp: TimeInterval?
         let hasSceneGLTF: Bool
         let hasHeadMeshOBJ: Bool
         let lastExportFolderName: String?
+        let committedExportDiagnostics: ExportDiagnostics?
     }
 
     private static let lock = NSLock()
@@ -218,6 +231,7 @@ enum ScanDiagnostics {
     private static var hasSceneGLTF = false
     private static var hasHeadMeshOBJ = false
     private static var lastExportFolderName: String?
+    private static var committedExportDiagnostics: ExportDiagnostics?
 
     static func recordScanStart(date: Date = Date()) {
         lock.lock()
@@ -236,11 +250,26 @@ enum ScanDiagnostics {
         let objURL = folderURL.appendingPathComponent("head_mesh.obj")
         let hasGLTF = FileManager.default.fileExists(atPath: gltfURL.path)
         let hasOBJ = FileManager.default.fileExists(atPath: objURL.path)
+        let diagnostics = ExportDiagnostics(
+            hasSceneGLTF: hasGLTF,
+            hasHeadMeshOBJ: hasOBJ,
+            lastExportFolderName: folderURL.lastPathComponent
+        )
         lock.lock()
         hasSceneGLTF = hasGLTF
         hasHeadMeshOBJ = hasOBJ
         lastExportFolderName = folderURL.lastPathComponent
+        committedExportDiagnostics = diagnostics
         lock.unlock()
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: didChangeNotification, object: nil)
+        }
+    }
+
+    static func currentDiagnosticsText() -> String? {
+        lock.lock()
+        defer { lock.unlock() }
+        return committedExportDiagnostics?.text
     }
 
     static func snapshot() -> Snapshot {
@@ -251,7 +280,8 @@ enum ScanDiagnostics {
             finalizeCompletionTimestamp: finalizeCompletionTimestamp,
             hasSceneGLTF: hasSceneGLTF,
             hasHeadMeshOBJ: hasHeadMeshOBJ,
-            lastExportFolderName: lastExportFolderName
+            lastExportFolderName: lastExportFolderName,
+            committedExportDiagnostics: committedExportDiagnostics
         )
     }
 
@@ -262,7 +292,11 @@ enum ScanDiagnostics {
         hasSceneGLTF = false
         hasHeadMeshOBJ = false
         lastExportFolderName = nil
+        committedExportDiagnostics = nil
         lock.unlock()
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: didChangeNotification, object: nil)
+        }
     }
 }
 #endif

@@ -161,6 +161,21 @@ final class ScanHUDController {
         currentHUDState = .capturing
     }
 
+    func initialActiveScanGuidance() -> AppScanGuidanceUpdate {
+        let message = AppScanGuidanceState.start.message
+        currentHUDState = .capturing
+        return AppScanGuidanceUpdate(
+            message: message,
+            status: .caution,
+            hudState: currentHUDState,
+            accessibilityLabel: String(
+                format: L("scanning.guidance.status.accessibility"),
+                AppScanGuidanceStatus.caution.title,
+                message
+            )
+        )
+    }
+
     func resetAfterCapture() {
         lastGuidanceState = nil
         lastGuidanceAt = .distantPast

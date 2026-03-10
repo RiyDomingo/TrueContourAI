@@ -26,6 +26,8 @@ protocol SaveExportUIStateAdapting {
     func setMeshingSpinnerActive(_ isActive: Bool)
     func showSavingToast()
     func hideSavingToast()
+    func markSaveCompleted()
+    func markSaveFailed()
     func clear()
 }
 

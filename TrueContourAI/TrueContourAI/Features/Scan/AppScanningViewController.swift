@@ -570,7 +570,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         captureProgressView.progress = 0
         hudController.resetForNewCapture()
         stopPromptLoop()
-        currentHUDState = hudController.currentHUDState
+        applyGuidanceUpdate(hudController.initialActiveScanGuidance())
         emitGuidance(.start, force: true)
         updateCaptureProgress()
     }
@@ -803,14 +803,18 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     @discardableResult
     private func emitGuidance(_ state: AppScanGuidanceState, force: Bool = false) -> Bool {
         guard let update = hudController.emitGuidance(state, force: force) else { return false }
+        applyGuidanceUpdate(update)
+        onRealtimeGuidance?(update.message)
+        return true
+    }
+
+    private func applyGuidanceUpdate(_ update: AppScanGuidanceUpdate) {
         promptLabel.text = update.message
         guidanceStatusChip.text = "  \(update.status.title)  "
         guidanceStatusChip.backgroundColor = update.status.backgroundColor
         guidanceStatusChip.textColor = update.status.textColor
         guidanceStatusChip.accessibilityLabel = update.accessibilityLabel
         currentHUDState = update.hudState
-        onRealtimeGuidance?(update.message)
-        return true
     }
 
     private func updateCaptureProgress() {

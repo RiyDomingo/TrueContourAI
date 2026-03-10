@@ -2,15 +2,29 @@ import UIKit
 import StandardCyborgUI
 
 final class SaveExportViewStateController: SaveExportUIStateAdapting {
+    private enum SaveState: String {
+        case idle
+        case meshing
+        case ready
+        case saving
+        case completed
+        case failed
+    }
+
     private weak var previewVC: ScenePreviewViewController?
     private weak var savingOverlayView: UIView?
     private weak var meshingStatusContainer: UIView?
     private weak var meshingStatusLabel: UILabel?
     private weak var meshingSpinner: UIActivityIndicatorView?
+    private weak var saveStateAccessibilityView: UIView?
+
+    private var currentSaveState: SaveState = .idle
 
     func configure(previewVC: ScenePreviewViewController) {
         self.previewVC = previewVC
         ensureMeshingStatusView(in: previewVC)
+        ensureSaveStateAccessibilityView(in: previewVC)
+        updateSaveState(.idle)
     }
 
     func setButtonsEnabled(_ isEnabled: Bool) {
@@ -25,16 +39,34 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
         guard let meshingStatusLabel, let meshingStatusContainer else { return }
         meshingStatusLabel.text = text
         meshingStatusContainer.isHidden = text.isEmpty
+        if text == L("scan.preview.readyToSave") {
+            updateSaveState(.ready)
+        } else if text == L("scan.preview.exporting") {
+            updateSaveState(.saving)
+        } else if !text.isEmpty, meshingSpinner?.isAnimating == true {
+            updateSaveState(.meshing)
+        }
+        updateSaveStateAccessibilityText(text)
     }
 
     func setMeshingSpinnerActive(_ isActive: Bool) {
         guard let meshingSpinner, let meshingStatusContainer else { return }
         if isActive {
             meshingSpinner.startAnimating()
+            if currentSaveState != .saving {
+                updateSaveState(.meshing)
+            }
         } else {
             meshingSpinner.stopAnimating()
         }
         meshingStatusContainer.isHidden = !isActive && (meshingStatusLabel?.text?.isEmpty ?? true)
+        if !isActive, currentSaveState != .saving {
+            if meshingStatusLabel?.text == L("scan.preview.readyToSave") {
+                updateSaveState(.ready)
+            } else if meshingStatusLabel?.text?.isEmpty ?? true {
+                updateSaveState(.idle)
+            }
+        }
     }
 
     func showSavingToast() {
@@ -107,7 +139,16 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
         ])
 
         savingOverlayView = dimView
+        updateSaveState(.saving)
         UIView.animate(withDuration: 0.2) { dimView.alpha = 1 }
+    }
+
+    func markSaveCompleted() {
+        updateSaveState(.completed)
+    }
+
+    func markSaveFailed() {
+        updateSaveState(.failed)
     }
 
     func hideSavingToast() {
@@ -118,6 +159,19 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
             view.removeFromSuperview()
         }
         savingOverlayView = nil
+        if currentSaveState == .completed {
+            return
+        } else if currentSaveState == .failed {
+            updateSaveState(.ready)
+        } else if meshingSpinner?.isAnimating == true {
+            updateSaveState(.meshing)
+        } else if meshingStatusLabel?.text == L("scan.preview.readyToSave") {
+            updateSaveState(.ready)
+        } else if !(meshingStatusLabel?.text?.isEmpty ?? true) {
+            updateSaveState(.ready)
+        } else {
+            updateSaveState(.idle)
+        }
     }
 
     func clear() {
@@ -128,6 +182,9 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
         meshingStatusContainer = nil
         meshingStatusLabel = nil
         meshingSpinner = nil
+        saveStateAccessibilityView?.removeFromSuperview()
+        saveStateAccessibilityView = nil
+        currentSaveState = .idle
     }
 
     private func ensureMeshingStatusView(in previewVC: ScenePreviewViewController) {
@@ -173,5 +230,36 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
         meshingStatusContainer = container
         meshingStatusLabel = label
         meshingSpinner = spinner
+    }
+
+    private func ensureSaveStateAccessibilityView(in previewVC: ScenePreviewViewController) {
+        guard saveStateAccessibilityView == nil else { return }
+
+        let stateView = UIView()
+        stateView.translatesAutoresizingMaskIntoConstraints = false
+        stateView.isAccessibilityElement = true
+        stateView.accessibilityIdentifier = "previewSaveStateView"
+        stateView.accessibilityLabel = "Preview save state"
+        stateView.accessibilityValue = SaveState.idle.rawValue
+
+        previewVC.view.addSubview(stateView)
+        NSLayoutConstraint.activate([
+            stateView.topAnchor.constraint(equalTo: previewVC.view.topAnchor),
+            stateView.leadingAnchor.constraint(equalTo: previewVC.view.leadingAnchor),
+            stateView.widthAnchor.constraint(equalToConstant: 1),
+            stateView.heightAnchor.constraint(equalToConstant: 1)
+        ])
+
+        saveStateAccessibilityView = stateView
+    }
+
+    private func updateSaveState(_ state: SaveState) {
+        currentSaveState = state
+        saveStateAccessibilityView?.accessibilityValue = state.rawValue
+    }
+
+    private func updateSaveStateAccessibilityText(_ text: String) {
+        guard let saveStateAccessibilityView else { return }
+        saveStateAccessibilityView.accessibilityHint = text
     }
 }
