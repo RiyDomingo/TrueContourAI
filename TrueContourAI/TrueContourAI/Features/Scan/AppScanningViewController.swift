@@ -585,11 +585,9 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
         switch reason {
         case .canceled:
-            hapticEngine.scanningCanceled()
             reconstructionManager.reset()
             delegate?.appScanningViewControllerDidCancel(self)
         case .finished:
-            hapticEngine.scanningFinished()
             cameraManager.stopSession(nil)
             if let calibrationData = reconstructionManager.latestCameraCalibrationData {
                 meshTexturing.cameraCalibrationData = calibrationData

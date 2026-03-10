@@ -11,6 +11,7 @@ import XCTest
 final class TrueContourAIUITests: XCTestCase {
     private static let defaultTimeout: TimeInterval = 4.0
     private static let shortTimeout: TimeInterval = 2.0
+    private static let pollInterval: TimeInterval = 0.15
 
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
@@ -25,7 +26,6 @@ final class TrueContourAIUITests: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
-    @MainActor
     func testHomeShowsCoreActions() throws {
         let app = launchApp()
         XCTAssertTrue(waitForElement(app.buttons["startScanButton"]))
@@ -33,7 +33,6 @@ final class TrueContourAIUITests: XCTestCase {
         XCTAssertTrue(waitForElement(app.buttons["settingsButton"]))
     }
 
-    @MainActor
     func testHowToSheetOpensAndCloses() throws {
         let app = launchApp()
 
@@ -47,7 +46,6 @@ final class TrueContourAIUITests: XCTestCase {
         XCTAssertTrue(waitForNotExists(closeButton))
     }
 
-    @MainActor
     func testSettingsShowsAdvancedSection() throws {
         let app = launchApp()
         openSettings(in: app)
@@ -58,7 +56,6 @@ final class TrueContourAIUITests: XCTestCase {
         XCTAssertTrue(waitForElement(app.staticTexts["Minimum valid points"]))
     }
 
-    @MainActor
     func testSettingsQualityGateToggleIsInteractive() throws {
         let app = launchApp()
         openSettings(in: app)
@@ -76,7 +73,6 @@ final class TrueContourAIUITests: XCTestCase {
         XCTAssertNotEqual(initial, updated)
     }
 
-    @MainActor
     func testSettingsMinimumQualityScoreOptionCanBeChanged() throws {
         let app = launchApp()
         openSettings(in: app)
@@ -90,7 +86,6 @@ final class TrueContourAIUITests: XCTestCase {
         XCTAssertTrue(waitForSettingsRowValue(title: "Minimum quality score", expectedValue: "0.75 (Strict)", in: app))
     }
 
-    @MainActor
     func testSettingsResetRestoresProcessingDefaults() throws {
         let app = launchApp()
         openSettings(in: app)
@@ -109,7 +104,6 @@ final class TrueContourAIUITests: XCTestCase {
         XCTAssertTrue(waitForSettingsRowValue(title: "Minimum quality score", expectedValue: "0.65 (Balanced)", in: app))
     }
 
-    @MainActor
     func testStartScanUnavailableShowsAlert() throws {
         let app = launchApp(seedScan: false, forceUnavailableTrueDepth: true)
         let startButton = app.buttons["startScanButton"]
@@ -133,7 +127,6 @@ final class TrueContourAIUITests: XCTestCase {
         alert.buttons["OK"].tap()
     }
 
-    @MainActor
     func testSettingsDeleteAllConfirmationAppearsAndCancels() throws {
         let app = launchApp(seedScan: true)
         openSettings(in: app)
@@ -145,7 +138,6 @@ final class TrueContourAIUITests: XCTestCase {
         XCTAssertTrue(waitForNotExists(alert))
     }
 
-    @MainActor
     func testLaunchPerformance() throws {
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
@@ -154,7 +146,6 @@ final class TrueContourAIUITests: XCTestCase {
         }
     }
 
-    @MainActor
     func testRecentScanPreviewHasCloseButton() throws {
         let app = launchApp(seedScan: true)
 
@@ -162,12 +153,12 @@ final class TrueContourAIUITests: XCTestCase {
 
         let closeButton = app.buttons["previewCloseButton"]
         XCTAssertTrue(waitForElement(closeButton))
+        XCTAssertTrue(waitForInteractiveElement(closeButton, timeout: Self.shortTimeout + 1.0))
         closeButton.tap()
 
         XCTAssertTrue(waitForElement(app.buttons["startScanButton"], timeout: Self.defaultTimeout + 4.0))
     }
 
-    @MainActor
     func testMissingSceneShowsAlert() throws {
         let app = launchApp(seedScan: false, seedMissingScene: true)
 
@@ -178,7 +169,6 @@ final class TrueContourAIUITests: XCTestCase {
         alert.buttons.firstMatch.tap()
     }
 
-    @MainActor
     func testMissingFolderShowsAlert() throws {
         let app = launchApp(seedScan: true, seedMissingScene: false, forceMissingFolder: true)
 
@@ -193,7 +183,6 @@ final class TrueContourAIUITests: XCTestCase {
         alert.buttons.firstMatch.tap()
     }
 
-    @MainActor
     func testFilteredEmptyStateClearFilterRestoresScans() throws {
         let app = launchApp(seedScan: true)
 
@@ -212,7 +201,6 @@ final class TrueContourAIUITests: XCTestCase {
         XCTAssertTrue(waitForElement(app.buttons["scanOpenButton"].firstMatch))
     }
 
-    @MainActor
     func testRecentScansSortControlCanSwitchToQuality() throws {
         let app = launchApp(seedScan: true)
         let sortControl = app.segmentedControls["recentScansSortControl"]
@@ -224,12 +212,10 @@ final class TrueContourAIUITests: XCTestCase {
         XCTAssertTrue(qualityButton.isSelected || (sortControl.value as? String)?.contains("Quality") == true)
     }
 
-    @MainActor
     private func launchApp() -> XCUIApplication {
         return launchApp(seedScan: false)
     }
 
-    @MainActor
     private func launchApp(
         seedScan: Bool,
         seedMissingScene: Bool = false,
@@ -258,21 +244,17 @@ final class TrueContourAIUITests: XCTestCase {
         return app
     }
 
-    @MainActor
     private func waitForElement(_ element: XCUIElement, timeout: TimeInterval = defaultTimeout) -> Bool {
         element.waitForExistence(timeout: timeout)
     }
 
-    @MainActor
     private func waitForNotExists(_ element: XCUIElement, timeout: TimeInterval = defaultTimeout) -> Bool {
-        let end = Date().addingTimeInterval(timeout)
-        while element.exists && Date() < end {
-            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
-        }
-        return !element.exists
+        let predicate = NSPredicate(format: "exists == false")
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        let result = XCTWaiter.wait(for: [expectation], timeout: timeout)
+        return result == .completed
     }
 
-    @MainActor
     private func openFirstScan(in app: XCUIApplication) {
         let table = app.tables.firstMatch
         if table.exists {
@@ -280,10 +262,11 @@ final class TrueContourAIUITests: XCTestCase {
         }
         let openButton = app.buttons["scanOpenButton"].firstMatch
         XCTAssertTrue(waitForElement(openButton, timeout: Self.defaultTimeout + 2))
+        scrollElementIntoView(openButton, in: table)
+        XCTAssertTrue(waitForInteractiveElement(openButton, timeout: Self.shortTimeout + 1.0))
         openButton.tap()
     }
 
-    @MainActor
     private func openSettings(in app: XCUIApplication) {
         let settingsButton = app.buttons["settingsButton"]
         XCTAssertTrue(waitForElement(settingsButton))
@@ -293,17 +276,16 @@ final class TrueContourAIUITests: XCTestCase {
         XCTAssertTrue(waitForElement(table))
         let anchor = app.switches["settings.showPreScanChecklist"]
         XCTAssertTrue(
-            waitUntil(timeout: 6.0) { anchor.exists },
+            waitForElement(anchor, timeout: 6.0),
             "Settings table did not stabilize. tableExists=\(table.exists) anchorExists=\(anchor.exists)"
         )
     }
 
-    @MainActor
     private func tapSettingsRow(identifier: String? = nil, named title: String, in app: XCUIApplication) {
         let table = app.tables["settingsTableView"]
         XCTAssertTrue(waitForElement(table))
         let anchor = app.switches["settings.showPreScanChecklist"]
-        XCTAssertTrue(waitUntil(timeout: 4.0) { anchor.exists }, "Storage anchor row was not visible before lookup")
+        XCTAssertTrue(waitForElement(anchor, timeout: 4.0), "Storage anchor row was not visible before lookup")
 
         func currentTarget() -> XCUIElement {
             if let identifier {
@@ -315,11 +297,10 @@ final class TrueContourAIUITests: XCTestCase {
             return table.staticTexts[title]
         }
 
-        let found = waitUntil(timeout: 6.0, poll: 0.15) {
+        let found = pollUntil(timeout: 6.0, poll: 0.3) {
             let target = currentTarget()
             if target.exists { return true }
             table.swipeUp()
-            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
             if currentTarget().exists { return true }
             table.swipeDown()
             return currentTarget().exists
@@ -332,21 +313,17 @@ final class TrueContourAIUITests: XCTestCase {
         )
         scrollElementIntoView(target, in: table)
         XCTAssertTrue(
-            waitUntil(timeout: 2.0) {
-                let refreshed = currentTarget()
-                return refreshed.exists && refreshed.isHittable
-            },
+            waitForPredicate("exists == true AND hittable == true", element: currentTarget(), timeout: 2.0),
             "Settings row never became hittable. identifier=\(identifier ?? "nil") title=\(title)"
         )
         currentTarget().tap()
     }
 
-    @MainActor
     private func waitForSettingsRowValue(title: String, expectedValue: String, in app: XCUIApplication) -> Bool {
         let table = app.tables["settingsTableView"]
         guard waitForElement(table) else { return false }
 
-        return waitUntil(timeout: 4.0, poll: 0.15) {
+        return pollUntil(timeout: 4.0, poll: 0.3) {
             let row = table.cells.containing(.staticText, identifier: title).firstMatch
             guard row.exists else { return false }
             if row.staticTexts[expectedValue].exists { return true }
@@ -359,13 +336,11 @@ final class TrueContourAIUITests: XCTestCase {
         }
     }
 
-    @MainActor
     private func settingsOptionButton(prefix: String, in app: XCUIApplication) -> XCUIElement {
         let predicate = NSPredicate(format: "label BEGINSWITH %@", prefix)
         return app.buttons.matching(predicate).firstMatch
     }
 
-    @MainActor
     private func scrollElementIntoView(_ element: XCUIElement, in table: XCUIElement, maxSwipes: Int = 8) {
         guard table.exists else { return }
         var remaining = maxSwipes
@@ -380,12 +355,26 @@ final class TrueContourAIUITests: XCTestCase {
         }
     }
 
-    @MainActor
     private func waitUntil(timeout: TimeInterval, poll: TimeInterval = 0.1, condition: @escaping () -> Bool) -> Bool {
+        pollUntil(timeout: timeout, poll: max(poll, 0.25), condition: condition)
+    }
+
+    private func waitForPredicate(_ format: String, element: XCUIElement, timeout: TimeInterval) -> Bool {
+        let predicate = NSPredicate(format: format)
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        let result = XCTWaiter.wait(for: [expectation], timeout: timeout)
+        return result == .completed
+    }
+
+    private func waitForInteractiveElement(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
+        waitForPredicate("exists == true AND hittable == true", element: element, timeout: timeout)
+    }
+
+    private func pollUntil(timeout: TimeInterval, poll: TimeInterval = 0.25, condition: @escaping () -> Bool) -> Bool {
         let end = Date().addingTimeInterval(timeout)
         while Date() < end {
             if condition() { return true }
-            RunLoop.current.run(until: Date().addingTimeInterval(poll))
+            Thread.sleep(forTimeInterval: poll)
         }
         return condition()
     }

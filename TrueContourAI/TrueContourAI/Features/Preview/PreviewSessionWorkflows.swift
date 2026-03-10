@@ -363,13 +363,14 @@ final class PreviewExistingScanWorkflow {
                 onClose: onClose,
                 onShare: onShare
             )
-            if closeTarget !== shareTarget, let previewVC = vc as? UIViewController {
-                previewVC.view.subviews
-                    .compactMap { $0 as? UIStackView }
-                    .flatMap(\.arrangedSubviews)
-                    .compactMap { $0 as? UIButton }
-                    .first(where: { $0.accessibilityIdentifier == "previewShareButton" })?
-                    .addTarget(shareTarget, action: onShare, for: .touchUpInside)
+            if closeTarget !== shareTarget {
+                let stacks = vc.view.subviews.compactMap { $0 as? UIStackView }
+                let arrangedSubviews = stacks.flatMap(\.arrangedSubviews)
+                let buttons = arrangedSubviews.compactMap { $0 as? UIButton }
+                let shareButton = buttons.first {
+                    $0.accessibilityIdentifier == "previewShareButton"
+                }
+                shareButton?.addTarget(shareTarget, action: onShare, for: .touchUpInside)
             }
             return (vc, nil, existingSummary)
         }
