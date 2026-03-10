@@ -20,7 +20,7 @@ This file tracks remaining implementation, validation, and hygiene tasks.
   - 2026-03-09: focused device validation passed on `Riy's iPhone` for:
     - `testDeviceSmokeForcedQualityGateBlocksSave`
     - `testDeviceSmokeSaveThenReopenFromHome`
-- [ ] Validate export settings matrix on device:
+- [x] Validate export settings matrix on device:
   - [x] GLTF on / OBJ on
   - [x] GLTF on / OBJ off
   - [x] `GLTF off / OBJ on` is prevented (`SettingsViewController` guard + device-smoke launch-arg hardening keeps GLTF enabled)
