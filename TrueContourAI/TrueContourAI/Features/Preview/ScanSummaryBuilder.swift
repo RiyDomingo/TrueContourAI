@@ -7,29 +7,20 @@ enum ScanSummaryBuilder {
         qualityReport: ScanQualityReport?,
         measurementSummary: LocalMeasurementGenerationService.ResultSummary?,
         hadEarVerification: Bool
-    ) -> ScanService.ScanSummary? {
+    ) -> ScanSummary? {
         guard let metrics else { return nil }
 
-        return ScanService.ScanSummary(
+        return ScanSummary(
             schemaVersion: settingsStore.scanSummarySchemaVersion,
             startedAt: metrics.startedAt,
             finishedAt: metrics.finishedAt,
             durationSeconds: metrics.durationSeconds,
-            overallConfidence: min(metrics.overallConfidence, qualityReport?.qualityScore ?? metrics.overallConfidence),
-            completedPoses: 0,
-            skippedPoses: 0,
-            poseRecords: [],
+            overallConfidence: qualityReport?.qualityScore ?? measurementSummary?.confidence ?? 0,
             pointCountEstimate: qualityReport?.validPointCount ?? 0,
             hadEarVerification: hadEarVerification,
-            processingProfile: .init(
-                outlierSigma: settingsStore.processingConfig.outlierSigma,
-                decimateRatio: settingsStore.processingConfig.decimateRatio,
-                cropBelowNeck: settingsStore.processingConfig.cropBelowNeck,
-                meshResolution: settingsStore.processingConfig.meshResolution,
-                meshSmoothness: settingsStore.processingConfig.meshSmoothness
-            ),
+            processingProfile: nil,
             derivedMeasurements: measurementSummary.map {
-                ScanService.ScanSummary.DerivedMeasurements(
+                ScanSummary.DerivedMeasurements(
                     sliceHeightNormalized: $0.sliceHeightNormalized,
                     circumferenceMm: $0.circumferenceMm,
                     widthMm: $0.widthMm,

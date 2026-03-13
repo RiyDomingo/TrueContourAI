@@ -32,6 +32,9 @@ import UIKit
     
     /** Gives us a hook to know the textured mesh is generated. */
     @objc public var onTexturedMeshGenerated: ((SCMesh) -> Void)?
+
+    /** Gives us a hook to observe meshing progress (0...1). */
+    @objc public var onMeshingProgressUpdated: ((Float) -> Void)?
     
     override public var preferredStatusBarStyle: UIStatusBarStyle { .default }
     
@@ -75,18 +78,28 @@ import UIKit
         super.init(coder: coder)
     }
         
-    
+    private static func makePreviewScene() -> SCNScene {
+        guard let sceneURL = Bundle.scuiResourcesBundle.url(forResource: "ScenePreviewViewController", withExtension: "scn") else {
+            assertionFailure("Could not find scene file for ScenePreviewViewController")
+            return SCNScene()
+        }
+
+        do {
+            let scene = try SCNScene(url: sceneURL, options: nil)
+            scene.background.contents = UIColor.clear
+            return scene
+        } catch {
+            assertionFailure("Could not load scene file for ScenePreviewViewController: \(error)")
+            let scene = SCNScene()
+            scene.background.contents = UIColor.clear
+            return scene
+        }
+    }
+
     /** Owners may mutate this view to change its appearance and add nodes to its scene */
     @objc public let sceneView: SCNView = {
-        guard let sceneURL = Bundle.scuiResourcesBundle.url(forResource: "ScenePreviewViewController", withExtension: "scn") else {
-            fatalError("Could not find scene file for ScenePreviewViewController")
-        }
-        
-        let scene = try! SCNScene(url: sceneURL, options: nil)
-        scene.background.contents = UIColor.clear
-        
         let sceneView = SCNView()
-        sceneView.scene = scene
+        sceneView.scene = makePreviewScene()
         sceneView.allowsCameraControl = true
         sceneView.backgroundColor = UIColor.clear
         return sceneView
@@ -116,6 +129,12 @@ import UIKit
     @objc public let meshingProgressView: UIProgressView = {
         let progressView = UIProgressView()
         progressView.progress = 0
+        progressView.trackTintColor = UIColor.white.withAlphaComponent(0.28)
+        progressView.progressTintColor = UIColor.systemBlue
+        progressView.layer.cornerRadius = 4
+        progressView.clipsToBounds = true
+        progressView.transform = CGAffineTransform(scaleX: 1, y: 2.0)
+        progressView.accessibilityIdentifier = "meshingProgressBar"
         return progressView
     }()
 
@@ -198,8 +217,11 @@ import UIKit
     private var _initialPointOfView = SCNMatrix4Identity
     private var _containerNode = SCNNode()
     private var _meshingHelper: SCMeshingHelper?
+    private var _snapshotGeneration = 0
     
     private func _constructScene(withSCScene scScene: SCScene) {
+        _snapshotGeneration += 1
+        let snapshotGeneration = _snapshotGeneration
         _containerNode.childNodes.forEach { $0.removeFromParentNode() }
         
         _containerNode.addChildNode(scScene.rootNode)
@@ -221,6 +243,7 @@ import UIKit
         // This is a bit of a hack. There doesn't appear to be a good way to determine when a sceneView has finished
         // rendering nodes. Delaying half a second before grabbing a snapshot seems to work.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            guard snapshotGeneration == self._snapshotGeneration else { return }
             self.renderedSceneImage = self.sceneView.snapshot()
         }
     }
@@ -237,6 +260,7 @@ import UIKit
                 switch meshingStatus {
                 case .inProgress(let progress):
                     self.meshingProgressView.setProgress(progress, animated: false)
+                    self.onMeshingProgressUpdated?(progress)
                 case .failure(let error):
                     self.meshingProgressView.isHidden = true
                     completion(.failure(error))    // Error is guaranteed to be set for the failure case

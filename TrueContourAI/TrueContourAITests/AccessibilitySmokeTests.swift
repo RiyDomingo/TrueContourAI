@@ -3,18 +3,27 @@ import XCTest
 
 final class AccessibilitySmokeTests: XCTestCase {
 
+    private func makeRepository(scansRootURL: URL? = nil) -> ScanRepository {
+        ScanRepository(scansRootURL: scansRootURL ?? FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true))
+    }
+
+    private func makeExporter(scansRootURL: URL? = nil) -> ScanExporterService {
+        let root = scansRootURL ?? FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        return ScanExporterService(scansRootURL: root)
+    }
+
     func testHomeButtonsHaveAccessibilityLabels() {
         let tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
 
-        let scanService = ScanService(scansRootURL: tempDir)
         let deps = AppDependencies(
-            scanService: scanService,
+            scanRepository: ScanRepository(scansRootURL: tempDir),
+            scanExporter: makeExporter(scansRootURL: tempDir),
             settingsStore: SettingsStore(),
             earServiceFactory: { nil }
         )
-        let vc = ViewController(dependencies: deps)
+        let vc = HomeViewController(dependencies: deps)
         _ = vc.view
 
         let startButton = vc.view.findView(withAccessibilityIdentifier: "startScanButton")
@@ -42,14 +51,77 @@ final class AccessibilitySmokeTests: XCTestCase {
     func testPreviewVerifyButtonHasAccessibilityLabelAndHint() {
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: ScanService(),
+            scanService: makeRepository(),
             settingsStore: SettingsStore(),
             scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter(),
             onToast: nil
         )
         let verifyButton = coordinator.debug_makeVerifyEarButton()
         XCTAssertEqual(verifyButton.accessibilityLabel, L("scan.preview.accessibility.verify.label"))
         XCTAssertEqual(verifyButton.accessibilityHint, L("scan.preview.accessibility.verify.hint"))
+    }
+
+    func testFitBrowSliderAppearsOnlyInDeveloperMode() {
+        let hostView = UIView(frame: CGRect(x: 0, y: 0, width: 320, height: 640))
+
+        let defaultsOff = UserDefaults(suiteName: "FitBrowSliderOff.\(UUID().uuidString)")!
+        let settingsOff = SettingsStore(defaults: defaultsOff)
+        settingsOff.developerModeEnabled = false
+        let coordinatorOff = ScanPreviewCoordinator(
+            presenter: UIViewController(),
+            scanService: makeRepository(),
+            settingsStore: settingsOff,
+            scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter()
+        )
+        XCTAssertFalse(coordinatorOff.debug_addFitControlsIfDeveloperMode(hostView: hostView))
+        XCTAssertFalse(coordinatorOff.debug_hasFitBrowSlider())
+
+        let defaultsOn = UserDefaults(suiteName: "FitBrowSliderOn.\(UUID().uuidString)")!
+        let settingsOn = SettingsStore(defaults: defaultsOn)
+        settingsOn.developerModeEnabled = true
+        let coordinatorOn = ScanPreviewCoordinator(
+            presenter: UIViewController(),
+            scanService: makeRepository(),
+            settingsStore: settingsOn,
+            scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter()
+        )
+        XCTAssertTrue(coordinatorOn.debug_addFitControlsIfDeveloperMode(hostView: hostView))
+        XCTAssertTrue(coordinatorOn.debug_hasFitBrowSlider())
+    }
+
+    func testPreviewSheetProfileCompactsOnSmallHeight() {
+        let p = PreviewOverlayUIController.debug_sheetProfile(height: 680, isPad: false)
+        XCTAssertEqual(p.collapsed, 80)
+        XCTAssertEqual(p.half, 112)
+        XCTAssertEqual(p.full, 144)
+    }
+
+    func testPreviewSheetStaysCollapsedWhenDeveloperModeEnabled() {
+        let overlay = PreviewOverlayUIController()
+        let host = UIView(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        overlay.debug_installSheet(on: host)
+        overlay.setDeveloperModeEnabled(true)
+        XCTAssertEqual(overlay.debug_currentSnapPoint(), .collapsed)
+    }
+
+    func testPreviewSheetFrameRatioStaysWithinViewportCaps() {
+        let smallPhone = UIView(frame: CGRect(x: 0, y: 0, width: 375, height: 667))
+        let smallFrame = PreviewOverlayUIController()
+            .debug_sheetFrame(on: smallPhone, developerModeEnabled: false)
+        XCTAssertLessThanOrEqual(smallFrame.height / smallPhone.bounds.height, 0.22)
+
+        let regularPhone = UIView(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        let regularFrame = PreviewOverlayUIController()
+            .debug_sheetFrame(on: regularPhone, developerModeEnabled: false)
+        XCTAssertLessThanOrEqual(regularFrame.height / regularPhone.bounds.height, 0.20)
+
+        let largePad = UIView(frame: CGRect(x: 0, y: 0, width: 820, height: 1180))
+        let padFrame = PreviewOverlayUIController()
+            .debug_sheetFrame(on: largePad, developerModeEnabled: true)
+        XCTAssertLessThanOrEqual(padFrame.height / largePad.bounds.height, 0.18)
     }
 }
 

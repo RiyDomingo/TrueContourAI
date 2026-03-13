@@ -7,6 +7,14 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
     private var defaults: UserDefaults!
     private var suiteName: String!
 
+    private func makeRepository() -> ScanRepository {
+        ScanRepository(scansRootURL: tempDir, defaults: defaults)
+    }
+
+    private func makeExporter() -> ScanExporterService {
+        ScanExporterService(scansRootURL: tempDir, defaults: defaults)
+    }
+
     override func setUp() {
         super.setUp()
         tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -30,19 +38,21 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
     }
 
     func testDebugExportSuccessSetsIdleAndEmitsToast() {
-        let scanService = ScanService(scansRootURL: tempDir, defaults: defaults)
+        let scanRepository = makeRepository()
+        let scanExporter = makeExporter()
         let flowState = ScanFlowState()
         flowState.setPhase(.saving)
 
         var toasts: [String] = []
-        var exportEvents: [ScanPreviewCoordinator.ExportResultEvent] = []
+        var exportEvents: [PreviewExportResultEvent] = []
         var scansChanged = 0
 
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: scanService,
+            scanService: scanRepository,
             settingsStore: SettingsStore(defaults: defaults),
             scanFlowState: flowState,
+            scanExporter: scanExporter,
             onToast: { toasts.append($0) },
             onExportResult: { exportEvents.append($0) }
         )
@@ -65,18 +75,20 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
     }
 
     func testDebugExportFailureSetsPreviewAndNoToast() {
-        let scanService = ScanService(scansRootURL: tempDir, defaults: defaults)
+        let scanRepository = makeRepository()
+        let scanExporter = makeExporter()
         let flowState = ScanFlowState()
         flowState.setPhase(.saving)
 
         var toasts: [String] = []
-        var exportEvents: [ScanPreviewCoordinator.ExportResultEvent] = []
+        var exportEvents: [PreviewExportResultEvent] = []
 
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: scanService,
+            scanService: scanRepository,
             settingsStore: SettingsStore(defaults: defaults),
             scanFlowState: flowState,
+            scanExporter: scanExporter,
             onToast: { toasts.append($0) },
             onExportResult: { exportEvents.append($0) }
         )
@@ -89,16 +101,18 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
     }
 
     func testDebugExportSuccessWithUnavailableEarEmitsWarningToast() {
-        let scanService = ScanService(scansRootURL: tempDir, defaults: defaults)
+        let scanRepository = makeRepository()
+        let scanExporter = makeExporter()
         let flowState = ScanFlowState()
         flowState.setPhase(.saving)
 
         var toasts: [String] = []
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: scanService,
+            scanService: scanRepository,
             settingsStore: SettingsStore(defaults: defaults),
             scanFlowState: flowState,
+            scanExporter: scanExporter,
             onToast: { toasts.append($0) }
         )
 
@@ -109,12 +123,13 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
         XCTAssertTrue(toasts.contains(L("scan.preview.toast.earUnavailable")))
     }
 
-    func testDebugSavePrecheckBlockedByQualityGate() {
+    func testDebugSavePrecheckBlocksWhenQualityGateRejectsScan() {
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: ScanService(scansRootURL: tempDir, defaults: defaults),
+            scanService: makeRepository(),
             settingsStore: SettingsStore(defaults: defaults),
             scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter(),
             onToast: nil
         )
 
@@ -130,54 +145,58 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
             reason: "low quality"
         )
 
-        XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: report, hasMesh: true), "blockedByQualityGate")
+        XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: report, hasMesh: true), "qualityGateBlocked")
     }
 
     func testDebugSavePrecheckMeshNotReady() {
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: ScanService(scansRootURL: tempDir, defaults: defaults),
+            scanService: makeRepository(),
             settingsStore: SettingsStore(defaults: defaults),
             scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter(),
             onToast: nil
         )
 
         XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: nil, hasMesh: false), "meshNotReady")
     }
 
-    func testDebugSavePrecheckBlocksWhenNoExportFormatsEnabled() {
+    func testDebugSavePrecheckBlocksWhenGLTFExportDisabled() {
         let settings = SettingsStore(defaults: defaults)
         settings.exportGLTF = false
-        settings.exportOBJ = false
+        settings.exportOBJ = true
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: ScanService(scansRootURL: tempDir, defaults: defaults),
+            scanService: makeRepository(),
             settingsStore: settings,
             scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter(),
             onToast: nil
         )
 
-        XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: nil, hasMesh: true), "noExportFormatsEnabled")
+        XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: nil, hasMesh: true), "gltfExportRequired")
     }
 
     func testDebugSavePrecheckReady() {
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: ScanService(scansRootURL: tempDir, defaults: defaults),
+            scanService: makeRepository(),
             settingsStore: SettingsStore(defaults: defaults),
             scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter(),
             onToast: nil
         )
 
         XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: nil, hasMesh: true), "ready")
     }
 
-    func testDebugSavePrecheckPrioritizesQualityGateBeforeMeshReadiness() {
+    func testDebugSavePrecheckPrioritizesMeshReadinessWhenQualityIsLow() {
         let coordinator = ScanPreviewCoordinator(
             presenter: UIViewController(),
-            scanService: ScanService(scansRootURL: tempDir, defaults: defaults),
+            scanService: makeRepository(),
             settingsStore: SettingsStore(defaults: defaults),
             scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter(),
             onToast: nil
         )
 
@@ -193,10 +212,37 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
             reason: "low quality"
         )
 
-        XCTAssertEqual(
-            coordinator.debug_savePrecheck(qualityReport: blocked, hasMesh: false),
-            "blockedByQualityGate"
+        XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: blocked, hasMesh: false), "meshNotReady")
+    }
+
+    func testDebugSavePrecheckAllowsLowQualityWhenGateDisabled() {
+        let settings = SettingsStore(defaults: defaults)
+        var config = settings.scanQualityConfig
+        config.gateEnabled = false
+        settings.scanQualityConfig = config
+
+        let coordinator = ScanPreviewCoordinator(
+            presenter: UIViewController(),
+            scanService: makeRepository(),
+            settingsStore: settings,
+            scanFlowState: ScanFlowState(),
+            scanExporter: makeExporter(),
+            onToast: nil
         )
+
+        let report = ScanQualityReport(
+            pointCount: 120_000,
+            validPointCount: 60_000,
+            widthMeters: 0.2,
+            heightMeters: 0.2,
+            depthMeters: 0.2,
+            qualityScore: 0.4,
+            isExportRecommended: false,
+            advice: .rescanSlowly,
+            reason: "low quality"
+        )
+
+        XCTAssertEqual(coordinator.debug_savePrecheck(qualityReport: report, hasMesh: true), "ready")
     }
 
     func testPreviewExportFormatSummaryMatchesSettingsMatrix() {
@@ -214,12 +260,13 @@ final class ScanPreviewCoordinatorExportTests: XCTestCase {
             settings.exportGLTF = entry.includeGLTF
             settings.exportOBJ = entry.includeOBJ
 
-            var events: [ScanPreviewCoordinator.ExportResultEvent] = []
+            var events: [PreviewExportResultEvent] = []
             let coordinator = ScanPreviewCoordinator(
                 presenter: UIViewController(),
-                scanService: ScanService(scansRootURL: tempDir, defaults: defaults),
+                scanService: makeRepository(),
                 settingsStore: settings,
                 scanFlowState: flowState,
+                scanExporter: makeExporter(),
                 onToast: nil,
                 onExportResult: { events.append($0) }
             )

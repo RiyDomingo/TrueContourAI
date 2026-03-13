@@ -10,6 +10,7 @@ final class ScanCoordinator {
     typealias CameraAccessRequester = (@escaping (Bool) -> Void) -> Void
 
     private let settingsStore: SettingsStore
+    private let environment: AppEnvironment
     private let deviceCapabilityProvider: DeviceCapabilityProvider
     private let scanningViewControllerFactory: ScanningViewControllerFactory
     private let simulatorProvider: SimulatorProvider
@@ -19,18 +20,39 @@ final class ScanCoordinator {
 
     init(
         settingsStore: SettingsStore,
-        deviceCapabilityProvider: @escaping DeviceCapabilityProvider = ScanCoordinator.defaultTrueDepthAvailability,
+        environment: AppEnvironment = .current,
+        deviceCapabilityProvider: @escaping DeviceCapabilityProvider,
         scanningViewControllerFactory: @escaping ScanningViewControllerFactory = { AppScanningViewController() },
         simulatorProvider: @escaping SimulatorProvider = ScanCoordinator.defaultSimulatorState,
         cameraAuthorizationStatusProvider: @escaping CameraAuthorizationStatusProvider = ScanCoordinator.defaultCameraAuthorizationStatus,
         cameraAccessRequester: @escaping CameraAccessRequester = ScanCoordinator.defaultRequestCameraAccess
     ) {
         self.settingsStore = settingsStore
+        self.environment = environment
         self.deviceCapabilityProvider = deviceCapabilityProvider
         self.scanningViewControllerFactory = scanningViewControllerFactory
         self.simulatorProvider = simulatorProvider
         self.cameraAuthorizationStatusProvider = cameraAuthorizationStatusProvider
         self.cameraAccessRequester = cameraAccessRequester
+    }
+
+    convenience init(
+        settingsStore: SettingsStore,
+        environment: AppEnvironment = .current,
+        scanningViewControllerFactory: @escaping ScanningViewControllerFactory = { AppScanningViewController() },
+        simulatorProvider: @escaping SimulatorProvider = ScanCoordinator.defaultSimulatorState,
+        cameraAuthorizationStatusProvider: @escaping CameraAuthorizationStatusProvider = ScanCoordinator.defaultCameraAuthorizationStatus,
+        cameraAccessRequester: @escaping CameraAccessRequester = ScanCoordinator.defaultRequestCameraAccess
+    ) {
+        self.init(
+            settingsStore: settingsStore,
+            environment: environment,
+            deviceCapabilityProvider: { ScanCoordinator.defaultTrueDepthAvailability(environment: environment) },
+            scanningViewControllerFactory: scanningViewControllerFactory,
+            simulatorProvider: simulatorProvider,
+            cameraAuthorizationStatusProvider: cameraAuthorizationStatusProvider,
+            cameraAccessRequester: cameraAccessRequester
+        )
     }
 
     func startScanFlow(
@@ -105,6 +127,7 @@ final class ScanCoordinator {
         scanningVC.delegate = delegate
         scanningVC.generatesTexturedMeshes = true
         scanningVC.requiresManualFinish = true
+        scanningVC.developerModeEnabled = settingsStore.developerModeEnabled
         scanningVC.maxDepthResolution = suggestedDepthResolution(for: processingConfig)
         scanningVC.texturedMeshColorBufferSaveInterval = suggestedColorBufferInterval(for: processingConfig)
         scanningVC.modalPresentationStyle = .fullScreen
@@ -127,27 +150,15 @@ final class ScanCoordinator {
         )
 
         activeScanVC = scanningVC
-        addFinishButton(to: scanningVC)
+        scanningVC.configureManualFinishButton(
+            title: L("common.finish"),
+            target: self,
+            action: #selector(finishScanNowTapped(_:))
+        )
 
         presenter.present(scanningVC, animated: true) {
             onPresented(scanningVC)
         }
-    }
-
-    private func addFinishButton(to scanningVC: AppScanningViewController) {
-        let finishButton = UIButton(type: .system)
-        DesignSystem.applyButton(finishButton, title: L("common.finish"), style: .primary, size: .regular)
-        finishButton.accessibilityIdentifier = "finishScanNowButton"
-        finishButton.translatesAutoresizingMaskIntoConstraints = false
-        finishButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
-
-        finishButton.addTarget(self, action: #selector(finishScanNowTapped(_:)), for: .touchUpInside)
-        scanningVC.view.addSubview(finishButton)
-
-        NSLayoutConstraint.activate([
-            finishButton.topAnchor.constraint(equalTo: scanningVC.view.safeAreaLayoutGuide.topAnchor, constant: 12),
-            finishButton.trailingAnchor.constraint(equalTo: scanningVC.view.safeAreaLayoutGuide.trailingAnchor, constant: -12)
-        ])
     }
 
     @objc private func finishScanNowTapped(_ sender: UIButton) {
@@ -164,8 +175,8 @@ final class ScanCoordinator {
         deviceCapabilityProvider()
     }
 
-    private static func defaultTrueDepthAvailability() -> Bool {
-        if ProcessInfo.processInfo.arguments.contains("ui-test-force-unavailable-truedepth") {
+    private static func defaultTrueDepthAvailability(environment: AppEnvironment) -> Bool {
+        if environment.forcesUnavailableTrueDepth {
             return false
         }
         let session = AVCaptureDevice.DiscoverySession(

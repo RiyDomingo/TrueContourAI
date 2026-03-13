@@ -19,8 +19,8 @@ public class AspectFillTextureCommandEncoder {
         var __memoryPadding = simd_float4(repeating: 0)
     }
     
-    private let _pipelineState: MTLComputePipelineState
-    private let _textureCache: CVMetalTextureCache
+    private let _pipelineState: MTLComputePipelineState?
+    private let _textureCache: CVMetalTextureCache?
     private var _uniforms = Uniforms()
     
     public init(device: MTLDevice, library: MTLLibrary) {
@@ -28,7 +28,7 @@ public class AspectFillTextureCommandEncoder {
         
         var cache: CVMetalTextureCache?
         CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &cache)
-        _textureCache = cache!
+        _textureCache = cache
     }
     
     public var alpha: Float = 0.3
@@ -37,6 +37,7 @@ public class AspectFillTextureCommandEncoder {
                                colorBuffer: CVPixelBuffer,
                                outputTexture: MTLTexture)
     {
+        guard _pipelineState != nil else { return }
         guard let colorTexture = _metalTexture(fromColorBuffer: colorBuffer)
             else { return }
         
@@ -110,9 +111,13 @@ public class AspectFillTextureCommandEncoder {
                                    depth: 1)
         
         
-        let commandEncoder = commandBuffer.makeComputeCommandEncoder()!
+        guard let pipelineState = _pipelineState else { return }
+        guard let commandEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            NSLog("AspectFillTextureCommandEncoder could not create compute command encoder")
+            return
+        }
         commandEncoder.label = "DrawColorTexture.commandEncoder"
-        commandEncoder.setComputePipelineState(_pipelineState)
+        commandEncoder.setComputePipelineState(pipelineState)
         commandEncoder.setBytes(&_uniforms, length: MemoryLayout<Uniforms>.size, index: 0)
         commandEncoder.setTexture(colorTexture, index: 0)
         commandEncoder.setTexture(outputTexture, index: 1)
@@ -121,12 +126,13 @@ public class AspectFillTextureCommandEncoder {
     }
     
     private func _metalTexture(fromColorBuffer colorBuffer: CVPixelBuffer) -> MTLTexture? {
+        guard let textureCache = _textureCache else { return nil }
         let textureAttributes = [kCVPixelBufferMetalCompatibilityKey: NSNumber(booleanLiteral: true),
                                  kCVMetalTextureUsage: NSNumber(integerLiteral: Int(MTLTextureUsage.shaderRead.rawValue))]
         
         var texture: CVMetalTexture?
         CVMetalTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
-                                                  _textureCache,
+                                                  textureCache,
                                                   colorBuffer,
                                                   textureAttributes as CFDictionary,
                                                   MTLPixelFormat.bgra8Unorm,
@@ -135,19 +141,26 @@ public class AspectFillTextureCommandEncoder {
                                                   0,
                                                   &texture)
         
-        return texture == nil ? nil : CVMetalTextureGetTexture(texture!)
+        guard let texture else { return nil }
+        return CVMetalTextureGetTexture(texture)
     }
     
-    private class func _buildColorPipelineState(withDevice device: MTLDevice, library: MTLLibrary) -> MTLComputePipelineState {
-        let function = library.makeFunction(name: "DrawColorTexture")!
+    private class func _buildColorPipelineState(withDevice device: MTLDevice, library: MTLLibrary) -> MTLComputePipelineState? {
+        guard let function = library.makeFunction(name: "DrawColorTexture") else {
+            NSLog("AspectFillTextureCommandEncoder missing DrawColorTexture function")
+            return nil
+        }
         
         let pipelineDescriptor = MTLComputePipelineDescriptor()
         pipelineDescriptor.computeFunction = function
         pipelineDescriptor.label = "DrawColorTexture._depthColorPipelineState"
         
-        let pipelineState = try! device.makeComputePipelineState(function: function)
-        
-        return pipelineState
+        do {
+            return try device.makeComputePipelineState(function: function)
+        } catch {
+            NSLog("AspectFillTextureCommandEncoder pipeline creation failed: %@", error.localizedDescription)
+            return nil
+        }
     }
     
 }

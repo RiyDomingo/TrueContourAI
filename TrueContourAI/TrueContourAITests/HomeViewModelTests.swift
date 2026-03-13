@@ -5,7 +5,7 @@ final class HomeViewModelTests: XCTestCase {
     private var tempDir: URL!
     private var defaults: UserDefaults!
     private var suiteName: String!
-    private var scanService: ScanService!
+    private var scanRepository: ScanRepository!
 
     override func setUp() {
         super.setUp()
@@ -14,7 +14,7 @@ final class HomeViewModelTests: XCTestCase {
         suiteName = "HomeViewModelTests.\(UUID().uuidString)"
         defaults = UserDefaults(suiteName: suiteName)
         defaults.removePersistentDomain(forName: suiteName)
-        scanService = ScanService(scansRootURL: tempDir, defaults: defaults)
+        scanRepository = ScanRepository(scansRootURL: tempDir, defaults: defaults)
     }
 
     override func tearDown() {
@@ -24,7 +24,7 @@ final class HomeViewModelTests: XCTestCase {
         if let suiteName {
             defaults.removePersistentDomain(forName: suiteName)
         }
-        scanService = nil
+        scanRepository = nil
         defaults = nil
         suiteName = nil
         tempDir = nil
@@ -35,7 +35,7 @@ final class HomeViewModelTests: XCTestCase {
         let older = try createScanFolder(name: "older", modifiedAt: Date(timeIntervalSince1970: 100), confidence: 0.95)
         let newer = try createScanFolder(name: "newer", modifiedAt: Date(timeIntervalSince1970: 200), confidence: 0.60)
 
-        let vm = HomeViewModel(scanService: scanService)
+        let vm = HomeViewModel(scanService: scanRepository)
         waitForRefresh(vm)
 
         XCTAssertEqual(vm.sortMode, .dateNewest)
@@ -47,7 +47,7 @@ final class HomeViewModelTests: XCTestCase {
         let lowQualityNewer = try createScanFolder(name: "low-newer", modifiedAt: Date(timeIntervalSince1970: 300), confidence: 0.55)
         let highQualityOlder = try createScanFolder(name: "high-older", modifiedAt: Date(timeIntervalSince1970: 200), confidence: 0.92)
 
-        let vm = HomeViewModel(scanService: scanService)
+        let vm = HomeViewModel(scanService: scanRepository)
         waitForRefresh(vm)
         vm.updateSortMode(.qualityHighest)
 
@@ -60,7 +60,7 @@ final class HomeViewModelTests: XCTestCase {
         _ = try createScanFolder(name: "low", modifiedAt: Date(timeIntervalSince1970: 100), confidence: 0.60)
         let high = try createScanFolder(name: "high", modifiedAt: Date(timeIntervalSince1970: 200), confidence: 0.88)
 
-        let vm = HomeViewModel(scanService: scanService)
+        let vm = HomeViewModel(scanService: scanRepository)
         waitForRefresh(vm)
         vm.updateFilterMode(.goodPlus)
 
@@ -73,13 +73,14 @@ final class HomeViewModelTests: XCTestCase {
         _ = try createScanFolder(name: "low-a", modifiedAt: Date(timeIntervalSince1970: 100), confidence: 0.50)
         _ = try createScanFolder(name: "low-b", modifiedAt: Date(timeIntervalSince1970: 200), confidence: 0.70)
 
-        let vm = HomeViewModel(scanService: scanService)
+        let vm = HomeViewModel(scanService: scanRepository)
         waitForRefresh(vm)
         vm.updateFilterMode(.goodPlus)
 
         XCTAssertEqual(vm.totalScanCount, 2)
         XCTAssertTrue(vm.scans.isEmpty)
         XCTAssertTrue(vm.isEmpty)
+        XCTAssertTrue(vm.makeViewState().isFilteredEmpty)
     }
 
     private func waitForRefresh(_ vm: HomeViewModel, timeout: TimeInterval = 2.0) {
@@ -98,7 +99,7 @@ final class HomeViewModelTests: XCTestCase {
         let folder = tempDir.appendingPathComponent(name, isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         try FileManager.default.setAttributes([.modificationDate: modifiedAt], ofItemAtPath: folder.path)
-        let summary = ScanService.ScanSummary(
+        let summary = ScanSummary(
             schemaVersion: 2,
             startedAt: modifiedAt,
             finishedAt: modifiedAt.addingTimeInterval(5),

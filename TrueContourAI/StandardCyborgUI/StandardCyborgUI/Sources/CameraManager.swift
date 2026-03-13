@@ -47,9 +47,7 @@ public extension Notification.Name {
     }
     
     deinit {
-        if _hasAddedObservers {
-            _captureSession.removeObserver(self, forKeyPath: "running", context: &_sessionRunningContext)
-        }
+        _removeObservers()
     }
     
     /** The mechanism for clients of CameraManager to be provided with streaming camera and depth frames */
@@ -203,6 +201,7 @@ public extension Notification.Name {
     private var _sessionRunningContext = 0
     
     private func _addObservers() {
+        guard !_hasAddedObservers else { return }
         guard let videoDevice = _videoDeviceInput?.device else {
             print("Video device input was nil")
             return
@@ -233,8 +232,16 @@ public extension Notification.Name {
         NotificationCenter.default.addObserver(self, selector: #selector(subjectAreaDidChange),
                                                name: .AVCaptureDeviceSubjectAreaDidChange,
                                                object: videoDevice)
-        
+
         _hasAddedObservers = true
+    }
+
+    private func _removeObservers() {
+        guard _hasAddedObservers else { return }
+
+        NotificationCenter.default.removeObserver(self)
+        _captureSession.removeObserver(self, forKeyPath: "running", context: &_sessionRunningContext)
+        _hasAddedObservers = false
     }
     
     override public func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
@@ -340,7 +347,11 @@ public extension Notification.Name {
             print("Could not create video device input: \(error)")
             return .configurationFailed
         }
-        guard _captureSession.canAddInput(_videoDeviceInput!) else {
+        guard let videoDeviceInput = _videoDeviceInput else {
+            print("Video device input was nil after creation")
+            return .configurationFailed
+        }
+        guard _captureSession.canAddInput(videoDeviceInput) else {
             print("Could not add video device input to the session")
             return .configurationFailed
         }
@@ -359,7 +370,7 @@ public extension Notification.Name {
         
         _captureSession.beginConfiguration()
         _captureSession.sessionPreset = colorCaptureSessionPreset
-        _captureSession.addInput(_videoDeviceInput!)
+        _captureSession.addInput(videoDeviceInput)
         if !_captureSession.outputs.contains(_videoDataOutput) {
             _captureSession.addOutput(_videoDataOutput)
         }

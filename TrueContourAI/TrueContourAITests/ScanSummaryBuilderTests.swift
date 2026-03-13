@@ -40,8 +40,7 @@ final class ScanSummaryBuilderTests: XCTestCase {
         let metrics = ScanFlowState.ScanSessionMetrics(
             startedAt: Date(timeIntervalSince1970: 100),
             finishedAt: Date(timeIntervalSince1970: 110),
-            durationSeconds: 10,
-            overallConfidence: 0.92
+            durationSeconds: 10
         )
         let report = ScanQualityReport(
             pointCount: 100_000,
@@ -72,7 +71,7 @@ final class ScanSummaryBuilderTests: XCTestCase {
         XCTAssertEqual(summary?.schemaVersion, settingsStore.scanSummarySchemaVersion)
     }
 
-    func testBuildMapsDerivedMeasurementsAndProcessingProfile() {
+    func testBuildMapsDerivedMeasurementsWithoutProcessingProfile() {
         var processing = settingsStore.processingConfig
         processing.outlierSigma = 4.0
         processing.decimateRatio = 1.25
@@ -84,8 +83,7 @@ final class ScanSummaryBuilderTests: XCTestCase {
         let metrics = ScanFlowState.ScanSessionMetrics(
             startedAt: Date(timeIntervalSince1970: 200),
             finishedAt: Date(timeIntervalSince1970: 230),
-            durationSeconds: 30,
-            overallConfidence: 0.81
+            durationSeconds: 30
         )
         let measurement = LocalMeasurementGenerationService.ResultSummary(
             sliceHeightNormalized: 0.5,
@@ -107,17 +105,7 @@ final class ScanSummaryBuilderTests: XCTestCase {
         XCTAssertNotNil(summary)
         XCTAssertEqual(summary?.hadEarVerification, true)
         XCTAssertEqual(summary?.pointCountEstimate, 0)
-        guard let outlierSigma = summary?.processingProfile?.outlierSigma else {
-            return XCTFail("Expected outlierSigma")
-        }
-        guard let decimateRatio = summary?.processingProfile?.decimateRatio else {
-            return XCTFail("Expected decimateRatio")
-        }
-        XCTAssertEqual(outlierSigma, Float(4.0), accuracy: Float(0.0001))
-        XCTAssertEqual(decimateRatio, Float(1.25), accuracy: Float(0.0001))
-        XCTAssertEqual(summary?.processingProfile?.cropBelowNeck, false)
-        XCTAssertEqual(summary?.processingProfile?.meshResolution, 7)
-        XCTAssertEqual(summary?.processingProfile?.meshSmoothness, 5)
+        XCTAssertNil(summary?.processingProfile)
         guard let circumferenceMm = summary?.derivedMeasurements?.circumferenceMm else {
             return XCTFail("Expected circumferenceMm")
         }

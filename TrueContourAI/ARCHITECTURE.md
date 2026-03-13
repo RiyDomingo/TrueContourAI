@@ -4,9 +4,11 @@ This document explains how TrueContourAI is organized and how scan data moves th
 
 ## Architectural Style
 - Programmatic UIKit app.
-- Coordinator-driven flow for scan and preview navigation.
-- Service-oriented persistence/export layer.
+- Root app composition through `AppCoordinator` and `AppEnvironment`.
+- Coordinator-assisted flow for scan start, home actions, and preview presentation.
+- Service-oriented persistence/export layer with internal repository/export helper split inside `ScanService`.
 - Explicit scan lifecycle state via `ScanFlowState`.
+- Transitional architecture: controllers are thinner than before, but Preview and Scan still carry active refactor debt.
 
 ## Top-Level Modules
 - [TrueContourAI/App](./TrueContourAI/App): app lifecycle and dependency wiring.
@@ -17,29 +19,34 @@ This document explains how TrueContourAI is organized and how scan data moves th
 
 ## Feature Ownership
 ### Home
-- `ViewController`: home UI and wiring.
+- `HomeViewController`: home UI and wiring.
 - `HomeViewModel`: recent scans, filter/sort state, and display models.
 - `HomeCoordinator`: routes to scan start, settings, preview entry points.
+- `HomeToastPresenter`: environment-aware toast timing and presentation.
 
 ### Scan
 - `ScanCoordinator`: validates device capability, configures scan VC.
-- `AppScanningViewController`: runtime scan engine adapter over StandardCyborg SDK.
-- `ScanFlowState`: current phase (`idle/scanning/preview/saving`).
+- `AppScanningViewController`: runtime scan engine adapter over StandardCyborg SDK; now owns the manual-finish control surface and no longer relies on synchronous main-thread state reads from camera callbacks.
+- `ScanFlowState`: current phase (`idle/scanning/preview/saving`) plus truthful session timing metrics.
 - `ScanQualityValidator`: quality scoring and export gate advice.
+- `LocalMeasurementGenerationService`: heuristic-only measurement summary generation.
 
 ### Preview
-- `ScanPreviewCoordinator`: post-scan orchestration, meshing state, save/export.
+- `PreviewViewModel`: preview-session state for metrics, quality report, measurement summary, mesh, and ear-verification artifacts.
+- `ScanPreviewCoordinator`: route/orchestration layer for post-scan preview, meshing state, save/export, and preview-session lifecycle guards. This is still the heaviest coordinator in the app and remains transitional.
 - `ScanPreviewCoordinator.ExportResultEvent`: structured success/failure export UI event output.
-- `SaveExportViewStateController`: save button/spinner/toast UI state control.
+- `SaveExportViewStateController`: meshing/save button/status/toast UI state control.
 - `ScanSummaryBuilder`: summary metadata for persisted scans.
 
 ### Settings
-- `SettingsViewController`: settings UI and storage/delete actions.
+- `SettingsViewController`: settings UI and storage/delete actions, with section construction delegated to an internal builder.
   - Sections: `General`, `Export`, `Advanced`, `Storage`.
+  - `Export` now treats GLTF as required for any saved scan the app can reopen in-app.
+  - `Advanced` exposes only quality-gate controls that are actually honored by the app.
 - `SettingsStore`: persisted app preferences.
 
 ### Core
-- `ScanService`: scan folder lifecycle, export artifacts, share items.
+- `ScanService`: stable public facade over scan storage/repository and export-writing helpers.
 - Utilities: localization, design system, view helpers.
 
 ## Runtime Flow
@@ -64,12 +71,19 @@ Failure transitions:
 
 ## Why This Design
 - Separation of concerns:
-  - View controllers focus on UI interactions.
-  - Coordinators own multi-screen flow.
-  - Services own IO/export/serialization.
+  - View controllers still own UIKit composition, but active flows are being pushed toward explicit feature-state ownership.
+  - Coordinators own route orchestration and some remaining flow policy.
+  - Services own IO/export/serialization, with `ScanService` now internally split between storage/repository and export-writing concerns.
 - Testability:
   - Protocol seams around scan engine components.
-  - Deterministic test hooks for quality gating and export paths.
+  - Deterministic environment wiring is centralized through `AppEnvironment`.
+  - Release validation still depends on real build and simulator/device coverage.
+
+## Known Architectural Debt
+- `ScanPreviewCoordinator` is still too large and should be split further into preview-session and export workflow collaborators.
+- `AppScanningViewController` still owns substantial runtime orchestration and HUD behavior in one class.
+- `ScanService` is cleaner internally but still exposes a broad facade.
+- Some tests still rely on hardware/runtime-sensitive flows and remain slower or less deterministic than ideal.
 
 ## Closest Reference Implementation
 The scan engine architecture in TrueContourAI is closer to the old `TrueDepthFusion` pattern than `StandardCyborgExample`, because it uses:

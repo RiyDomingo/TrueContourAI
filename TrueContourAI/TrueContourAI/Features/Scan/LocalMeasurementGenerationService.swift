@@ -28,16 +28,25 @@ final class LocalMeasurementGenerationService {
         self.estimator = estimator
     }
 
+    private func dispatchToMain(_ block: @escaping () -> Void) {
+        if Thread.isMainThread {
+            block()
+        } else {
+            DispatchQueue.main.async(execute: block)
+        }
+    }
+
     func generate(
         from pointCloud: SCPointCloud,
         progress: @escaping (Float) -> Void,
         completion: @escaping (Result<ResultSummary, Error>) -> Void
     ) {
-        progress(0.1)
+        dispatchToMain {
+            progress(0)
+        }
         DispatchQueue.global(qos: .userInitiated).async {
-            progress(0.5)
             guard let measurement = self.estimator(pointCloud) else {
-                DispatchQueue.main.async {
+                self.dispatchToMain {
                     completion(.failure(LocalMeasurementGenerationError.insufficientPointCloudData))
                 }
                 return
@@ -50,10 +59,10 @@ final class LocalMeasurementGenerationService {
                 widthMm: measurement.widthMm,
                 depthMm: measurement.depthMm,
                 confidence: confidence,
-                status: confidence >= 0.75 ? "validated" : "estimated"
+                status: "heuristic"
             )
 
-            DispatchQueue.main.async {
+            self.dispatchToMain {
                 progress(1.0)
                 completion(.success(summary))
             }

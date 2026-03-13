@@ -263,11 +263,8 @@ import UIKit
     // MARK: - CameraManagerDelegate
     
     public func cameraDidOutput(colorBuffer: CVPixelBuffer, depthBuffer: CVPixelBuffer, depthCalibrationData: AVCameraCalibrationData) {
-        var isScanning = false
-        DispatchQueue.main.sync {
-            isScanning = self._state == _State.scanning
-        }
-        
+        let isScanning = _isActiveScanningState()
+
         let pointCloud: SCPointCloud
         
         if isScanning {
@@ -357,6 +354,8 @@ import UIKit
     private lazy var _visualizationCommandQueue = _metalDevice.makeCommandQueue()!
     private lazy var _reconstructionManager = SCReconstructionManager(device: _metalDevice, commandQueue: _algorithmCommandQueue, maxThreadCount: _maxReconstructionThreadCount)
     private let _cameraManager = CameraManager()
+    private let _scanStateLock = NSLock()
+    private var _activeScanningState = false
     private var _latestViewMatrix = matrix_identity_float4x4
     private var _assimilatedFrameIndex = 0
     
@@ -379,11 +378,25 @@ import UIKit
     
     private var _state = _State.default {
         didSet {
+            _setActiveScanningState(_state == _State.scanning)
             _updateUI()
             
             // Prevent auto screen dimming/lock while scanning
             UIApplication.shared.isIdleTimerDisabled = _state == _State.scanning
         }
+    }
+
+    private func _setActiveScanningState(_ isActive: Bool) {
+        _scanStateLock.lock()
+        _activeScanningState = isActive
+        _scanStateLock.unlock()
+    }
+
+    private func _isActiveScanningState() -> Bool {
+        _scanStateLock.lock()
+        let isActive = _activeScanningState
+        _scanStateLock.unlock()
+        return isActive
     }
     
     private func _setUpSubviews() {

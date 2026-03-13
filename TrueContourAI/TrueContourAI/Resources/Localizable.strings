@@ -110,6 +110,8 @@
 "settings.scanDuration.20s" = "20 seconds";
 "settings.showChecklist.title" = "Show pre-scan checklist";
 "settings.showChecklist.subtitle" = "Helps ensure good results";
+"settings.developerMode.title" = "Developer Mode";
+"settings.developerMode.subtitle" = "Enable Fit Model diagnostics and export tools.";
 "settings.export.gltf.title" = "Export GLTF";
 "settings.export.gltf.subtitle" = "scene.gltf";
 "settings.export.obj.title" = "Export OBJ";
@@ -222,6 +224,8 @@
 "scan.preview.meshNotReady.message" = "Wait for meshing to finish, then tap Save again.";
 "scan.preview.exportFailed.title" = "Export Failed";
 "scan.preview.exportFailed.message" = "Could not save this scan.\n\n%@";
+"scan.preview.exportUnavailable.message" = "The scan is not ready to export yet. Wait for meshing to finish and try again.";
+"scan.preview.exportUnavailable.inline" = "Preparing export…";
 "scan.preview.toast.saved" = "Saved to Scans/%@";
 "scan.preview.toast.savedWithFormats" = "Saved %@ as %@";
 "scan.preview.exportFormat.gltf" = "GLTF";
@@ -229,6 +233,7 @@
 "scan.preview.exportFormat.none" = "No file exports";
 "scan.preview.toast.earUnavailable" = "Saved without ear overlay.";
 "scan.preview.meshing" = "Meshing…";
+"scan.preview.meshing.progressFormat" = "Meshing… %.0f%%";
 "scan.preview.meshing.accessibility" = "Meshing in progress";
 "scan.preview.readyToSave" = "Ready to save your scan";
 "scan.preview.exporting" = "Exporting your files…";
@@ -248,6 +253,27 @@
 "scan.preview.accessibility.quality" = "Scan quality %@";
 "scan.preview.accessibility.qualityTip" = "Scan quality tip: %@";
 "scan.preview.measurements.format" = "Est. measurements: C %d mm · W %d mm · D %d mm (%d%%)";
+"scan.preview.fit.check" = "Fit Model Check";
+"scan.preview.fit.export" = "Export Fit Pack";
+"scan.preview.fit.tools" = "Developer Tools";
+"scan.preview.fit.tools.hide" = "Hide Tools";
+"scan.preview.tab.summary" = "Summary";
+"scan.preview.tab.developer" = "Developer";
+"scan.preview.sheet.title" = "Preview Controls";
+"scan.preview.fit.results.title" = "Fit Check Results";
+"scan.preview.fit.results.pending" = "Run Fit Model Check to compute fit metrics.";
+"scan.preview.fit.brow.advanced" = "Advanced: Adjust brow plane";
+"scan.preview.fit.brow.slider" = "Brow plane depth: %d%% from top (20-30%). Use only if brow fit looks off.";
+"scan.preview.fit.results.missingEars" = "Ear points missing. Tap left ear, then right ear on the 3D mesh.";
+"scan.preview.fit.results.format" = "Brow C %d mm · W %d mm · L %d mm · Occipital %d mm · Coverage %d%%";
+"scan.preview.fit.export.failed.title" = "Fit Pack Export Failed";
+"scan.preview.fit.export.failed.message" = "Could not export FitModelPack.\n\n%@";
+"scan.preview.fit.export.success" = "FitModelPack exported: %@";
+"scan.preview.fit.pick.left" = "Tap LEFT ear on the mesh.";
+"scan.preview.fit.pick.right" = "Tap RIGHT ear on the mesh.";
+"scan.preview.fit.pick.failed" = "Could not pick ear point. Tap directly on the mesh surface.";
+"scan.preview.fit.unavailable.title" = "Fit Check Unavailable";
+"scan.preview.fit.unavailable.message" = "Mesh is not ready yet. Wait for meshing to finish.";
 "scan.quality.gate.title" = "Scan needs another pass";
 "scan.quality.gate.message" = "This scan needs a little more coverage before it can be saved.\n\nWhat needs attention: %@\n\nTry this next: %@";
 "scan.quality.advice.improveLighting" = "Lighting is too low. Move to a brighter area and avoid backlighting.";
@@ -290,6 +316,12 @@
 "scanning.prompt.initial" = "Keep your head STILL.\nMove the phone around your head slowly.";
 "scanning.focusHint" = "Tap to focus before scanning";
 "scanning.progress" = "Scanning…";
+"scanning.progress.capturing" = "Capturing";
+"scanning.progress.framesFormat" = "Captured: %d frames";
+"scanning.progress.coverageFormat" = "Coverage: %d%%";
+"scanning.progress.captureFormat" = "Capture progress: %d%% (%d/%d)";
+"scanning.progress.capturePercentFormat" = "Capture progress: %d%%";
+"scanning.progress.timeFormat" = "Captured: %d / %d s";
 "scanning.prompt.1" = "Keep your head STILL.\nMove the phone around your head.";
 "scanning.prompt.2" = "Move SLOWLY.\nIf you see overlap, pause for 1–2 seconds.";
 "scanning.prompt.3" = "Front view → move to LEFT side.\n(Phone moves, head stays still.)";
@@ -297,6 +329,20 @@
 "scanning.prompt.5" = "Continue to RIGHT side.\nMove slowly and smoothly.";
 "scanning.prompt.6" = "Return to FRONT to close the loop.\nThen press Finish.";
 "scanning.autofinish" = "Auto-finish in %ds";
+"scanning.guidance.start" = "Move slowly around your head";
+"scanning.guidance.motion" = "Move slower and keep your head steady";
+"scanning.guidance.poorTracking" = "Tracking is weak. Keep face in view and move slowly";
+"scanning.guidance.goodTracking" = "Great tracking. Continue rotating";
+"scanning.guidance.trackingLost" = "Tracking lost. Pause briefly, then continue";
+"scanning.guidance.short.start" = "Move around your head slowly";
+"scanning.guidance.short.motion" = "Move slower";
+"scanning.guidance.short.poorTracking" = "Keep face in frame";
+"scanning.guidance.short.goodTracking" = "Tracking good";
+"scanning.guidance.short.trackingLost" = "Tracking lost";
+"scanning.guidance.status.good" = "Good";
+"scanning.guidance.status.caution" = "Caution";
+"scanning.guidance.status.lost" = "Lost";
+"scanning.guidance.status.accessibility" = "Scan status %@. %@";
 "scanning.thermal.title" = "iPhone is too warm";
 "scanning.thermal.message" = "Let your device cool down, then try scanning again.";
 
@@ -306,7 +352,7 @@
 "scan.service.writeGLTFFailed" = "Failed to write scene.gltf. Check free storage and try again.";
 "scan.service.writeOBJFailed" = "Failed to write head_mesh.obj\n\n%@";
 "settings.export.minimum.title" = "Select An Export Format";
-"settings.export.minimum.message" = "Keep at least one export format enabled so saved scans can be reopened or shared.";
+"settings.export.minimum.message" = "Keep GLTF export enabled so saved scans can be reopened in the app. OBJ export is optional.";
 
 "ear.service.modelMissing" = "Missing model in bundle: %@.mlmodelc (ensure the .mlmodel is added to your app target and builds into .mlmodelc)";
 "ear.service.cgImageMissing" = "Could not create CGImage from UIImage.";

@@ -1,6 +1,20 @@
 import Foundation
 
 final class HomeViewModel {
+    struct ViewState {
+        let scans: [ScanItem]
+        let totalScanCount: Int
+        let isEmpty: Bool
+        let canViewLast: Bool
+        let sortMode: ScanSortMode
+        let filterMode: ScanFilterMode
+        let trend: HomeTrend?
+
+        var isFilteredEmpty: Bool {
+            isEmpty && totalScanCount > 0 && filterMode == .goodPlus
+        }
+    }
+
     struct ScanQualityBadge {
         enum Tier {
             case high
@@ -44,13 +58,13 @@ final class HomeViewModel {
         let kind: Kind
     }
 
-    private let scanService: ScanService
+    private let scanService: ScanListing
     var onChange: (() -> Void)?
     private var refreshGeneration: Int = 0
 
-    private(set) var scans: [ScanService.ScanItem] = []
+    private(set) var scans: [ScanItem] = []
     private(set) var totalScanCount: Int = 0
-    private var allScans: [ScanService.ScanItem] = []
+    private var allScans: [ScanItem] = []
     private(set) var isEmpty: Bool = true
     private(set) var canViewLast: Bool = false
     private(set) var insightsByFolderPath: [String: ScanInsight] = [:]
@@ -60,7 +74,7 @@ final class HomeViewModel {
     private(set) var sortMode: ScanSortMode = .dateNewest
     private(set) var filterMode: ScanFilterMode = .all
 
-    init(scanService: ScanService) {
+    init(scanService: ScanListing) {
         self.scanService = scanService
     }
 
@@ -105,16 +119,28 @@ final class HomeViewModel {
         onChange?()
     }
 
-    func insight(for item: ScanService.ScanItem) -> ScanInsight? {
+    func insight(for item: ScanItem) -> ScanInsight? {
         insightsByFolderPath[item.folderURL.path]
     }
 
-    func qualityBadge(for item: ScanService.ScanItem) -> ScanQualityBadge? {
+    func qualityBadge(for item: ScanItem) -> ScanQualityBadge? {
         qualityBadgeByFolderPath[item.folderURL.path]
     }
 
-    private func buildSummaries(for items: [ScanService.ScanItem]) -> [String: ScanService.ScanSummary] {
-        var summaries: [String: ScanService.ScanSummary] = [:]
+    func makeViewState() -> ViewState {
+        .init(
+            scans: scans,
+            totalScanCount: totalScanCount,
+            isEmpty: isEmpty,
+            canViewLast: canViewLast,
+            sortMode: sortMode,
+            filterMode: filterMode,
+            trend: trend
+        )
+    }
+
+    private func buildSummaries(for items: [ScanItem]) -> [String: ScanSummary] {
+        var summaries: [String: ScanSummary] = [:]
         summaries.reserveCapacity(items.count)
         for item in items {
             guard let summary = scanService.resolveScanSummary(from: item.folderURL) else { continue }
@@ -124,8 +150,8 @@ final class HomeViewModel {
     }
 
     private func buildInsights(
-        for items: [ScanService.ScanItem],
-        summariesByPath: [String: ScanService.ScanSummary]
+        for items: [ScanItem],
+        summariesByPath: [String: ScanSummary]
     ) -> [String: ScanInsight] {
         var insights: [String: ScanInsight] = [:]
         insights.reserveCapacity(items.count)
@@ -140,8 +166,8 @@ final class HomeViewModel {
     }
 
     private func buildTrend(
-        for items: [ScanService.ScanItem],
-        summariesByPath: [String: ScanService.ScanSummary]
+        for items: [ScanItem],
+        summariesByPath: [String: ScanSummary]
     ) -> HomeTrend? {
         guard items.count >= 2 else { return nil }
         let newest = items[0]
@@ -153,7 +179,7 @@ final class HomeViewModel {
         return ScanInsightFormatter.makeTrend(current: newestSummary, previous: previousSummary)
     }
 
-    private func buildQualityScores(summariesByPath: [String: ScanService.ScanSummary]) -> [String: Float] {
+    private func buildQualityScores(summariesByPath: [String: ScanSummary]) -> [String: Float] {
         var scores: [String: Float] = [:]
         scores.reserveCapacity(summariesByPath.count)
         for (path, summary) in summariesByPath {
@@ -162,7 +188,7 @@ final class HomeViewModel {
         return scores
     }
 
-    private func buildQualityBadges(summariesByPath: [String: ScanService.ScanSummary]) -> [String: ScanQualityBadge] {
+    private func buildQualityBadges(summariesByPath: [String: ScanSummary]) -> [String: ScanQualityBadge] {
         var badges: [String: ScanQualityBadge] = [:]
         badges.reserveCapacity(summariesByPath.count)
         for (path, summary) in summariesByPath {
@@ -173,7 +199,7 @@ final class HomeViewModel {
 
     private func applyPresentation() {
         totalScanCount = allScans.count
-        let filtered: [ScanService.ScanItem]
+        let filtered: [ScanItem]
         switch filterMode {
         case .all:
             filtered = allScans
@@ -202,7 +228,7 @@ final class HomeViewModel {
 }
 
 enum ScanInsightFormatter {
-    static func makeQualityBadge(from summary: ScanService.ScanSummary) -> HomeViewModel.ScanQualityBadge {
+    static func makeQualityBadge(from summary: ScanSummary) -> HomeViewModel.ScanQualityBadge {
         let confidence = normalizedConfidence(summary.overallConfidence)
         if confidence >= 0.8 {
             return .init(tier: .high)
@@ -213,7 +239,7 @@ enum ScanInsightFormatter {
         }
     }
 
-    static func makeInsight(from summary: ScanService.ScanSummary) -> HomeViewModel.ScanInsight? {
+    static func makeInsight(from summary: ScanSummary) -> HomeViewModel.ScanInsight? {
         let confidence = normalizedConfidence(summary.overallConfidence)
         let confidencePercent = Int((confidence * 100).rounded())
         let detail: HomeViewModel.ScanInsight.Detail
@@ -238,8 +264,8 @@ enum ScanInsightFormatter {
     }
 
     static func makeTrend(
-        current: ScanService.ScanSummary,
-        previous: ScanService.ScanSummary
+        current: ScanSummary,
+        previous: ScanSummary
     ) -> HomeViewModel.HomeTrend {
         let confidenceDeltaPercent = Int(((normalizedConfidence(current.overallConfidence) - normalizedConfidence(previous.overallConfidence)) * 100).rounded())
 

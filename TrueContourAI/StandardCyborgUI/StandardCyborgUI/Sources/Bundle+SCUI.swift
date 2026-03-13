@@ -5,6 +5,12 @@ extension Bundle {
     // won't be packaged correctly.
     public static let scuiBundle = Bundle(for: ShutterButton.self)
     
-    public static let scuiResourcesBundle =
-    Bundle(url: Bundle.main.url(forResource: "StandardCyborgUI_StandardCyborgUI", withExtension: "bundle", subdirectory: nil)!)!
+    public static let scuiResourcesBundle: Bundle = {
+        if let resourcesURL = Bundle.main.url(forResource: "StandardCyborgUI_StandardCyborgUI", withExtension: "bundle", subdirectory: nil),
+           let resourcesBundle = Bundle(url: resourcesURL) {
+            return resourcesBundle
+        }
+
+        return scuiBundle
+    }()
 }

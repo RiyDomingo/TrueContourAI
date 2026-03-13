@@ -61,7 +61,8 @@ final class ScanCoordinatorTests: XCTestCase {
             settingsStore: settingsStore,
             deviceCapabilityProvider: { true },
             scanningViewControllerFactory: { scanVC },
-            simulatorProvider: { false }
+            simulatorProvider: { false },
+            cameraAuthorizationStatusProvider: { .authorized }
         )
 
         let flowState = ScanFlowState()

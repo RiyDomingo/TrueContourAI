@@ -63,10 +63,7 @@ final class StartScanCardView: UIView {
     }
 
     private func configure() {
-        backgroundColor = DesignSystem.Colors.surface
-        layer.cornerRadius = DesignSystem.CornerRadius.large
-        layer.borderWidth = 1
-        layer.borderColor = DesignSystem.Colors.border.cgColor
+        DesignSystem.applyCardSurface(self, floating: false)
 
         addSubview(titleLabel)
         addSubview(subtitleLabel)
@@ -75,26 +72,26 @@ final class StartScanCardView: UIView {
         addSubview(howToScanButton)
 
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: 16),
-            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: DesignSystem.Spacing.m),
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: DesignSystem.Spacing.m),
+            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -DesignSystem.Spacing.m),
 
-            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
-            subtitleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            subtitleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
+            subtitleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: DesignSystem.Spacing.m),
+            subtitleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -DesignSystem.Spacing.m),
 
-            prepSummaryLabel.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 10),
-            prepSummaryLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            prepSummaryLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            prepSummaryLabel.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: DesignSystem.Spacing.s),
+            prepSummaryLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: DesignSystem.Spacing.m),
+            prepSummaryLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -DesignSystem.Spacing.m),
 
-            startScanButton.topAnchor.constraint(equalTo: prepSummaryLabel.bottomAnchor, constant: 14),
-            startScanButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            startScanButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            startScanButton.topAnchor.constraint(equalTo: prepSummaryLabel.bottomAnchor, constant: DesignSystem.Spacing.m),
+            startScanButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: DesignSystem.Spacing.m),
+            startScanButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -DesignSystem.Spacing.m),
 
-            howToScanButton.topAnchor.constraint(equalTo: startScanButton.bottomAnchor, constant: 10),
-            howToScanButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            howToScanButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            howToScanButton.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -14)
+            howToScanButton.topAnchor.constraint(equalTo: startScanButton.bottomAnchor, constant: DesignSystem.Spacing.s),
+            howToScanButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: DesignSystem.Spacing.m),
+            howToScanButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -DesignSystem.Spacing.m),
+            howToScanButton.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -DesignSystem.Spacing.m)
         ])
     }
 }

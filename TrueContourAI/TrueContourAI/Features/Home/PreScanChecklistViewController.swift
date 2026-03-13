@@ -84,10 +84,12 @@ final class PreScanChecklistViewController: UIViewController {
         close.accessibilityIdentifier = "preScanChecklistCloseButton"
 
         view.addSubview(close)
-        view.addSubview(titleLabel)
-        view.addSubview(subtitleLabel)
-        view.addSubview(stack)
-        view.addSubview(startButton)
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentView)
+        contentView.addSubview(titleLabel)
+        contentView.addSubview(subtitleLabel)
+        contentView.addSubview(stack)
+        contentView.addSubview(startButton)
 
         stack.addArrangedSubview(rowLighting)
         stack.addArrangedSubview(rowHair)
@@ -124,22 +126,33 @@ final class PreScanChecklistViewController: UIViewController {
             close.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
             close.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
 
-            titleLabel.topAnchor.constraint(equalTo: close.bottomAnchor, constant: 10),
-            titleLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 18),
-            titleLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -18),
+            scrollView.topAnchor.constraint(equalTo: close.bottomAnchor, constant: 8),
+            scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+
+            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
+
+            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
+            titleLabel.leadingAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.leadingAnchor, constant: 18),
+            titleLabel.trailingAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.trailingAnchor, constant: -18),
 
             subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
             subtitleLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             subtitleLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
 
             stack.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 14),
-            stack.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 18),
-            stack.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -18),
+            stack.leadingAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.leadingAnchor, constant: 18),
+            stack.trailingAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.trailingAnchor, constant: -18),
 
             startButton.topAnchor.constraint(equalTo: stack.bottomAnchor, constant: 16),
-            startButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 18),
-            startButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -18),
-            startButton.bottomAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -18)
+            startButton.leadingAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.leadingAnchor, constant: 18),
+            startButton.trailingAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.trailingAnchor, constant: -18),
+            startButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -18)
         ])
     }
 
@@ -184,10 +197,7 @@ private final class ChecklistToggleRow: UIView {
 
     private func configure(text: String) {
         translatesAutoresizingMaskIntoConstraints = false
-        backgroundColor = DesignSystem.Colors.surface
-        layer.cornerRadius = DesignSystem.CornerRadius.medium
-        layer.borderWidth = 1
-        layer.borderColor = DesignSystem.Colors.border.cgColor
+        DesignSystem.applyCardSurface(self, floating: false)
 
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = text
@@ -216,3 +226,16 @@ private final class ChecklistToggleRow: UIView {
         ])
     }
 }
+    private let scrollView: UIScrollView = {
+        let s = UIScrollView()
+        s.translatesAutoresizingMaskIntoConstraints = false
+        s.alwaysBounceVertical = true
+        s.showsVerticalScrollIndicator = true
+        return s
+    }()
+
+    private let contentView: UIView = {
+        let v = UIView()
+        v.translatesAutoresizingMaskIntoConstraints = false
+        return v
+    }()

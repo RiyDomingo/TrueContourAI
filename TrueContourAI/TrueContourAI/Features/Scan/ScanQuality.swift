@@ -8,7 +8,7 @@ struct ScanQuality {
     let tip: String
 }
 
-enum ScanRecoveryAdvice {
+enum ScanRecoveryAdvice: Equatable {
     case improveLighting
     case reduceMovement
     case adjustDistance
@@ -28,7 +28,7 @@ enum ScanRecoveryAdvice {
     }
 }
 
-struct ScanQualityReport {
+struct ScanQualityReport: Equatable {
     let pointCount: Int
     let validPointCount: Int
     let widthMeters: Float

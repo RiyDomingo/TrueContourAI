@@ -2,19 +2,31 @@ import UIKit
 import StandardCyborgUI
 
 final class SaveExportViewStateController: SaveExportUIStateAdapting {
-    private weak var previewVC: ScenePreviewViewController?
-    private weak var meshingStatusLabel: UILabel?
-    private weak var meshingActivityIndicator: UIActivityIndicatorView?
-    private weak var savingOverlayView: UIView?
+    private enum SaveState: String {
+        case idle
+        case meshing
+        case ready
+        case invoked
+        case saving
+        case completed
+        case failed
+        case blocked
+    }
 
-    func configure(
-        previewVC: ScenePreviewViewController,
-        meshingStatusLabel: UILabel?,
-        meshingActivityIndicator: UIActivityIndicatorView?
-    ) {
+    private weak var previewVC: ScenePreviewViewController?
+    private weak var savingOverlayView: UIView?
+    private weak var meshingStatusContainer: UIView?
+    private weak var meshingStatusLabel: UILabel?
+    private weak var meshingSpinner: UIActivityIndicatorView?
+    private weak var saveStateAccessibilityView: UIView?
+
+    private var currentSaveState: SaveState = .idle
+
+    func configure(previewVC: ScenePreviewViewController) {
         self.previewVC = previewVC
-        self.meshingStatusLabel = meshingStatusLabel
-        self.meshingActivityIndicator = meshingActivityIndicator
+        ensureMeshingStatusView(in: previewVC)
+        ensureSaveStateAccessibilityView(in: previewVC)
+        updateSaveState(.idle)
     }
 
     func setButtonsEnabled(_ isEnabled: Bool) {
@@ -26,14 +38,36 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
     }
 
     func setMeshingStatusText(_ text: String) {
-        meshingStatusLabel?.text = text
+        guard let meshingStatusLabel, let meshingStatusContainer else { return }
+        meshingStatusLabel.text = text
+        meshingStatusContainer.isHidden = text.isEmpty
+        if text == L("scan.preview.readyToSave") {
+            markSaveReady()
+        } else if text == L("scan.preview.exporting") {
+            updateSaveState(.saving)
+        } else if !text.isEmpty, meshingSpinner?.isAnimating == true {
+            updateSaveState(.meshing)
+        }
+        updateSaveStateAccessibilityText(text)
     }
 
     func setMeshingSpinnerActive(_ isActive: Bool) {
+        guard let meshingSpinner, let meshingStatusContainer else { return }
         if isActive {
-            meshingActivityIndicator?.startAnimating()
+            meshingSpinner.startAnimating()
+            if currentSaveState != .saving {
+                updateSaveState(.meshing)
+            }
         } else {
-            meshingActivityIndicator?.stopAnimating()
+            meshingSpinner.stopAnimating()
+        }
+        meshingStatusContainer.isHidden = !isActive && (meshingStatusLabel?.text?.isEmpty ?? true)
+        if !isActive, currentSaveState != .saving {
+            if meshingStatusLabel?.text == L("scan.preview.readyToSave") {
+                updateSaveState(.ready)
+            } else if meshingStatusLabel?.text?.isEmpty ?? true {
+                updateSaveState(.idle)
+            }
         }
     }
 
@@ -49,7 +83,7 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
 
         let card = UIView()
         card.translatesAutoresizingMaskIntoConstraints = false
-        card.backgroundColor = DesignSystem.Colors.overlay
+        card.backgroundColor = DesignSystem.Colors.overlayCard
         card.layer.cornerRadius = DesignSystem.CornerRadius.large
         card.layer.masksToBounds = true
 
@@ -107,7 +141,28 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
         ])
 
         savingOverlayView = dimView
+        updateSaveState(.saving)
         UIView.animate(withDuration: 0.2) { dimView.alpha = 1 }
+    }
+
+    func markSaveReady() {
+        updateSaveState(.ready)
+    }
+
+    func markSaveInvoked() {
+        updateSaveState(.invoked)
+    }
+
+    func markSaveBlocked() {
+        updateSaveState(.blocked)
+    }
+
+    func markSaveCompleted() {
+        updateSaveState(.completed)
+    }
+
+    func markSaveFailed() {
+        updateSaveState(.failed)
     }
 
     func hideSavingToast() {
@@ -118,13 +173,107 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
             view.removeFromSuperview()
         }
         savingOverlayView = nil
+        if currentSaveState == .completed {
+            return
+        } else if currentSaveState == .failed || currentSaveState == .blocked {
+            updateSaveState(.ready)
+        } else if meshingSpinner?.isAnimating == true {
+            updateSaveState(.meshing)
+        } else if meshingStatusLabel?.text == L("scan.preview.readyToSave") {
+            updateSaveState(.ready)
+        } else if !(meshingStatusLabel?.text?.isEmpty ?? true) {
+            updateSaveState(.ready)
+        } else {
+            updateSaveState(.idle)
+        }
     }
 
     func clear() {
         previewVC = nil
-        meshingStatusLabel = nil
-        meshingActivityIndicator = nil
         savingOverlayView?.removeFromSuperview()
         savingOverlayView = nil
+        meshingStatusContainer?.removeFromSuperview()
+        meshingStatusContainer = nil
+        meshingStatusLabel = nil
+        meshingSpinner = nil
+        saveStateAccessibilityView?.removeFromSuperview()
+        saveStateAccessibilityView = nil
+        currentSaveState = .idle
+    }
+
+    private func ensureMeshingStatusView(in previewVC: ScenePreviewViewController) {
+        guard meshingStatusContainer == nil else { return }
+
+        let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        container.backgroundColor = DesignSystem.Colors.overlayCard
+        container.layer.cornerRadius = DesignSystem.CornerRadius.medium
+        container.layer.masksToBounds = true
+        container.isHidden = true
+
+        let spinner = UIActivityIndicatorView(style: .medium)
+        spinner.translatesAutoresizingMaskIntoConstraints = false
+        spinner.color = DesignSystem.Colors.textPrimary
+
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.font = DesignSystem.Typography.caption()
+        label.textColor = DesignSystem.Colors.textPrimary
+        label.adjustsFontForContentSizeCategory = true
+        label.numberOfLines = 2
+        label.textAlignment = .left
+
+        container.addSubview(spinner)
+        container.addSubview(label)
+        previewVC.view.addSubview(container)
+
+        NSLayoutConstraint.activate([
+            container.leadingAnchor.constraint(equalTo: previewVC.view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            container.trailingAnchor.constraint(lessThanOrEqualTo: previewVC.view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            container.bottomAnchor.constraint(equalTo: previewVC.view.safeAreaLayoutGuide.bottomAnchor, constant: -92),
+
+            spinner.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
+            spinner.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+
+            label.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
+            label.leadingAnchor.constraint(equalTo: spinner.trailingAnchor, constant: 10),
+            label.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            label.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -10)
+        ])
+
+        meshingStatusContainer = container
+        meshingStatusLabel = label
+        meshingSpinner = spinner
+    }
+
+    private func ensureSaveStateAccessibilityView(in previewVC: ScenePreviewViewController) {
+        guard saveStateAccessibilityView == nil else { return }
+
+        let stateView = UIView()
+        stateView.translatesAutoresizingMaskIntoConstraints = false
+        stateView.isAccessibilityElement = true
+        stateView.accessibilityIdentifier = "previewSaveStateView"
+        stateView.accessibilityLabel = "Preview save state"
+        stateView.accessibilityValue = SaveState.idle.rawValue
+
+        previewVC.view.addSubview(stateView)
+        NSLayoutConstraint.activate([
+            stateView.topAnchor.constraint(equalTo: previewVC.view.topAnchor),
+            stateView.leadingAnchor.constraint(equalTo: previewVC.view.leadingAnchor),
+            stateView.widthAnchor.constraint(equalToConstant: 1),
+            stateView.heightAnchor.constraint(equalToConstant: 1)
+        ])
+
+        saveStateAccessibilityView = stateView
+    }
+
+    private func updateSaveState(_ state: SaveState) {
+        currentSaveState = state
+        saveStateAccessibilityView?.accessibilityValue = state.rawValue
+    }
+
+    private func updateSaveStateAccessibilityText(_ text: String) {
+        guard let saveStateAccessibilityView else { return }
+        saveStateAccessibilityView.accessibilityHint = text
     }
 }

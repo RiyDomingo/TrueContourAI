@@ -152,11 +152,7 @@ private final class HowToRow: UIView {
 
     private func configure(title: String, body: String, iconName: String?) {
         translatesAutoresizingMaskIntoConstraints = false
-
-        backgroundColor = DesignSystem.Colors.surface
-        layer.cornerRadius = DesignSystem.CornerRadius.medium
-        layer.borderWidth = 1
-        layer.borderColor = DesignSystem.Colors.border.cgColor
+        DesignSystem.applyCardSurface(self, floating: false)
 
         iconView.translatesAutoresizingMaskIntoConstraints = false
         if let iconName, let image = UIImage(systemName: iconName) {
