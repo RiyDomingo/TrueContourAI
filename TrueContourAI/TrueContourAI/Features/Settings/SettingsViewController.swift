@@ -108,8 +108,9 @@ final class SettingsViewController: UITableViewController {
             toggle.addTarget(self, action: #selector(toggleChanged(_:)), for: .valueChanged)
             toggle.tag = (indexPath.section * 100) + indexPath.row
             cell.accessoryView = toggle
-            cell.selectionStyle = .none
-            cell.accessibilityTraits = .none
+            cell.selectionStyle = .default
+            cell.accessibilityTraits = .button
+            cell.accessibilityValue = toggle.isOn ? "1" : "0"
         case .option:
             cell.accessoryView = nil
             cell.accessoryType = .disclosureIndicator
@@ -136,6 +137,19 @@ final class SettingsViewController: UITableViewController {
         tableView.deselectRow(at: indexPath, animated: true)
         let row = sections[indexPath.section].rows[indexPath.row]
         switch row.kind {
+        case .toggle(let isOn, let setOn, let toggleIdentifier):
+            let nextValue = !isOn()
+            if toggleIdentifier == "settings.exportGLTF",
+               nextValue == false {
+                feedbackController.showError(
+                    title: L("settings.export.minimum.title"),
+                    message: L("settings.export.minimum.message")
+                )
+                return
+            }
+            setOn(nextValue)
+            buildSections()
+            tableView.reloadRows(at: [indexPath], with: .none)
         case .action(let handler):
             handler()
         case .option(let options, let selected, let setSelected):

@@ -422,12 +422,24 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
     }
 
     private func waitForCondition(timeout: TimeInterval, condition: @escaping () -> Bool) -> Bool {
-        let end = Date().addingTimeInterval(timeout)
-        while Date() < end {
-            if condition() { return true }
-            Thread.sleep(forTimeInterval: Self.pollInterval)
+        if condition() { return true }
+
+        let expectation = XCTestExpectation(description: "waitForCondition")
+        let deadline = Date().addingTimeInterval(timeout)
+
+        let timer = Timer(timeInterval: Self.pollInterval, repeats: true) { timer in
+            if condition() {
+                expectation.fulfill()
+                timer.invalidate()
+            } else if Date() >= deadline {
+                timer.invalidate()
+            }
         }
-        return condition()
+
+        RunLoop.main.add(timer, forMode: .common)
+
+        let result = XCTWaiter.wait(for: [expectation], timeout: timeout)
+        return result == .completed || condition()
     }
 
     private func scanEntryDebugState(app: XCUIApplication, shutter: XCUIElement) -> String {
@@ -446,12 +458,7 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
     }
 
     private func pollUntil(timeout: TimeInterval, poll: TimeInterval = 0.5, condition: @escaping () -> Bool) -> Bool {
-        let end = Date().addingTimeInterval(timeout)
-        while Date() < end {
-            if condition() { return true }
-            Thread.sleep(forTimeInterval: poll)
-        }
-        return condition()
+        return waitForCondition(timeout: timeout, condition: condition)
     }
 
     private func revealElementIfNeeded(_ element: XCUIElement, in app: XCUIApplication, maxScrolls: Int = 4) {

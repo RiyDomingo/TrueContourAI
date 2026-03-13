@@ -62,13 +62,10 @@ final class TrueContourAIUITests: XCTestCase {
 
         let toggle = app.switches["settings.qualityGateEnabled"]
         XCTAssertTrue(waitForElement(toggle))
-        scrollElementIntoView(toggle, in: app.tables.firstMatch)
         let initial = (toggle.value as? String) ?? "0"
-        if toggle.isHittable {
-            toggle.tap()
-        } else {
-            app.cells.containing(.switch, identifier: "settings.qualityGateEnabled").firstMatch.tap()
-        }
+        tapSettingsRow(identifier: "settings.qualityGateEnabled", named: "Enable quality gate", in: app)
+        let expected = initial == "1" ? "0" : "1"
+        XCTAssertTrue(waitForCondition(timeout: 2.0, poll: 0.3) { ((toggle.value as? String) ?? "0") == expected })
         let updated = (toggle.value as? String) ?? "0"
         XCTAssertNotEqual(initial, updated)
     }
