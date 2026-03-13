@@ -28,7 +28,10 @@ final class PreviewActionController: NSObject {
 
     @objc
     func saveFromPreviewTapped() {
-        guard let previewVC = presentationController.currentScenePreviewViewController else { return }
+        guard let previewVC = presentationController.resolvedScenePreviewViewController else {
+            exportController.handleInvocationFailure(reason: L("scan.preview.exportUnavailable.message"))
+            return
+        }
         let previewSessionID = previewSessionController.sessionID
         DesignSystem.hapticPrimary()
         exportController.performSave(

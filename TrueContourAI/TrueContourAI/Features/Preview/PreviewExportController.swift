@@ -102,6 +102,32 @@ final class PreviewExportController {
         )
     }
 
+    func handleInvocationFailure(reason: String) {
+        guard let presentingVC = presentationController.currentPreviewedViewController
+            ?? presentationController.resolvedScenePreviewViewController else {
+            Log.export.error("Save invocation failed without preview presenter: \(reason, privacy: .public)")
+            return
+        }
+
+        saveExportViewState.markSaveFailed()
+        presentingVC.present(
+            alertPresenter.makeAlert(
+                title: L("scan.preview.exportFailed.title"),
+                message: String(format: L("scan.preview.exportFailed.message"), reason),
+                identifier: "exportInvocationAlert"
+            ),
+            animated: true
+        )
+        scanFlowState.setPhase(.preview)
+        previewViewModel.setPhase(.preview)
+        saveExportViewState.setButtonsEnabled(true)
+        saveExportViewState.setMeshingStatusText(L("scan.preview.readyToSave"))
+        saveExportViewState.setMeshingSpinnerActive(false)
+        saveExportViewState.hideSavingToast()
+        onExportResult?(.failure(message: reason))
+        Log.export.error("Save invocation failed: \(reason, privacy: .public)")
+    }
+
     func exportFormatSummary() -> String {
         exportWorkflow.exportFormatSummary()
     }

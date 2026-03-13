@@ -224,6 +224,8 @@
 "scan.preview.meshNotReady.message" = "Wait for meshing to finish, then tap Save again.";
 "scan.preview.exportFailed.title" = "Export Failed";
 "scan.preview.exportFailed.message" = "Could not save this scan.\n\n%@";
+"scan.preview.exportUnavailable.message" = "The scan is not ready to export yet. Wait for meshing to finish and try again.";
+"scan.preview.exportUnavailable.inline" = "Preparing export…";
 "scan.preview.toast.saved" = "Saved to Scans/%@";
 "scan.preview.toast.savedWithFormats" = "Saved %@ as %@";
 "scan.preview.exportFormat.gltf" = "GLTF";

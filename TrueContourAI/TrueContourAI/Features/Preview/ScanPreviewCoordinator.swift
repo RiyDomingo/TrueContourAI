@@ -22,6 +22,9 @@ protocol SaveExportUIStateAdapting {
         previewVC: ScenePreviewViewController
     )
     func setButtonsEnabled(_ isEnabled: Bool)
+    func markSaveReady()
+    func markSaveInvoked()
+    func markSaveBlocked()
     func setMeshingStatusText(_ text: String)
     func setMeshingSpinnerActive(_ isActive: Bool)
     func showSavingToast()
@@ -98,10 +101,12 @@ final class ScanPreviewCoordinator {
             pointCloud: pointCloud,
             meshTexturing: meshTexturing,
             sessionMetrics: sessionMetrics,
-            closeTarget: components.actionController,
-            closeAction: #selector(PreviewActionController.dismissPreviewTapped),
-            saveTarget: components.actionController,
-            saveAction: #selector(PreviewActionController.saveFromPreviewTapped)
+            onClose: { [weak actionController = components.actionController] in
+                actionController?.dismissPreviewTapped()
+            },
+            onSave: { [weak actionController = components.actionController] in
+                actionController?.saveFromPreviewTapped()
+            }
         )
     }
 

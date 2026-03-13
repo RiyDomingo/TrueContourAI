@@ -53,7 +53,7 @@ final class PreviewInteractionController: NSObject {
     }
 
     @objc func verifyEarTapped() {
-        guard let previewVC = presentationController.currentScenePreviewViewController else { return }
+        guard let previewVC = presentationController.resolvedScenePreviewViewController else { return }
         guard !isVerifyingEar else { return }
         let previewSessionID = previewSessionController.sessionID
         guard let svc = earServiceProvider() else {
@@ -79,7 +79,7 @@ final class PreviewInteractionController: NSObject {
 
     @objc func fitModelCheckTapped() {
         fitWorkflow.runFitModelCheck(
-            scenePreviewVC: presentationController.currentScenePreviewViewController,
+            scenePreviewVC: presentationController.resolvedScenePreviewViewController,
             currentPreviewedFolderURL: previewSessionController.currentPreviewedFolderURL,
             showHaptic: true,
             allowEarPickPrompt: true,
@@ -90,7 +90,7 @@ final class PreviewInteractionController: NSObject {
 
     @objc func exportFitPackTapped() {
         fitWorkflow.exportFitPack(
-            scenePreviewVC: presentationController.currentScenePreviewViewController,
+            scenePreviewVC: presentationController.resolvedScenePreviewViewController,
             currentPreviewedFolderURL: previewSessionController.currentPreviewedFolderURL
         )
     }
@@ -107,7 +107,7 @@ final class PreviewInteractionController: NSObject {
         fitWorkflow.updateBrowPlaneDropFromTopFraction(slider.value)
         if previewViewModel.latestFitMeshData != nil {
             fitWorkflow.runFitModelCheck(
-                scenePreviewVC: presentationController.currentScenePreviewViewController,
+                scenePreviewVC: presentationController.resolvedScenePreviewViewController,
                 currentPreviewedFolderURL: previewSessionController.currentPreviewedFolderURL,
                 showHaptic: false,
                 allowEarPickPrompt: false,
@@ -120,7 +120,7 @@ final class PreviewInteractionController: NSObject {
     @objc func handleFitEarPickTap(_ gesture: UITapGestureRecognizer) {
         fitWorkflow.handleFitEarPickTap(
             gesture,
-            scenePreviewVC: presentationController.currentScenePreviewViewController,
+            scenePreviewVC: presentationController.resolvedScenePreviewViewController,
             currentPreviewedFolderURL: previewSessionController.currentPreviewedFolderURL
         )
     }
@@ -165,7 +165,7 @@ final class PreviewInteractionController: NSObject {
 
     func cleanup() {
         isVerifyingEar = false
-        fitWorkflow.cleanup(scenePreviewVC: presentationController.currentScenePreviewViewController)
+        fitWorkflow.cleanup(scenePreviewVC: presentationController.resolvedScenePreviewViewController)
         previewOverlayUI.clear()
     }
 }

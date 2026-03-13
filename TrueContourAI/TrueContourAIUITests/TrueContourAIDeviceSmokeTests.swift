@@ -217,26 +217,40 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         let finishButton = try waitForFinishButton(app: app)
         finishButton.tap()
         let saveButton = app.buttons["previewSaveButton"]
+        let saveStateView = app.otherElements["previewSaveStateView"]
         XCTAssertTrue(waitForExists(saveButton, timeout: 30), "Expected preview save button to appear")
+        XCTAssertTrue(waitForExists(saveStateView, timeout: 10), "Expected preview save state view to appear")
+        XCTAssertTrue(waitForValue(saveStateView, equals: "ready", timeout: 30), "Expected preview save state to become ready before save")
+        XCTAssertTrue(waitForEnabled(saveButton, timeout: 30), "Expected preview save button to become enabled before save")
         revealElementIfNeeded(saveButton, in: app)
         XCTAssertTrue(waitForHittable(saveButton, timeout: 4), "Expected preview save button to become hittable")
         saveButton.tap()
 
         let homeStart = app.buttons["startScanButton"]
+        let previewClose = app.buttons["previewCloseButton"]
+        let enteredSaveFlow = waitForCondition(timeout: 6.0) {
+            let state = saveStateView.exists ? (saveStateView.value as? String ?? "") : ""
+            return ["invoked", "saving", "completed", "blocked", "failed"].contains(state)
+                || !saveButton.exists
+                || !previewClose.exists
+        }
+        let saveStateDescription: String = saveStateView.exists ? String(describing: saveStateView.value) : "missing"
+        XCTAssertTrue(enteredSaveFlow, "Expected preview save state to advance after tapping save. state=\(saveStateDescription)")
+
         let didReturnHome = waitForCondition(timeout: 30.0) {
             homeStart.exists
-                && homeStart.isHittable
+                && !previewClose.exists
                 && !saveButton.exists
         }
         if !didReturnHome {
             let exportAlert = app.alerts["exportFailedAlert"]
             let qualityAlert = app.alerts["qualityGateAlert"]
             let meshAlert = app.alerts["meshNotReadyAlert"]
-            let previewClose = app.buttons["previewCloseButton"]
             let debugState = [
                 "exportAlert=\(exportAlert.exists ? exportAlert.label : "none")",
                 "qualityAlert=\(qualityAlert.exists ? qualityAlert.label : "none")",
                 "meshAlert=\(meshAlert.exists ? meshAlert.label : "none")",
+                "saveState=\(String(describing: saveStateView.value ?? "nil"))",
                 "homeStart.exists=\(homeStart.exists ? 1 : 0)",
                 "homeStart.hittable=\(homeStart.isHittable ? 1 : 0)",
                 "saveButton.exists=\(saveButton.exists ? 1 : 0)",
@@ -247,6 +261,7 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
             ].joined(separator: ",")
             XCTFail("Expected to return to the home screen after save. \(debugState)")
         }
+        XCTAssertTrue(waitForHittable(homeStart, timeout: 6.0), "Expected Home start button to become hittable after preview dismissal")
         let diagnosticsLabel = app.staticTexts["deviceSmokeDiagnosticsLabel"]
         XCTAssertTrue(waitForExists(diagnosticsLabel, timeout: 12.0), "Expected visible device diagnostics label after save")
         let hasExpectedDiagnostics = waitForCondition(timeout: 12.0) {

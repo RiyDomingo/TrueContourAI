@@ -2,12 +2,23 @@ import UIKit
 import StandardCyborgUI
 
 final class PreviewPresentationController {
-    private weak var scenePreviewVC: ScenePreviewViewController?
+    private var scenePreviewVC: ScenePreviewViewController?
     private var previewContainerVC: PreviewContainerViewController?
-    private weak var activePreviewVC: UIViewController?
+    private var activePreviewVC: UIViewController?
+    private var buttonActionTarget: PreviewButtonActionTarget?
 
     var currentScenePreviewViewController: ScenePreviewViewController? {
         scenePreviewVC
+    }
+
+    var resolvedScenePreviewViewController: ScenePreviewViewController? {
+        if let scenePreviewVC {
+            return scenePreviewVC
+        }
+        if let previewVC = previewContainerVC?.contentViewController as? ScenePreviewViewController {
+            return previewVC
+        }
+        return activePreviewVC as? ScenePreviewViewController
     }
 
     var currentPreviewContainerViewController: PreviewContainerViewController? {
@@ -23,7 +34,7 @@ final class PreviewPresentationController {
     }
 
     var currentShareSourceView: UIView? {
-        scenePreviewVC?.rightButton
+        resolvedScenePreviewViewController?.rightButton
     }
 
     func setExistingPreview(viewController: UIViewController, scenePreviewViewController: ScenePreviewViewController?) {
@@ -38,6 +49,7 @@ final class PreviewPresentationController {
         scenePreviewVC = context.previewVC
         previewContainerVC = context.container
         activePreviewVC = context.container
+        buttonActionTarget = context.buttonActionTarget
     }
 
     func bringOverlayToFront() {
@@ -48,6 +60,7 @@ final class PreviewPresentationController {
         activePreviewVC = nil
         previewContainerVC = nil
         scenePreviewVC = nil
+        buttonActionTarget = nil
     }
 
     func dismissActivePreview(animated: Bool, completion: (() -> Void)? = nil) {

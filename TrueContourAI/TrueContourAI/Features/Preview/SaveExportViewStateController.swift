@@ -6,9 +6,11 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
         case idle
         case meshing
         case ready
+        case invoked
         case saving
         case completed
         case failed
+        case blocked
     }
 
     private weak var previewVC: ScenePreviewViewController?
@@ -40,7 +42,7 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
         meshingStatusLabel.text = text
         meshingStatusContainer.isHidden = text.isEmpty
         if text == L("scan.preview.readyToSave") {
-            updateSaveState(.ready)
+            markSaveReady()
         } else if text == L("scan.preview.exporting") {
             updateSaveState(.saving)
         } else if !text.isEmpty, meshingSpinner?.isAnimating == true {
@@ -143,6 +145,18 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
         UIView.animate(withDuration: 0.2) { dimView.alpha = 1 }
     }
 
+    func markSaveReady() {
+        updateSaveState(.ready)
+    }
+
+    func markSaveInvoked() {
+        updateSaveState(.invoked)
+    }
+
+    func markSaveBlocked() {
+        updateSaveState(.blocked)
+    }
+
     func markSaveCompleted() {
         updateSaveState(.completed)
     }
@@ -161,7 +175,7 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
         savingOverlayView = nil
         if currentSaveState == .completed {
             return
-        } else if currentSaveState == .failed {
+        } else if currentSaveState == .failed || currentSaveState == .blocked {
             updateSaveState(.ready)
         } else if meshingSpinner?.isAnimating == true {
             updateSaveState(.meshing)

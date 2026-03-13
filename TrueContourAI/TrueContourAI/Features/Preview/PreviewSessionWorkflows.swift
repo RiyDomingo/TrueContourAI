@@ -39,8 +39,8 @@ final class PreviewPresentationWorkflow {
         vc.sceneView.backgroundColor = DesignSystem.Colors.background
 
         buttonConfigurator.configureButtons(for: vc, mode: .existingScan)
-        vc.leftButton.addTarget(closeTarget, action: onClose, for: .touchUpInside)
-        vc.rightButton.addTarget(shareTarget, action: onShare, for: .touchUpInside)
+        bind(button: vc.leftButton, to: closeTarget, action: onClose)
+        bind(button: vc.rightButton, to: shareTarget, action: onShare)
         return vc
     }
 
@@ -58,8 +58,8 @@ final class PreviewPresentationWorkflow {
         DesignSystem.applyButton(shareButton, title: L("common.share"), style: .secondary, size: .regular)
         closeButton.accessibilityIdentifier = "previewCloseButton"
         shareButton.accessibilityIdentifier = "previewShareButton"
-        closeButton.addTarget(target, action: onClose, for: .touchUpInside)
-        shareButton.addTarget(target, action: onShare, for: .touchUpInside)
+        bind(button: closeButton, to: target, action: onClose)
+        bind(button: shareButton, to: target, action: onShare)
 
         let stack = UIStackView(arrangedSubviews: [closeButton, shareButton])
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -82,9 +82,7 @@ final class PreviewPresentationWorkflow {
     func makePostScanPreview(
         pointCloud: SCPointCloud,
         meshTexturing: SCMeshTexturing,
-        target: Any,
-        onClose: Selector,
-        onSave: Selector
+        actionTarget: PreviewButtonActionTarget
     ) -> ScenePreviewViewController {
         let vc = ScenePreviewViewController(
             pointCloud: pointCloud,
@@ -96,8 +94,8 @@ final class PreviewPresentationWorkflow {
 
         previewOverlayUI.clear()
         buttonConfigurator.configureButtons(for: vc, mode: .newScan)
-        vc.leftButton.addTarget(target, action: onClose, for: .touchUpInside)
-        vc.rightButton.addTarget(target, action: onSave, for: .touchUpInside)
+        bind(button: vc.leftButton, to: actionTarget, action: #selector(PreviewButtonActionTarget.leftTapped))
+        bind(button: vc.rightButton, to: actionTarget, action: #selector(PreviewButtonActionTarget.rightTapped))
         vc.leftButton.accessibilityIdentifier = "previewCloseButton"
         vc.rightButton.accessibilityIdentifier = "previewSaveButton"
         vc.rightButton.isEnabled = false
@@ -105,6 +103,11 @@ final class PreviewPresentationWorkflow {
         saveExportViewState.configure(previewVC: vc)
         return vc
     }
+
+    private func bind(button: UIButton, to target: Any, action: Selector) {
+        button.addTarget(target, action: action, for: .touchUpInside)
+    }
+
 }
 
 final class PreviewOverlayWorkflow {
@@ -238,6 +241,30 @@ final class PreviewPostScanWorkflow {
 struct PreviewPostScanPresentationContext {
     let previewVC: ScenePreviewViewController
     let container: PreviewContainerViewController
+    let buttonActionTarget: PreviewButtonActionTarget
+}
+
+final class PreviewButtonActionTarget: NSObject {
+    private let onLeftTap: () -> Void
+    private let onRightTap: () -> Void
+
+    init(
+        onLeftTap: @escaping () -> Void,
+        onRightTap: @escaping () -> Void
+    ) {
+        self.onLeftTap = onLeftTap
+        self.onRightTap = onRightTap
+    }
+
+    @objc
+    func leftTapped() {
+        onLeftTap()
+    }
+
+    @objc
+    func rightTapped() {
+        onRightTap()
+    }
 }
 
 final class PreviewPostScanPresentationWorkflow {
@@ -267,20 +294,21 @@ final class PreviewPostScanPresentationWorkflow {
         pointCloud: SCPointCloud,
         meshTexturing: SCMeshTexturing,
         previewSessionID: UUID,
-        target: Any,
-        onClose: Selector,
-        onSave: Selector,
+        onCloseHandler: @escaping () -> Void,
+        onSaveHandler: @escaping () -> Void,
         isCurrentPreviewSession: @escaping (UUID) -> Bool,
         onMeshReady: @escaping (SCMesh) -> Void
     ) -> PreviewPostScanPresentationContext {
         postScanWorkflow.preparePreviewState(pointCloud: pointCloud)
+        let actionTarget = PreviewButtonActionTarget(
+            onLeftTap: onCloseHandler,
+            onRightTap: onSaveHandler
+        )
 
         let previewVC = presentationWorkflow.makePostScanPreview(
             pointCloud: pointCloud,
             meshTexturing: meshTexturing,
-            target: target,
-            onClose: onClose,
-            onSave: onSave
+            actionTarget: actionTarget
         )
         meshingWorkflow.startTimeout(in: previewVC, sessionID: previewSessionID, isCurrentPreviewSession: isCurrentPreviewSession)
         meshingWorkflow.configureCallbacks(
@@ -311,7 +339,8 @@ final class PreviewPostScanPresentationWorkflow {
 
         return PreviewPostScanPresentationContext(
             previewVC: previewVC,
-            container: container
+            container: container,
+            buttonActionTarget: actionTarget
         )
     }
 }
@@ -572,6 +601,18 @@ struct PreviewExportWorkflow {
         )
     }
 
+    func canBuildExportContext(
+        previewVC: ScenePreviewViewController,
+        previewViewModel: PreviewViewModel,
+        earServiceUnavailable: Bool
+    ) -> Bool {
+        makeExportContext(
+            previewVC: previewVC,
+            previewViewModel: previewViewModel,
+            earServiceUnavailable: earServiceUnavailable
+        ) != nil
+    }
+
     func exportFormatSummary() -> String {
         var formats: [String] = []
         if settingsStore.exportGLTF { formats.append(L("scan.preview.exportFormat.gltf")) }
@@ -611,11 +652,13 @@ final class PreviewSaveWorkflow {
         onFailure: @escaping (String) -> Void,
         onSuccess: @escaping (URL, PreviewExportContext) -> Void
     ) {
+        saveExportViewState.markSaveInvoked()
         let precheck = exportWorkflow.savePrecheck(
             qualityReport: previewViewModel.qualityReport,
             meshAvailable: previewViewModel.meshForExport != nil
         )
         if precheck == .gltfExportRequired {
+            saveExportViewState.markSaveBlocked()
             previewVC.present(
                 alertPresenter.makeAlert(
                     title: L("settings.export.minimum.title"),
@@ -629,6 +672,7 @@ final class PreviewSaveWorkflow {
         }
 
         if case .qualityGateBlocked(let qualityReport) = precheck {
+            saveExportViewState.markSaveBlocked()
             previewVC.present(
                 alertPresenter.makeAlert(
                     title: L("scan.quality.gate.title"),
@@ -654,6 +698,7 @@ final class PreviewSaveWorkflow {
         Log.export.info("User requested export")
 
         guard precheck != .meshNotReady else {
+            saveExportViewState.markSaveBlocked()
             previewVC.present(
                 alertPresenter.makeAlert(
                     title: L("scan.preview.meshNotReady.title"),
@@ -672,6 +717,16 @@ final class PreviewSaveWorkflow {
             previewViewModel: previewViewModel,
             earServiceUnavailable: earServiceUnavailable
         ) else {
+            saveExportViewState.markSaveBlocked()
+            previewVC.present(
+                alertPresenter.makeAlert(
+                    title: L("scan.preview.exportFailed.title"),
+                    message: String(format: L("scan.preview.exportFailed.message"), L("scan.preview.exportUnavailable.message")),
+                    identifier: "exportUnavailableAlert"
+                ),
+                animated: true
+            )
+            saveExportViewState.markSaveFailed()
             resetToPreviewReadyState()
             Log.export.error("Export blocked: export context unavailable")
             return
@@ -707,6 +762,7 @@ final class PreviewSaveWorkflow {
     private func resetToPreviewReadyState() {
         scanFlowState.setPhase(.preview)
         previewViewModel.setPhase(.preview)
+        saveExportViewState.markSaveReady()
         saveExportViewState.setButtonsEnabled(true)
         saveExportViewState.setMeshingStatusText(L("scan.preview.readyToSave"))
         saveExportViewState.setMeshingSpinnerActive(false)
@@ -1263,14 +1319,22 @@ final class PreviewMeshingWorkflow {
             DispatchQueue.main.async {
                 guard let self, isCurrentPreviewSession(previewSessionID) else { return }
                 self.previewViewModel.setMeshingActive(false)
-                previewVC?.rightButton.isEnabled = true
-                previewVC?.rightButton.alpha = 1.0
-                self.saveExportViewState.setMeshingStatusText(L("scan.preview.readyToSave"))
+                onMeshReady(mesh)
+                let canExportNow = previewVC?.scScene != nil && self.previewViewModel.meshForExport != nil
+                previewVC?.rightButton.isEnabled = canExportNow
+                previewVC?.rightButton.alpha = canExportNow ? 1.0 : 0.6
+                if canExportNow {
+                    self.saveExportViewState.markSaveReady()
+                    self.saveExportViewState.setMeshingStatusText(L("scan.preview.readyToSave"))
+                    self.previewOverlayUI.setMeshingStatus(L("scan.preview.readyToSave"), percent: nil, spinning: false)
+                } else {
+                    self.saveExportViewState.markSaveFailed()
+                    self.saveExportViewState.setMeshingStatusText(L("scan.preview.exportUnavailable.inline"))
+                    self.previewOverlayUI.setMeshingStatus(L("scan.preview.exportUnavailable.inline"), percent: nil, spinning: false)
+                }
                 self.saveExportViewState.setMeshingSpinnerActive(false)
-                self.previewOverlayUI.setMeshingStatus(L("scan.preview.readyToSave"), percent: nil, spinning: false)
                 self.previewOverlayUI.setFitToolsAvailable(true)
                 self.cancelTimeout()
-                onMeshReady(mesh)
                 Log.scan.info("Mesh ready for export")
             }
         }

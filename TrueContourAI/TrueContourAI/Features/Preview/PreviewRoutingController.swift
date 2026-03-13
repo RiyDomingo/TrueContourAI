@@ -78,10 +78,8 @@ final class PreviewRoutingController {
         pointCloud: SCPointCloud,
         meshTexturing: SCMeshTexturing,
         sessionMetrics: ScanFlowState.ScanSessionMetrics?,
-        closeTarget: AnyObject,
-        closeAction: Selector,
-        saveTarget: AnyObject,
-        saveAction: Selector
+        onClose: @escaping () -> Void,
+        onSave: @escaping () -> Void
     ) {
         guard let presenter else { return }
         let previewSessionID = previewSessionController.beginPreviewSession(sessionMetrics: sessionMetrics)
@@ -93,9 +91,8 @@ final class PreviewRoutingController {
             pointCloud: pointCloud,
             meshTexturing: meshTexturing,
             previewSessionID: previewSessionID,
-            target: closeTarget,
-            onClose: closeAction,
-            onSave: saveAction,
+            onCloseHandler: onClose,
+            onSaveHandler: onSave,
             isCurrentPreviewSession: { [weak self] sessionID in
                 guard let self else { return false }
                 return self.previewSessionController.isCurrentSession(sessionID)
@@ -104,8 +101,6 @@ final class PreviewRoutingController {
                 self?.previewViewModel.setMeshForExport(mesh)
             }
         )
-        // Save target is currently the same target object as close target in the coordinator path.
-        _ = saveTarget
         presentationController.setPostScanPreview(context: context)
     }
 }
