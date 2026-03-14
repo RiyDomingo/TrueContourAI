@@ -89,6 +89,11 @@ final class ScanExporterService: ScanExporting {
                 try? png.write(to: url, options: [.atomic])
             }
 
+            if let png = artifacts.earCropOverlay.pngData() {
+                let url = folderURL.appendingPathComponent("ear_crop_overlay.png")
+                try? png.write(to: url, options: [.atomic])
+            }
+
             do {
                 let jsonURL = folderURL.appendingPathComponent("ear_landmarks.json")
                 let jsonData = try JSONEncoder().encode(artifacts.earResult)

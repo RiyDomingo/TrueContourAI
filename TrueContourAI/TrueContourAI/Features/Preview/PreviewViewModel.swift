@@ -24,6 +24,7 @@ final class PreviewViewModel {
     private(set) var verifiedEarImage: UIImage?
     private(set) var verifiedEarResult: EarLandmarksResult?
     private(set) var verifiedEarOverlay: UIImage?
+    private(set) var verifiedEarCropOverlay: UIImage?
     private(set) var latestFitCheckResult: FitModelCheckResult?
     private(set) var latestFitMeshData: FitModelPackService.MeshData?
     private(set) var manualEarLeftMeters: SIMD3<Float>?
@@ -152,10 +153,11 @@ final class PreviewViewModel {
         self.phase = phase
     }
 
-    func setVerifiedEar(image: UIImage, result: EarLandmarksResult, overlay: UIImage) {
+    func setVerifiedEar(image: UIImage, result: EarLandmarksResult, overlay: UIImage, cropOverlay: UIImage) {
         verifiedEarImage = image
         verifiedEarResult = result
         verifiedEarOverlay = overlay
+        verifiedEarCropOverlay = cropOverlay
     }
 
     func evaluateScanQuality(report: ScanQualityReport) -> ScanQuality {
@@ -203,6 +205,7 @@ final class PreviewViewModel {
         verifiedEarImage = nil
         verifiedEarResult = nil
         verifiedEarOverlay = nil
+        verifiedEarCropOverlay = nil
     }
 
     func clearPreviewArtifacts() {

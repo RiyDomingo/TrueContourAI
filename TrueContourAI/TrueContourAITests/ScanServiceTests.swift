@@ -322,12 +322,14 @@ final class ScanServiceTests: XCTestCase {
             landmarks: [.init(x: 0.1, y: 0.2)],
             usedLeftEarMirroringHeuristic: false
         )
-        let artifacts = ScanEarArtifacts(earImage: image, earResult: result, earOverlay: overlay)
+        let cropOverlay = makeDummyImage(color: .yellow)
+        let artifacts = ScanEarArtifacts(earImage: image, earResult: result, earOverlay: overlay, earCropOverlay: cropOverlay)
 
         exporter._writeEarArtifactsForTest(folderURL: folder, artifacts: artifacts)
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("ear_view.png").path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("thumbnail_ear_overlay.png").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("ear_crop_overlay.png").path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("ear_landmarks.json").path))
     }
 

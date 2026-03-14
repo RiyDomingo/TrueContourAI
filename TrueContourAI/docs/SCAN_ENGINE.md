@@ -61,6 +61,11 @@ TrueContourAI scan runtime is built on StandardCyborg components and most closel
 
 These seams allow deterministic unit tests of cancel/finish/error lifecycle without live hardware runtime coupling.
 
+## Ear Verification Note
+Ear verification recovery work, coordinate contracts, and device-debug workflow are documented in:
+
+- [docs/EAR_LANDMARKING_RECOVERY.md](./EAR_LANDMARKING_RECOVERY.md)
+
 ## Quality Gate Behavior
 Quality is evaluated from point cloud properties:
 - valid points

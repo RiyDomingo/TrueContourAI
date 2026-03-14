@@ -111,6 +111,7 @@ struct StoredScanEarArtifacts {
     let earImage: UIImage
     let earResult: EarLandmarksResult
     let earOverlay: UIImage
+    let earCropOverlay: UIImage
 }
 
 enum StoredScanExportResult {
