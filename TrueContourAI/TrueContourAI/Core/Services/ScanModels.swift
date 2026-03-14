@@ -114,6 +114,12 @@ struct StoredScanEarArtifacts {
     let earCropOverlay: UIImage
 }
 
+struct ScanPreviewInput {
+    let pointCloud: SCPointCloud
+    let meshTexturing: SCMeshTexturing
+    let earVerificationImage: UIImage?
+}
+
 enum StoredScanExportResult {
     case success(folderURL: URL)
     case failure(String)

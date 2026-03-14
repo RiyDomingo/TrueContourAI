@@ -166,12 +166,37 @@ That input currently appears:
 
 This may be acceptable for bbox detection but still too degraded for reliable anatomical landmark placement.
 
-If the overlay fix does not fully correct placement on device, the next recovery step should be:
+## Capture-Faithful Verification Source
 
-1. keep bbox detection unchanged
-2. keep current preview/export UX unchanged
-3. route landmark inference to a more capture-faithful image source
-4. compare landmark outputs from preview snapshot vs capture-faithful input on the same scans
+Ear verification now prefers a preserved camera color frame captured during active scanning.
+
+Source precedence:
+
+1. preserved scan capture frame
+2. preview snapshot fallback
+
+Artifacts now have distinct roles:
+
+1. `ear_view.png`
+- Actual image used for ear verification
+- This should be the preserved camera frame when available
+
+2. `thumbnail_ear_overlay.png`
+- Full-scene context overlay shown in preview flows
+- Still useful for scene-level context, not primary anatomical QA
+
+3. `ear_crop_overlay.png`
+- Primary anatomical QA artifact
+- Derived from the actual model-input crop
+
+4. `ear-landmark-debug.json`
+- Records:
+  - verification source type
+  - whether preview fallback was used
+  - verification image dimensions
+  - crop/debug/render metadata
+
+If anatomical placement is still weak after the capture-faithful source migration, the next issue is likely model quality or model-domain mismatch rather than overlay math.
 
 ## Validation Checklist
 

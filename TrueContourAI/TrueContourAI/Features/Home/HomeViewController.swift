@@ -290,14 +290,20 @@ extension HomeViewController: AppScanningViewControllerDelegate {
 
     func appScanningViewController(
         _ controller: AppScanningViewController,
-        didScan pointCloud: SCPointCloud,
-        meshTexturing: SCMeshTexturing
+        didCompleteScan payload: ScanPreviewInput
     ) {
         scanFlowController.handleScanCompleted(
             from: controller,
-            pointCloud: pointCloud,
-            meshTexturing: meshTexturing
+            payload: payload
         )
+    }
+
+    func appScanningViewController(
+        _ controller: AppScanningViewController,
+        didScan pointCloud: SCPointCloud,
+        meshTexturing: SCMeshTexturing
+    ) {
+        // Legacy callback retained for compatibility during scan preview payload migration.
     }
 
 }

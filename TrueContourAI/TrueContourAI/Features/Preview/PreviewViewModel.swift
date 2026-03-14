@@ -8,6 +8,11 @@ final class PreviewSessionState {
 }
 
 final class PreviewViewModel {
+    enum EarVerificationImageSource: String {
+        case captureFrame
+        case previewSnapshotFallback
+    }
+
     enum Phase {
         case idle
         case preview
@@ -25,6 +30,8 @@ final class PreviewViewModel {
     private(set) var verifiedEarResult: EarLandmarksResult?
     private(set) var verifiedEarOverlay: UIImage?
     private(set) var verifiedEarCropOverlay: UIImage?
+    private(set) var preservedEarVerificationImage: UIImage?
+    private(set) var earVerificationImageSource: EarVerificationImageSource?
     private(set) var latestFitCheckResult: FitModelCheckResult?
     private(set) var latestFitMeshData: FitModelPackService.MeshData?
     private(set) var manualEarLeftMeters: SIMD3<Float>?
@@ -66,10 +73,15 @@ final class PreviewViewModel {
     }
 
     @discardableResult
-    func beginPreviewSession(sessionMetrics: ScanFlowState.ScanSessionMetrics?) -> UUID {
+    func beginPreviewSession(
+        sessionMetrics: ScanFlowState.ScanSessionMetrics?,
+        preservedEarVerificationImage: UIImage? = nil
+    ) -> UUID {
         let sessionID = UUID()
         self.sessionID = sessionID
         self.sessionMetrics = sessionMetrics
+        self.preservedEarVerificationImage = preservedEarVerificationImage
+        self.earVerificationImageSource = nil
         qualityReport = nil
         measurementSummary = nil
         meshForExport = nil
@@ -160,6 +172,10 @@ final class PreviewViewModel {
         verifiedEarCropOverlay = cropOverlay
     }
 
+    func setEarVerificationImageSource(_ source: EarVerificationImageSource) {
+        earVerificationImageSource = source
+    }
+
     func evaluateScanQuality(report: ScanQualityReport) -> ScanQuality {
         if report.isExportRecommended && report.qualityScore >= 0.8 {
             return .init(
@@ -206,6 +222,7 @@ final class PreviewViewModel {
         verifiedEarResult = nil
         verifiedEarOverlay = nil
         verifiedEarCropOverlay = nil
+        earVerificationImageSource = nil
     }
 
     func clearPreviewArtifacts() {
@@ -215,6 +232,7 @@ final class PreviewViewModel {
         measurementSummary = nil
         meshForExport = nil
         scanQuality = nil
+        preservedEarVerificationImage = nil
         clearVerification()
         resetFitState()
         phase = .idle

@@ -92,14 +92,12 @@ final class ScanPreviewCoordinator {
 
     func presentPreviewAfterScan(
         from scanningVC: UIViewController,
-        pointCloud: SCPointCloud,
-        meshTexturing: SCMeshTexturing,
+        payload: ScanPreviewInput,
         sessionMetrics: ScanFlowState.ScanSessionMetrics?
     ) {
         components.routingController.presentPreviewAfterScan(
             from: scanningVC,
-            pointCloud: pointCloud,
-            meshTexturing: meshTexturing,
+            payload: payload,
             sessionMetrics: sessionMetrics,
             onClose: { [weak actionController = components.actionController] in
                 actionController?.dismissPreviewTapped()

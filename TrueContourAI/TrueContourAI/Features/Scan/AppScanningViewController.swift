@@ -128,6 +128,10 @@ protocol AppScanningViewControllerDelegate: AnyObject {
     func appScanningViewControllerDidCancel(_ controller: AppScanningViewController)
     func appScanningViewController(
         _ controller: AppScanningViewController,
+        didCompleteScan payload: ScanPreviewInput
+    )
+    func appScanningViewController(
+        _ controller: AppScanningViewController,
         didScan pointCloud: SCPointCloud,
         meshTexturing: SCMeshTexturing
     )
@@ -260,6 +264,8 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         label.accessibilityIdentifier = "scanDeveloperDiagnosticsLabel"
         return label
     }()
+
+    private var latestEarVerificationImage: UIImage?
 
     private let autoFinishLabel: UILabel = {
         let label = UILabel()
@@ -566,6 +572,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         sessionController.beginScanning()
         assimilatedFrameIndex = 0
         consecutiveFailedCount = 0
+        latestEarVerificationImage = nil
         meshTexturing.reset()
         captureProgressView.progress = 0
         hudController.resetForNewCapture()
@@ -600,6 +607,13 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
                 guard let self else { return }
                 let pointCloud = self.reconstructionManager.buildPointCloud()
                 self.reconstructionManager.reset()
+                let payload = ScanPreviewInput(
+                    pointCloud: pointCloud,
+                    meshTexturing: self.meshTexturing,
+                    earVerificationImage: self.latestEarVerificationImage
+                )
+                self.latestEarVerificationImage = nil
+                self.delegate?.appScanningViewController(self, didCompleteScan: payload)
                 self.delegate?.appScanningViewController(
                     self,
                     didScan: pointCloud,
@@ -698,6 +712,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         )
 
         if isScanning {
+            captureEarVerificationImage(from: colorBuffer)
             reconstructionManager.accumulate(depthBuffer: depthBuffer, colorBuffer: colorBuffer, calibrationData: depthCalibrationData)
         }
     }
@@ -871,6 +886,12 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         autoFinishLabel.text = String(format: L("scanning.autofinish"), sessionController.autoFinishRemaining)
     }
 
+    private func captureEarVerificationImage(from colorBuffer: CVPixelBuffer) {
+        if currentHUDState == .critical { return }
+        guard let image = Self.uiImage(from: colorBuffer) else { return }
+        latestEarVerificationImage = image
+    }
+
     @objc private func focusOnTap(_ gesture: UITapGestureRecognizer) {
         guard state != .scanning else { return }
         let location = gesture.location(in: metalContainerView)
@@ -893,6 +914,26 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
         guard presentedViewController == nil else { return }
         present(alert, animated: true)
+    }
+
+    private static func uiImage(from pixelBuffer: CVPixelBuffer) -> UIImage? {
+        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+        let context = CIContext()
+        guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return nil }
+        return normalizedUIImage(UIImage(cgImage: cgImage))
+    }
+
+    private static func normalizedUIImage(_ image: UIImage) -> UIImage {
+        if image.imageOrientation == .up {
+            return image
+        }
+
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: image.size, format: format)
+        return renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: image.size))
+        }
     }
 
     private func installVolumeShutterIfNeeded() {

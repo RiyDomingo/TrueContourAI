@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 final class PreviewSessionController {
     let viewModel: PreviewViewModel
@@ -18,8 +19,14 @@ final class PreviewSessionController {
     }
 
     @discardableResult
-    func beginPreviewSession(sessionMetrics: ScanFlowState.ScanSessionMetrics?) -> UUID {
-        viewModel.beginPreviewSession(sessionMetrics: sessionMetrics)
+    func beginPreviewSession(
+        sessionMetrics: ScanFlowState.ScanSessionMetrics?,
+        preservedEarVerificationImage: UIImage? = nil
+    ) -> UUID {
+        viewModel.beginPreviewSession(
+            sessionMetrics: sessionMetrics,
+            preservedEarVerificationImage: preservedEarVerificationImage
+        )
     }
 
     func invalidateSession() {

@@ -1081,7 +1081,10 @@ final class PreviewEarVerificationWorkflow {
         isCurrentSession: @escaping () -> Bool,
         onComplete: @escaping () -> Void
     ) {
-        let snapshot = previewVC.renderedSceneImage ?? previewVC.sceneView.snapshot()
+        let previewSnapshot = previewVC.renderedSceneImage ?? previewVC.sceneView.snapshot()
+        let verificationImage = previewViewModel.preservedEarVerificationImage ?? previewSnapshot
+        let verificationSource: PreviewViewModel.EarVerificationImageSource =
+            previewViewModel.preservedEarVerificationImage != nil ? .captureFrame : .previewSnapshotFallback
         let mlStart = CFAbsoluteTimeGetCurrent()
         beginVerificationUI()
 
@@ -1094,7 +1097,11 @@ final class PreviewEarVerificationWorkflow {
             }
 
             do {
-                guard let verification = try service.verify(in: snapshot) else {
+                guard let verification = try service.verify(
+                    in: verificationImage,
+                    verificationSource: verificationSource.rawValue,
+                    usedPreviewSnapshotFallback: verificationSource == .previewSnapshotFallback
+                ) else {
                     DispatchQueue.main.async {
                         guard isCurrentSession() else { return }
                         self.finishVerificationUI(title: L("scan.preview.verify"))
@@ -1112,8 +1119,9 @@ final class PreviewEarVerificationWorkflow {
 
                 DispatchQueue.main.async {
                     guard isCurrentSession() else { return }
+                    self.previewViewModel.setEarVerificationImageSource(verificationSource)
                     self.previewViewModel.setVerifiedEar(
-                        image: snapshot,
+                        image: verification.verificationImage,
                         result: verification.result,
                         overlay: verification.fullSceneOverlay,
                         cropOverlay: verification.cropOverlay

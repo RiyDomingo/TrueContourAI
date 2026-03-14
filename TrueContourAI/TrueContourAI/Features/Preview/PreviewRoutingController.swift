@@ -75,21 +75,23 @@ final class PreviewRoutingController {
 
     func presentPreviewAfterScan(
         from scanningVC: UIViewController,
-        pointCloud: SCPointCloud,
-        meshTexturing: SCMeshTexturing,
+        payload: ScanPreviewInput,
         sessionMetrics: ScanFlowState.ScanSessionMetrics?,
         onClose: @escaping () -> Void,
         onSave: @escaping () -> Void
     ) {
         guard let presenter else { return }
-        let previewSessionID = previewSessionController.beginPreviewSession(sessionMetrics: sessionMetrics)
+        let previewSessionID = previewSessionController.beginPreviewSession(
+            sessionMetrics: sessionMetrics,
+            preservedEarVerificationImage: payload.earVerificationImage
+        )
 
         Log.scan.info("Presenting preview after scan")
         let context = postScanPresentationWorkflow.makePresentationContext(
             scanningVC: scanningVC,
             presenter: presenter,
-            pointCloud: pointCloud,
-            meshTexturing: meshTexturing,
+            pointCloud: payload.pointCloud,
+            meshTexturing: payload.meshTexturing,
             previewSessionID: previewSessionID,
             onCloseHandler: onClose,
             onSaveHandler: onSave,

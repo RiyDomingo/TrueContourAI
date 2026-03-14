@@ -18,6 +18,7 @@ struct EarLandmarksResult: Codable {
 final class EarLandmarksService {
     struct VerificationArtifacts {
         let result: EarLandmarksResult
+        let verificationImage: UIImage
         let fullSceneOverlay: UIImage
         let cropOverlay: UIImage
     }
@@ -93,6 +94,10 @@ final class EarLandmarksService {
         let renderedBoundingBox: RectPayload?
         let overlayFlipX: Bool?
         let landmarkRenderOrigin: String?
+        let verificationSource: String?
+        let usedPreviewSnapshotFallback: Bool?
+        let verificationImageWidth: Double?
+        let verificationImageHeight: Double?
         let validationFailure: String?
         let outputPath: String
     }
@@ -144,8 +149,14 @@ final class EarLandmarksService {
     func verify(in uiImage: UIImage,
                 drawBoundingBox: Bool = true,
                 flipY: Bool = true,
-                flipX: Bool = false) throws -> VerificationArtifacts? {
-        guard let detectionArtifacts = try detectArtifacts(in: uiImage) else { return nil }
+                flipX: Bool = false,
+                verificationSource: String? = nil,
+                usedPreviewSnapshotFallback: Bool? = nil) throws -> VerificationArtifacts? {
+        guard let detectionArtifacts = try detectArtifacts(
+            in: uiImage,
+            verificationSource: verificationSource,
+            usedPreviewSnapshotFallback: usedPreviewSnapshotFallback
+        ) else { return nil }
         let fullSceneOverlay = renderOverlay(
             on: uiImage,
             result: detectionArtifacts.result,
@@ -165,12 +176,17 @@ final class EarLandmarksService {
 
         return VerificationArtifacts(
             result: detectionArtifacts.result,
+            verificationImage: uiImage,
             fullSceneOverlay: fullSceneOverlay,
             cropOverlay: cropOverlay
         )
     }
 
-    private func detectArtifacts(in uiImage: UIImage) throws -> DetectionArtifacts? {
+    private func detectArtifacts(
+        in uiImage: UIImage,
+        verificationSource: String? = nil,
+        usedPreviewSnapshotFallback: Bool? = nil
+    ) throws -> DetectionArtifacts? {
         guard let cgImage = uiImage.normalizedCGImage() else { throw ServiceError.cgImageMissing }
 
         let ciImage = CIImage(cgImage: cgImage)
@@ -242,6 +258,10 @@ final class EarLandmarksService {
                 renderedBoundingBox: nil,
                 overlayFlipX: nil,
                 landmarkRenderOrigin: nil,
+                verificationSource: verificationSource,
+                usedPreviewSnapshotFallback: usedPreviewSnapshotFallback,
+                verificationImageWidth: Double(uiImage.size.width),
+                verificationImageHeight: Double(uiImage.size.height),
                 validationFailure: debugValidationFailure?.rawValue,
                 outputPath: Self.debugArtifactsDirectory().path
             )
@@ -329,6 +349,10 @@ final class EarLandmarksService {
                 renderedBoundingBox: layout.boundingBoxRect.map(Self.payloadRect(from:)),
                 overlayFlipX: flipX,
                 landmarkRenderOrigin: "topLeft",
+                verificationSource: nil,
+                usedPreviewSnapshotFallback: nil,
+                verificationImageWidth: Double(baseImage.size.width),
+                verificationImageHeight: Double(baseImage.size.height),
                 validationFailure: nil,
                 outputPath: Self.debugArtifactsDirectory().path
             )
@@ -737,6 +761,10 @@ final class EarLandmarksService {
             renderedBoundingBox: layout.boundingBoxRect.map(Self.payloadRect(from:)),
             overlayFlipX: flipX,
             landmarkRenderOrigin: "topLeft",
+            verificationSource: payload.verificationSource,
+            usedPreviewSnapshotFallback: payload.usedPreviewSnapshotFallback,
+            verificationImageWidth: payload.verificationImageWidth,
+            verificationImageHeight: payload.verificationImageHeight,
             validationFailure: payload.validationFailure,
             outputPath: payload.outputPath
         )
