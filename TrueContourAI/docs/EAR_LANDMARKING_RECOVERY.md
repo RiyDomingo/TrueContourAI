@@ -17,6 +17,7 @@ Relevant files:
 - [TrueContourAI/Features/Scan/EarLandmarksService.swift](../TrueContourAI/Features/Scan/EarLandmarksService.swift)
 - [TrueContourAI/Features/Preview/PreviewOverlayUIController.swift](../TrueContourAI/Features/Preview/PreviewOverlayUIController.swift)
 - [StandardCyborgFusion/Sources/StandardCyborgFusion/EarLandmarking/EarLandmarkingAnalysis.m](../StandardCyborgFusion/Sources/StandardCyborgFusion/EarLandmarking/EarLandmarkingAnalysis.m)
+- [STANDARD_CYBORG_EAR_ML_REFERENCE.md](./STANDARD_CYBORG_EAR_ML_REFERENCE.md)
 
 ## Coordinate Contracts
 
@@ -172,8 +173,17 @@ Ear verification now prefers a preserved camera color frame captured during acti
 
 Source precedence:
 
-1. preserved scan capture frame
-2. preview snapshot fallback
+1. best scored preserved scan capture frame
+2. latest preserved capture frame fallback
+3. preview snapshot fallback
+
+The current scan-time frame scorer is deterministic and heuristic-based:
+
+1. reject lost/failed tracking frames
+2. reject very early scan frames before reconstruction has stabilized
+3. prefer stronger side-profile view matrices over frontal frames
+4. boost stable capture states and penalize warning states
+5. break score ties by preferring the newer frame
 
 Artifacts now have distinct roles:
 
@@ -194,6 +204,8 @@ Artifacts now have distinct roles:
   - verification source type
   - whether preview fallback was used
   - verification image dimensions
+  - selected frame index
+  - selected frame score breakdown
   - crop/debug/render metadata
 
 If anatomical placement is still weak after the capture-faithful source migration, the next issue is likely model quality or model-domain mismatch rather than overlay math.

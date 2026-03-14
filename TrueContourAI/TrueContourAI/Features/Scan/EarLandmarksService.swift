@@ -98,6 +98,12 @@ final class EarLandmarksService {
         let usedPreviewSnapshotFallback: Bool?
         let verificationImageWidth: Double?
         let verificationImageHeight: Double?
+        let selectedFrameIndex: Int?
+        let selectedFrameScore: Double?
+        let selectedProfileScore: Double?
+        let selectedTrackingScore: Double?
+        let selectedGuidanceScore: Double?
+        let selectedTimingScore: Double?
         let validationFailure: String?
         let outputPath: String
     }
@@ -151,11 +157,13 @@ final class EarLandmarksService {
                 flipY: Bool = true,
                 flipX: Bool = false,
                 verificationSource: String? = nil,
-                usedPreviewSnapshotFallback: Bool? = nil) throws -> VerificationArtifacts? {
+                usedPreviewSnapshotFallback: Bool? = nil,
+                selectionMetadata: EarVerificationSelectionMetadata? = nil) throws -> VerificationArtifacts? {
         guard let detectionArtifacts = try detectArtifacts(
             in: uiImage,
             verificationSource: verificationSource,
-            usedPreviewSnapshotFallback: usedPreviewSnapshotFallback
+            usedPreviewSnapshotFallback: usedPreviewSnapshotFallback,
+            selectionMetadata: selectionMetadata
         ) else { return nil }
         let fullSceneOverlay = renderOverlay(
             on: uiImage,
@@ -185,7 +193,8 @@ final class EarLandmarksService {
     private func detectArtifacts(
         in uiImage: UIImage,
         verificationSource: String? = nil,
-        usedPreviewSnapshotFallback: Bool? = nil
+        usedPreviewSnapshotFallback: Bool? = nil,
+        selectionMetadata: EarVerificationSelectionMetadata? = nil
     ) throws -> DetectionArtifacts? {
         guard let cgImage = uiImage.normalizedCGImage() else { throw ServiceError.cgImageMissing }
 
@@ -262,6 +271,12 @@ final class EarLandmarksService {
                 usedPreviewSnapshotFallback: usedPreviewSnapshotFallback,
                 verificationImageWidth: Double(uiImage.size.width),
                 verificationImageHeight: Double(uiImage.size.height),
+                selectedFrameIndex: selectionMetadata?.frameIndex,
+                selectedFrameScore: selectionMetadata?.totalScore,
+                selectedProfileScore: selectionMetadata?.profileScore,
+                selectedTrackingScore: selectionMetadata?.trackingScore,
+                selectedGuidanceScore: selectionMetadata?.guidanceScore,
+                selectedTimingScore: selectionMetadata?.timingScore,
                 validationFailure: debugValidationFailure?.rawValue,
                 outputPath: Self.debugArtifactsDirectory().path
             )
@@ -353,6 +368,12 @@ final class EarLandmarksService {
                 usedPreviewSnapshotFallback: nil,
                 verificationImageWidth: Double(baseImage.size.width),
                 verificationImageHeight: Double(baseImage.size.height),
+                selectedFrameIndex: nil,
+                selectedFrameScore: nil,
+                selectedProfileScore: nil,
+                selectedTrackingScore: nil,
+                selectedGuidanceScore: nil,
+                selectedTimingScore: nil,
                 validationFailure: nil,
                 outputPath: Self.debugArtifactsDirectory().path
             )
@@ -765,6 +786,12 @@ final class EarLandmarksService {
             usedPreviewSnapshotFallback: payload.usedPreviewSnapshotFallback,
             verificationImageWidth: payload.verificationImageWidth,
             verificationImageHeight: payload.verificationImageHeight,
+            selectedFrameIndex: payload.selectedFrameIndex,
+            selectedFrameScore: payload.selectedFrameScore,
+            selectedProfileScore: payload.selectedProfileScore,
+            selectedTrackingScore: payload.selectedTrackingScore,
+            selectedGuidanceScore: payload.selectedGuidanceScore,
+            selectedTimingScore: payload.selectedTimingScore,
             validationFailure: payload.validationFailure,
             outputPath: payload.outputPath
         )

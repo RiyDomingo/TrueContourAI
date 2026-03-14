@@ -270,6 +270,73 @@ final class AppScanningViewControllerTests: XCTestCase {
         XCTAssertEqual(profile.full, 320)
     }
 
+    func testEarVerificationFrameScorePrefersSucceededProfileFrames() {
+        let frontal = AppScanningViewController.debug_makeEarVerificationFrameScore(
+            metadataResult: .succeeded,
+            guidanceState: .capturing,
+            assimilatedFrameIndex: 24,
+            minimumAssimilatedFrameIndex: 8,
+            viewMatrix: matrix_identity_float4x4
+        )
+        let sideProfileMatrix = simd_float4x4(
+            SIMD4<Float>(1, 0, 0, 0),
+            SIMD4<Float>(0, 1, 0, 0),
+            SIMD4<Float>(1, 0, 0, 0),
+            SIMD4<Float>(0, 0, 0, 1)
+        )
+        let side = AppScanningViewController.debug_makeEarVerificationFrameScore(
+            metadataResult: .succeeded,
+            guidanceState: .capturing,
+            assimilatedFrameIndex: 24,
+            minimumAssimilatedFrameIndex: 8,
+            viewMatrix: sideProfileMatrix
+        )
+
+        XCTAssertNotNil(frontal)
+        XCTAssertNotNil(side)
+        XCTAssertGreaterThan(side?.profile ?? 0, frontal?.profile ?? 0)
+        XCTAssertGreaterThan(side?.total ?? 0, frontal?.total ?? 0)
+    }
+
+    func testEarVerificationFrameScoreRejectsLostTrackingAndEarlyFrames() {
+        let lostTracking = AppScanningViewController.debug_makeEarVerificationFrameScore(
+            metadataResult: .lostTracking,
+            guidanceState: .capturing,
+            assimilatedFrameIndex: 24,
+            minimumAssimilatedFrameIndex: 8,
+            viewMatrix: matrix_identity_float4x4
+        )
+        let tooEarly = AppScanningViewController.debug_makeEarVerificationFrameScore(
+            metadataResult: .succeeded,
+            guidanceState: .capturing,
+            assimilatedFrameIndex: 3,
+            minimumAssimilatedFrameIndex: 8,
+            viewMatrix: matrix_identity_float4x4
+        )
+
+        XCTAssertNil(lostTracking)
+        XCTAssertNil(tooEarly)
+    }
+
+    func testEarVerificationCandidateSelectionUsesNewerFrameOnTie() {
+        XCTAssertTrue(
+            AppScanningViewController.debug_shouldReplaceEarVerificationCandidate(
+                currentScore: 1.2,
+                currentFrameIndex: 4,
+                candidateScore: 1.2,
+                candidateFrameIndex: 5
+            )
+        )
+        XCTAssertFalse(
+            AppScanningViewController.debug_shouldReplaceEarVerificationCandidate(
+                currentScore: 1.3,
+                currentFrameIndex: 8,
+                candidateScore: 1.1,
+                candidateFrameIndex: 9
+            )
+        )
+    }
+
     private func makeController(
         reconstruction: ReconstructionManaging,
         camera: CameraManaging,
@@ -294,9 +361,14 @@ private enum TestError: Error {
 private final class ScanningDelegateSpy: NSObject, AppScanningViewControllerDelegate {
     private(set) var cancelCount = 0
     private(set) var scanCount = 0
+    private(set) var completedPayloads: [ScanPreviewInput] = []
 
     func appScanningViewControllerDidCancel(_ controller: AppScanningViewController) {
         cancelCount += 1
+    }
+
+    func appScanningViewController(_ controller: AppScanningViewController, didCompleteScan payload: ScanPreviewInput) {
+        completedPayloads.append(payload)
     }
 
     func appScanningViewController(

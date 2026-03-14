@@ -83,7 +83,8 @@ final class PreviewRoutingController {
         guard let presenter else { return }
         let previewSessionID = previewSessionController.beginPreviewSession(
             sessionMetrics: sessionMetrics,
-            preservedEarVerificationImage: payload.earVerificationImage
+            preservedEarVerificationImage: payload.earVerificationImage,
+            preservedEarVerificationSelectionMetadata: payload.earVerificationSelectionMetadata
         )
 
         Log.scan.info("Presenting preview after scan")

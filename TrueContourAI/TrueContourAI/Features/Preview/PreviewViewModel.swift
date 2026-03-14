@@ -9,7 +9,8 @@ final class PreviewSessionState {
 
 final class PreviewViewModel {
     enum EarVerificationImageSource: String {
-        case captureFrame
+        case bestCaptureFrame
+        case latestCaptureFallback
         case previewSnapshotFallback
     }
 
@@ -31,6 +32,7 @@ final class PreviewViewModel {
     private(set) var verifiedEarOverlay: UIImage?
     private(set) var verifiedEarCropOverlay: UIImage?
     private(set) var preservedEarVerificationImage: UIImage?
+    private(set) var preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata?
     private(set) var earVerificationImageSource: EarVerificationImageSource?
     private(set) var latestFitCheckResult: FitModelCheckResult?
     private(set) var latestFitMeshData: FitModelPackService.MeshData?
@@ -75,12 +77,14 @@ final class PreviewViewModel {
     @discardableResult
     func beginPreviewSession(
         sessionMetrics: ScanFlowState.ScanSessionMetrics?,
-        preservedEarVerificationImage: UIImage? = nil
+        preservedEarVerificationImage: UIImage? = nil,
+        preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata? = nil
     ) -> UUID {
         let sessionID = UUID()
         self.sessionID = sessionID
         self.sessionMetrics = sessionMetrics
         self.preservedEarVerificationImage = preservedEarVerificationImage
+        self.preservedEarVerificationSelectionMetadata = preservedEarVerificationSelectionMetadata
         self.earVerificationImageSource = nil
         qualityReport = nil
         measurementSummary = nil
@@ -233,6 +237,7 @@ final class PreviewViewModel {
         meshForExport = nil
         scanQuality = nil
         preservedEarVerificationImage = nil
+        preservedEarVerificationSelectionMetadata = nil
         clearVerification()
         resetFitState()
         phase = .idle

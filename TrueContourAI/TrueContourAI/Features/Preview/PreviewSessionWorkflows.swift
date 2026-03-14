@@ -1084,7 +1084,14 @@ final class PreviewEarVerificationWorkflow {
         let previewSnapshot = previewVC.renderedSceneImage ?? previewVC.sceneView.snapshot()
         let verificationImage = previewViewModel.preservedEarVerificationImage ?? previewSnapshot
         let verificationSource: PreviewViewModel.EarVerificationImageSource =
-            previewViewModel.preservedEarVerificationImage != nil ? .captureFrame : .previewSnapshotFallback
+            previewViewModel.preservedEarVerificationSelectionMetadata.map {
+                switch $0.source {
+                case .bestCaptureFrame:
+                    return .bestCaptureFrame
+                case .latestCaptureFallback:
+                    return .latestCaptureFallback
+                }
+            } ?? (previewViewModel.preservedEarVerificationImage != nil ? .latestCaptureFallback : .previewSnapshotFallback)
         let mlStart = CFAbsoluteTimeGetCurrent()
         beginVerificationUI()
 
@@ -1100,7 +1107,8 @@ final class PreviewEarVerificationWorkflow {
                 guard let verification = try service.verify(
                     in: verificationImage,
                     verificationSource: verificationSource.rawValue,
-                    usedPreviewSnapshotFallback: verificationSource == .previewSnapshotFallback
+                    usedPreviewSnapshotFallback: verificationSource == .previewSnapshotFallback,
+                    selectionMetadata: previewViewModel.preservedEarVerificationSelectionMetadata
                 ) else {
                     DispatchQueue.main.async {
                         guard isCurrentSession() else { return }

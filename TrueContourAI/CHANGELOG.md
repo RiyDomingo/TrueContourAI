@@ -48,6 +48,7 @@ This project follows a simple keep-a-changelog style:
 - Ear verification recovery now documents and enforces separate coordinate contracts for detector bbox rendering vs landmark point rendering, and persists device-debug artifacts under `Documents/Scans/EarDebug`.
 - `Verify Ear` now lives in the normal preview summary UI instead of the developer-only section.
 - Ear verification now prefers a preserved capture-faithful scan frame over preview snapshot fallback, while keeping the full-scene overlay for UI context and the crop overlay for QA.
+- Scan-time ear verification image selection now scores capture frames for side-profile strength and tracking quality, preferring the best candidate over the simple latest-frame policy and recording the winning frame metadata in debug output.
 
 ### Fixed
 - Stabilized settings UI-test helpers to wait for an always-visible settings control instead of a non-visible storage-row anchor

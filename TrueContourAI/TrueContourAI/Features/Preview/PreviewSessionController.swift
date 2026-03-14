@@ -21,11 +21,13 @@ final class PreviewSessionController {
     @discardableResult
     func beginPreviewSession(
         sessionMetrics: ScanFlowState.ScanSessionMetrics?,
-        preservedEarVerificationImage: UIImage? = nil
+        preservedEarVerificationImage: UIImage? = nil,
+        preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata? = nil
     ) -> UUID {
         viewModel.beginPreviewSession(
             sessionMetrics: sessionMetrics,
-            preservedEarVerificationImage: preservedEarVerificationImage
+            preservedEarVerificationImage: preservedEarVerificationImage,
+            preservedEarVerificationSelectionMetadata: preservedEarVerificationSelectionMetadata
         )
     }
 
