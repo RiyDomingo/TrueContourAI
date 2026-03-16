@@ -141,10 +141,14 @@ final class EarLandmarksServiceTests: XCTestCase {
             flipX: false
         )
 
-        XCTAssertEqual(layout.boundingBoxRect?.origin.x, 20, accuracy: 0.001)
-        XCTAssertEqual(layout.boundingBoxRect?.origin.y, 100, accuracy: 0.001)
-        XCTAssertEqual(layout.boundingBoxRect?.width, 20, accuracy: 0.001)
-        XCTAssertEqual(layout.boundingBoxRect?.height, 40, accuracy: 0.001)
+        guard let boundingBoxRect = layout.boundingBoxRect else {
+            return XCTFail("Expected bounding box rect")
+        }
+
+        XCTAssertEqual(Double(boundingBoxRect.origin.x), 20, accuracy: 0.001)
+        XCTAssertEqual(Double(boundingBoxRect.origin.y), 100, accuracy: 0.001)
+        XCTAssertEqual(Double(boundingBoxRect.width), 20, accuracy: 0.001)
+        XCTAssertEqual(Double(boundingBoxRect.height), 40, accuracy: 0.001)
     }
 
     func testOverlayLayoutKeepsLandmarksInsideBoundingBoxNeighborhoodForCurrentDebugSample() {

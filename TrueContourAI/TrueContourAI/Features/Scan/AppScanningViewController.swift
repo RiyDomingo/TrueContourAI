@@ -141,27 +141,6 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     typealias ScanningTerminationReason = AppScanningTerminationReason
     private typealias State = AppScanningSessionState
 
-    private struct EarVerificationPendingFrame {
-        let image: UIImage
-        let frameIndex: Int
-        let timestamp: CFAbsoluteTime
-    }
-
-    private struct EarVerificationFrameCandidate {
-        let image: UIImage
-        let frameIndex: Int
-        let timestamp: CFAbsoluteTime
-        let scoreBreakdown: EarVerificationFrameScoreBreakdown
-    }
-
-    private struct EarVerificationFrameScoreBreakdown: Equatable {
-        let totalScore: Float
-        let profileScore: Float
-        let trackingScore: Float
-        let guidanceScore: Float
-        let timingScore: Float
-    }
-
     private enum Layout {
         static let topStatusInset: CGFloat = 10
         static let instructionToProgressSpacing: CGFloat = 8
@@ -286,12 +265,6 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         return label
     }()
 
-    private var latestEarVerificationImage: UIImage?
-    private var latestEarVerificationImageFrameIndex: Int?
-    private var pendingEarVerificationFrame: EarVerificationPendingFrame?
-    private var bestEarVerificationFrameCandidate: EarVerificationFrameCandidate?
-    private var capturedCameraFrameIndex = 0
-
     private let autoFinishLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -341,7 +314,6 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     private let maxReconstructionThreadCount: Int32 = 2
     private let unstableMotionThreshold = 0.16
     private let goodTrackingFrameInterval = 40
-    private let minimumEarVerificationAssimilatedFrameIndex = 8
 
     private func scanSheetProfile() -> ScanSheetProfile {
         Self.scanSheetProfile(forHeight: view.bounds.height, isPad: traitCollection.userInterfaceIdiom == .pad)
@@ -598,11 +570,6 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         sessionController.beginScanning()
         assimilatedFrameIndex = 0
         consecutiveFailedCount = 0
-        latestEarVerificationImage = nil
-        latestEarVerificationImageFrameIndex = nil
-        pendingEarVerificationFrame = nil
-        bestEarVerificationFrameCandidate = nil
-        capturedCameraFrameIndex = 0
         meshTexturing.reset()
         captureProgressView.progress = 0
         hudController.resetForNewCapture()
@@ -622,7 +589,6 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
         switch reason {
         case .canceled:
-            clearEarVerificationFrameState()
             reconstructionManager.reset()
             delegate?.appScanningViewControllerDidCancel(self)
         case .finished:
@@ -638,15 +604,12 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
                 guard let self else { return }
                 let pointCloud = self.reconstructionManager.buildPointCloud()
                 self.reconstructionManager.reset()
-                let selectedEarVerificationImage = self.bestEarVerificationFrameCandidate?.image ?? self.latestEarVerificationImage
-                let selectedSelectionMetadata = self.makeEarVerificationSelectionMetadata()
                 let payload = ScanPreviewInput(
                     pointCloud: pointCloud,
                     meshTexturing: self.meshTexturing,
-                    earVerificationImage: selectedEarVerificationImage,
-                    earVerificationSelectionMetadata: selectedSelectionMetadata
+                    earVerificationImage: nil,
+                    earVerificationSelectionMetadata: nil
                 )
-                self.clearEarVerificationFrameState()
                 self.delegate?.appScanningViewController(self, didCompleteScan: payload)
                 self.delegate?.appScanningViewController(
                     self,
@@ -746,7 +709,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         )
 
         if isScanning {
-            captureEarVerificationImage(from: colorBuffer)
+            // Keep the synchronized camera callback limited to reconstruction/rendering work.
             reconstructionManager.accumulate(depthBuffer: depthBuffer, colorBuffer: colorBuffer, calibrationData: depthCalibrationData)
         }
     }
@@ -760,7 +723,6 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     ) {
         guard state == .scanning else { return }
         latestViewMatrix = metadata.viewMatrix
-        scorePendingEarVerificationFrame(with: metadata)
 
         switch metadata.result {
         case .succeeded, .poorTracking:
@@ -921,154 +883,6 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         autoFinishLabel.text = String(format: L("scanning.autofinish"), sessionController.autoFinishRemaining)
     }
 
-    private func clearEarVerificationFrameState() {
-        latestEarVerificationImage = nil
-        latestEarVerificationImageFrameIndex = nil
-        pendingEarVerificationFrame = nil
-        bestEarVerificationFrameCandidate = nil
-        capturedCameraFrameIndex = 0
-    }
-
-    private func makeEarVerificationSelectionMetadata() -> EarVerificationSelectionMetadata? {
-        if let bestCandidate = bestEarVerificationFrameCandidate {
-            return EarVerificationSelectionMetadata(
-                source: .bestCaptureFrame,
-                frameIndex: bestCandidate.frameIndex,
-                totalScore: Double(bestCandidate.scoreBreakdown.totalScore),
-                profileScore: Double(bestCandidate.scoreBreakdown.profileScore),
-                trackingScore: Double(bestCandidate.scoreBreakdown.trackingScore),
-                guidanceScore: Double(bestCandidate.scoreBreakdown.guidanceScore),
-                timingScore: Double(bestCandidate.scoreBreakdown.timingScore)
-            )
-        }
-
-        if let latestFrameIndex = latestEarVerificationImageFrameIndex, latestEarVerificationImage != nil {
-            return EarVerificationSelectionMetadata(
-                source: .latestCaptureFallback,
-                frameIndex: latestFrameIndex,
-                totalScore: nil,
-                profileScore: nil,
-                trackingScore: nil,
-                guidanceScore: nil,
-                timingScore: nil
-            )
-        }
-
-        return nil
-    }
-
-    private func scorePendingEarVerificationFrame(with metadata: SCAssimilatedFrameMetadata) {
-        guard let pendingFrame = pendingEarVerificationFrame else { return }
-        pendingEarVerificationFrame = nil
-
-        guard let scoreBreakdown = Self.makeEarVerificationFrameScore(
-            metadataResult: metadata.result,
-            guidanceState: currentHUDState,
-            assimilatedFrameIndex: assimilatedFrameIndex,
-            minimumAssimilatedFrameIndex: minimumEarVerificationAssimilatedFrameIndex,
-            viewMatrix: metadata.viewMatrix
-        ) else {
-            return
-        }
-
-        let candidate = EarVerificationFrameCandidate(
-            image: pendingFrame.image,
-            frameIndex: pendingFrame.frameIndex,
-            timestamp: pendingFrame.timestamp,
-            scoreBreakdown: scoreBreakdown
-        )
-
-        if let bestCandidate = bestEarVerificationFrameCandidate {
-            if Self.shouldReplaceEarVerificationCandidate(current: bestCandidate, with: candidate) {
-                bestEarVerificationFrameCandidate = candidate
-            }
-        } else {
-            bestEarVerificationFrameCandidate = candidate
-        }
-    }
-
-    private static func makeEarVerificationFrameScore(
-        metadataResult: SCAssimilatedFrameResult,
-        guidanceState: AppScanHUDState,
-        assimilatedFrameIndex: Int,
-        minimumAssimilatedFrameIndex: Int,
-        viewMatrix: simd_float4x4
-    ) -> EarVerificationFrameScoreBreakdown? {
-        guard assimilatedFrameIndex >= minimumAssimilatedFrameIndex else { return nil }
-
-        let trackingScore: Float
-        switch metadataResult {
-        case .succeeded:
-            trackingScore = 1.0
-        case .poorTracking:
-            trackingScore = 0.35
-        case .lostTracking, .failed:
-            return nil
-        @unknown default:
-            return nil
-        }
-
-        let guidanceScore: Float
-        switch guidanceState {
-        case .capturing:
-            guidanceScore = 0.3
-        case .warning:
-            guidanceScore = -0.2
-        case .critical:
-            return nil
-        case .idlePrompts, .countdown:
-            guidanceScore = 0
-        }
-
-        let normalizedProgress = min(max(Float(assimilatedFrameIndex - minimumAssimilatedFrameIndex) / 40.0, 0), 1)
-        let timingScore = normalizedProgress * 0.2
-        let profileScore = Self.earVerificationProfileScore(from: viewMatrix)
-        let totalScore = profileScore + trackingScore + guidanceScore + timingScore
-
-        return EarVerificationFrameScoreBreakdown(
-            totalScore: totalScore,
-            profileScore: profileScore,
-            trackingScore: trackingScore,
-            guidanceScore: guidanceScore,
-            timingScore: timingScore
-        )
-    }
-
-    private static func earVerificationProfileScore(from viewMatrix: simd_float4x4) -> Float {
-        let horizontalMagnitude = sqrt((viewMatrix.columns.0.x * viewMatrix.columns.0.x) + (viewMatrix.columns.1.x * viewMatrix.columns.1.x))
-        let yaw = abs(atan2(viewMatrix.columns.2.x, horizontalMagnitude))
-        let normalizedYaw = min(max(yaw / (.pi / 2), 0), 1)
-        return normalizedYaw * 1.2
-    }
-
-    private static func shouldReplaceEarVerificationCandidate(
-        current: EarVerificationFrameCandidate,
-        with candidate: EarVerificationFrameCandidate
-    ) -> Bool {
-        if candidate.scoreBreakdown.totalScore > current.scoreBreakdown.totalScore + 0.0001 {
-            return true
-        }
-
-        if abs(candidate.scoreBreakdown.totalScore - current.scoreBreakdown.totalScore) <= 0.0001 {
-            return candidate.frameIndex > current.frameIndex
-        }
-
-        return false
-    }
-
-    private func captureEarVerificationImage(from colorBuffer: CVPixelBuffer) {
-        if currentHUDState == .critical { return }
-        guard let image = Self.uiImage(from: colorBuffer) else { return }
-        latestEarVerificationImage = image
-        capturedCameraFrameIndex += 1
-        latestEarVerificationImageFrameIndex = capturedCameraFrameIndex
-        pendingEarVerificationFrame = EarVerificationPendingFrame(
-            image: image,
-            frameIndex: capturedCameraFrameIndex,
-            timestamp: CFAbsoluteTimeGetCurrent()
-        )
-    }
-
     @objc private func focusOnTap(_ gesture: UITapGestureRecognizer) {
         guard state != .scanning else { return }
         let location = gesture.location(in: metalContainerView)
@@ -1091,26 +905,6 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
         guard presentedViewController == nil else { return }
         present(alert, animated: true)
-    }
-
-    private static func uiImage(from pixelBuffer: CVPixelBuffer) -> UIImage? {
-        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-        let context = CIContext()
-        guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return nil }
-        return normalizedUIImage(UIImage(cgImage: cgImage))
-    }
-
-    private static func normalizedUIImage(_ image: UIImage) -> UIImage {
-        if image.imageOrientation == .up {
-            return image
-        }
-
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = 1
-        let renderer = UIGraphicsImageRenderer(size: image.size, format: format)
-        return renderer.image { _ in
-            image.draw(in: CGRect(origin: .zero, size: image.size))
-        }
     }
 
     private func installVolumeShutterIfNeeded() {
@@ -1249,61 +1043,5 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         handleCriticalThermalState()
     }
 
-    static func debug_makeEarVerificationFrameScore(
-        metadataResult: SCAssimilatedFrameResult,
-        guidanceState: AppScanHUDState,
-        assimilatedFrameIndex: Int,
-        minimumAssimilatedFrameIndex: Int,
-        viewMatrix: simd_float4x4
-    ) -> (total: Float, profile: Float, tracking: Float, guidance: Float, timing: Float)? {
-        guard let score = makeEarVerificationFrameScore(
-            metadataResult: metadataResult,
-            guidanceState: guidanceState,
-            assimilatedFrameIndex: assimilatedFrameIndex,
-            minimumAssimilatedFrameIndex: minimumAssimilatedFrameIndex,
-            viewMatrix: viewMatrix
-        ) else { return nil }
-
-        return (
-            total: score.totalScore,
-            profile: score.profileScore,
-            tracking: score.trackingScore,
-            guidance: score.guidanceScore,
-            timing: score.timingScore
-        )
-    }
-
-    static func debug_shouldReplaceEarVerificationCandidate(
-        currentScore: Float,
-        currentFrameIndex: Int,
-        candidateScore: Float,
-        candidateFrameIndex: Int
-    ) -> Bool {
-        let current = EarVerificationFrameCandidate(
-            image: UIImage(),
-            frameIndex: currentFrameIndex,
-            timestamp: 0,
-            scoreBreakdown: .init(
-                totalScore: currentScore,
-                profileScore: 0,
-                trackingScore: 0,
-                guidanceScore: 0,
-                timingScore: 0
-            )
-        )
-        let candidate = EarVerificationFrameCandidate(
-            image: UIImage(),
-            frameIndex: candidateFrameIndex,
-            timestamp: 0,
-            scoreBreakdown: .init(
-                totalScore: candidateScore,
-                profileScore: 0,
-                trackingScore: 0,
-                guidanceScore: 0,
-                timingScore: 0
-            )
-        )
-        return shouldReplaceEarVerificationCandidate(current: current, with: candidate)
-    }
 #endif
 }

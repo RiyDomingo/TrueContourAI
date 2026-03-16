@@ -136,6 +136,9 @@ final class AppScanningViewControllerTests: XCTestCase {
         XCTAssertEqual(reconstruction.resetCount, 1)
         XCTAssertEqual(delegate.scanCount, 1)
         XCTAssertEqual(delegate.cancelCount, 0)
+        XCTAssertEqual(delegate.completedPayloads.count, 1)
+        XCTAssertNil(delegate.completedPayloads[0].earVerificationImage)
+        XCTAssertNil(delegate.completedPayloads[0].earVerificationSelectionMetadata)
         XCTAssertEqual(camera.stopSessionCount, 1)
         XCTAssertEqual(haptics.finishCount, 1)
 
@@ -175,6 +178,9 @@ final class AppScanningViewControllerTests: XCTestCase {
 
         XCTAssertEqual(delegate.scanCount, 1)
         XCTAssertEqual(delegate.cancelCount, 0)
+        XCTAssertEqual(delegate.completedPayloads.count, 1)
+        XCTAssertNil(delegate.completedPayloads[0].earVerificationImage)
+        XCTAssertNil(delegate.completedPayloads[0].earVerificationSelectionMetadata)
         XCTAssertEqual(reconstruction.finalizeCount, 1)
         XCTAssertEqual(reconstruction.resetCount, 1)
     }
@@ -195,6 +201,7 @@ final class AppScanningViewControllerTests: XCTestCase {
 
         XCTAssertEqual(delegate.scanCount, 1)
         XCTAssertEqual(delegate.cancelCount, 0)
+        XCTAssertEqual(delegate.completedPayloads.count, 1)
         XCTAssertEqual(reconstruction.finalizeCount, 1)
         XCTAssertEqual(reconstruction.resetCount, 1)
     }
@@ -268,73 +275,6 @@ final class AppScanningViewControllerTests: XCTestCase {
         XCTAssertEqual(profile.collapsed, 180)
         XCTAssertEqual(profile.half, 250)
         XCTAssertEqual(profile.full, 320)
-    }
-
-    func testEarVerificationFrameScorePrefersSucceededProfileFrames() {
-        let frontal = AppScanningViewController.debug_makeEarVerificationFrameScore(
-            metadataResult: .succeeded,
-            guidanceState: .capturing,
-            assimilatedFrameIndex: 24,
-            minimumAssimilatedFrameIndex: 8,
-            viewMatrix: matrix_identity_float4x4
-        )
-        let sideProfileMatrix = simd_float4x4(
-            SIMD4<Float>(1, 0, 0, 0),
-            SIMD4<Float>(0, 1, 0, 0),
-            SIMD4<Float>(1, 0, 0, 0),
-            SIMD4<Float>(0, 0, 0, 1)
-        )
-        let side = AppScanningViewController.debug_makeEarVerificationFrameScore(
-            metadataResult: .succeeded,
-            guidanceState: .capturing,
-            assimilatedFrameIndex: 24,
-            minimumAssimilatedFrameIndex: 8,
-            viewMatrix: sideProfileMatrix
-        )
-
-        XCTAssertNotNil(frontal)
-        XCTAssertNotNil(side)
-        XCTAssertGreaterThan(side?.profile ?? 0, frontal?.profile ?? 0)
-        XCTAssertGreaterThan(side?.total ?? 0, frontal?.total ?? 0)
-    }
-
-    func testEarVerificationFrameScoreRejectsLostTrackingAndEarlyFrames() {
-        let lostTracking = AppScanningViewController.debug_makeEarVerificationFrameScore(
-            metadataResult: .lostTracking,
-            guidanceState: .capturing,
-            assimilatedFrameIndex: 24,
-            minimumAssimilatedFrameIndex: 8,
-            viewMatrix: matrix_identity_float4x4
-        )
-        let tooEarly = AppScanningViewController.debug_makeEarVerificationFrameScore(
-            metadataResult: .succeeded,
-            guidanceState: .capturing,
-            assimilatedFrameIndex: 3,
-            minimumAssimilatedFrameIndex: 8,
-            viewMatrix: matrix_identity_float4x4
-        )
-
-        XCTAssertNil(lostTracking)
-        XCTAssertNil(tooEarly)
-    }
-
-    func testEarVerificationCandidateSelectionUsesNewerFrameOnTie() {
-        XCTAssertTrue(
-            AppScanningViewController.debug_shouldReplaceEarVerificationCandidate(
-                currentScore: 1.2,
-                currentFrameIndex: 4,
-                candidateScore: 1.2,
-                candidateFrameIndex: 5
-            )
-        )
-        XCTAssertFalse(
-            AppScanningViewController.debug_shouldReplaceEarVerificationCandidate(
-                currentScore: 1.3,
-                currentFrameIndex: 8,
-                candidateScore: 1.1,
-                candidateFrameIndex: 9
-            )
-        )
     }
 
     private func makeController(

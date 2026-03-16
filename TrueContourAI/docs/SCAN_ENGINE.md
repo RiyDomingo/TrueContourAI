@@ -31,6 +31,7 @@ TrueContourAI scan runtime is built on StandardCyborg components and most closel
 - Delegates countdown/auto-finish/session timing to `ScanSessionController`.
 - Delegates thermal + idle-timer lifecycle to `ScanRuntimeController`.
 - Delegates guidance/prompt/progress/HUD visibility state to `ScanHUDController`.
+- Hot-path rule: camera callbacks must not create `UIImage` / `CIImage` / `CIContext`, run ML, or do heavy scoring/allocation work. Any preserved-frame design must use bounded retention and defer conversion until after scanning.
 
 3. Reconstruction callbacks
 - Uses `SCReconstructionManagerDelegate` callbacks for tracking state.

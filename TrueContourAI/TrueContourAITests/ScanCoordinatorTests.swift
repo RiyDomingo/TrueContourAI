@@ -198,6 +198,11 @@ private final class ScanDelegateSpy: NSObject, AppScanningViewControllerDelegate
 
     func appScanningViewController(
         _ controller: AppScanningViewController,
+        didCompleteScan payload: ScanPreviewInput
+    ) {}
+
+    func appScanningViewController(
+        _ controller: AppScanningViewController,
         didScan pointCloud: SCPointCloud,
         meshTexturing: SCMeshTexturing
     ) {}
