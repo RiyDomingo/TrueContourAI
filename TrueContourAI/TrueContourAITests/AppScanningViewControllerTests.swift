@@ -63,6 +63,33 @@ final class AppScanningViewControllerTests: XCTestCase {
         XCTAssertEqual(vc.debug_statusChipText(), "Good")
     }
 
+    func testMotionGuidanceUsesMoveSlowerRatherThanDistanceWarning() {
+        let vc = makeController(
+            reconstruction: ReconstructionManagerFake(),
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.loadViewIfNeeded()
+        vc.debug_setStateScanning()
+
+        XCTAssertTrue(vc.debug_handleMotionGuidance(forMagnitudes: [0.20, 0.22, 0.24]))
+        XCTAssertEqual(vc.debug_guidanceText(), L("scanning.guidance.short.motion"))
+    }
+
+    func testSubthresholdMotionDoesNotEmitWarningGuidance() {
+        let vc = makeController(
+            reconstruction: ReconstructionManagerFake(),
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.loadViewIfNeeded()
+        vc.debug_setStateScanning()
+        let initialGuidance = vc.debug_guidanceText()
+
+        XCTAssertFalse(vc.debug_handleMotionGuidance(forMagnitudes: [0.04, 0.08, 0.10]))
+        XCTAssertEqual(vc.debug_guidanceText(), initialGuidance)
+    }
+
     func testProgressTextStaysModeConsistentPerRun() {
         let vc = makeController(
             reconstruction: ReconstructionManagerFake(),
@@ -80,6 +107,47 @@ final class AppScanningViewControllerTests: XCTestCase {
         vc.debug_setAssimilatedFramesForProgress(12)
         vc.debug_updateCaptureProgress()
         XCTAssertEqual(vc.debug_progressLabelText(), L("scanning.progress.capturing"))
+    }
+
+    func testProgressUpdatesAreThrottled() {
+        let vc = makeController(
+            reconstruction: ReconstructionManagerFake(),
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.loadViewIfNeeded()
+        vc.debug_setStateScanning()
+
+        vc.debug_setAutoFinishForProgress(seconds: 20, remaining: 18)
+        vc.debug_updateCaptureProgress()
+        let initialText = vc.debug_progressLabelText()
+
+        vc.debug_setAutoFinishForProgress(seconds: 20, remaining: 10)
+        vc.debug_setLastProgressUpdate(Date())
+        vc.debug_updateCaptureProgress()
+
+        XCTAssertEqual(vc.debug_progressLabelText(), initialText)
+    }
+
+    func testProgressUpdatesResumeAfterThrottleWindowElapses() {
+        let vc = makeController(
+            reconstruction: ReconstructionManagerFake(),
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.loadViewIfNeeded()
+        vc.debug_setStateScanning()
+
+        vc.debug_setAutoFinishForProgress(seconds: 20, remaining: 18)
+        vc.debug_updateCaptureProgress()
+        let initialText = vc.debug_progressLabelText()
+
+        vc.debug_setAutoFinishForProgress(seconds: 20, remaining: 10)
+        vc.debug_setLastProgressUpdate(Date(timeIntervalSinceNow: -1))
+        vc.debug_updateCaptureProgress()
+
+        XCTAssertNotEqual(vc.debug_progressLabelText(), initialText)
+        XCTAssertTrue(vc.debug_progressLabelText()?.contains("10 / 20") == true)
     }
 
     func testCountdownVisibilityIsIndependentFromActiveGuidance() {
@@ -262,6 +330,89 @@ final class AppScanningViewControllerTests: XCTestCase {
         XCTAssertEqual(camera.stopSessionCount, 1)
         XCTAssertEqual(haptics.finishCount, 1)
     }
+
+    func testDistanceInstabilityGuidanceIsEmittedForTranslationVariance() {
+        let vc = makeController(
+            reconstruction: ReconstructionManagerFake(),
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.loadViewIfNeeded()
+        vc.debug_setStateScanning()
+
+        for translation in [0.35 as Float, 0.36, 0.34, 0.45, 0.33, 0.46, 0.34, 0.47] {
+            var matrix = matrix_identity_float4x4
+            matrix.columns.3.z = translation
+            vc.debug_updateDistanceGuidance(with: matrix)
+        }
+
+        XCTAssertEqual(vc.debug_guidanceText(), L("scanning.guidance.short.distance"))
+    }
+
+    func testDistanceInstabilityGuidanceDoesNotFireForSmallVariance() {
+        let vc = makeController(
+            reconstruction: ReconstructionManagerFake(),
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.loadViewIfNeeded()
+        vc.debug_setStateScanning()
+        let initialGuidance = vc.debug_guidanceText()
+
+        for translation in [0.35 as Float, 0.355, 0.352, 0.358, 0.351, 0.357, 0.354, 0.356] {
+            var matrix = matrix_identity_float4x4
+            matrix.columns.3.z = translation
+            vc.debug_updateDistanceGuidance(with: matrix)
+        }
+
+        XCTAssertEqual(vc.debug_guidanceText(), initialGuidance)
+    }
+
+    func testMotionMagnitudeUsesRollingAverage() {
+        let vc = makeController(
+            reconstruction: ReconstructionManagerFake(),
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+
+        let average = vc.debug_smoothedMotionMagnitude([0.10, 0.12, 0.30])
+        XCTAssertGreaterThan(average, 0.10)
+        XCTAssertLessThan(average, 0.30)
+    }
+
+    func testDeveloperDiagnosticsIncludePerformanceMetrics() {
+        let vc = makeController(
+            reconstruction: ReconstructionManagerFake(),
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.developerModeEnabled = true
+        vc.debug_recordCameraMetric(duration: 0.010, budget: 0.005)
+        vc.debug_recordDrawMetric(duration: 0.006, budget: 0.005)
+        vc.debug_recordReconstructionMetric(duration: 0.008, budget: 0.005)
+
+        let diagnostics = vc.debug_developerDiagnosticsText(baseDiagnostics: "Frames: 12 · Progress: 24%")
+        XCTAssertTrue(diagnostics.contains("camera"))
+        XCTAssertTrue(diagnostics.contains("draw"))
+        XCTAssertTrue(diagnostics.contains("recon"))
+        XCTAssertTrue(diagnostics.contains("ovr="))
+    }
+
+    func testDeveloperDiagnosticsRemainBaseTextWhenDeveloperModeDisabled() {
+        let vc = makeController(
+            reconstruction: ReconstructionManagerFake(),
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.debug_recordCameraMetric(duration: 0.010, budget: 0.005)
+        vc.debug_recordReconstructionMetric(duration: 0.008, budget: 0.005)
+
+        XCTAssertEqual(
+            vc.debug_developerDiagnosticsText(baseDiagnostics: "Frames: 12 · Progress: 24%"),
+            "Frames: 12 · Progress: 24%"
+        )
+    }
+
 
     func testScanSheetProfileCompactsOnSmallHeight() {
         let profile = AppScanningViewController.debug_scanSheetProfile(height: 680, isPad: false)

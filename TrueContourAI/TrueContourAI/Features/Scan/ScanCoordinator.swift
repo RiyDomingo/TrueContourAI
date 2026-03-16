@@ -2,6 +2,11 @@ import AVFoundation
 import UIKit
 import StandardCyborgUI
 
+struct ScanCaptureTuning: Equatable {
+    let maxDepthResolution: Int
+    let textureSaveInterval: Int
+}
+
 final class ScanCoordinator {
     typealias DeviceCapabilityProvider = () -> Bool
     typealias ScanningViewControllerFactory = () -> AppScanningViewController
@@ -123,13 +128,14 @@ final class ScanCoordinator {
         scanFlowState.startScanSession()
         let scanningVC = scanningViewControllerFactory()
         let processingConfig = settingsStore.processingConfig
+        let captureTuning = suggestedCaptureTuning(for: processingConfig)
         scanningVC.autoFinishSeconds = settingsStore.scanDurationSeconds
         scanningVC.delegate = delegate
         scanningVC.generatesTexturedMeshes = true
         scanningVC.requiresManualFinish = true
         scanningVC.developerModeEnabled = settingsStore.developerModeEnabled
-        scanningVC.maxDepthResolution = suggestedDepthResolution(for: processingConfig)
-        scanningVC.texturedMeshColorBufferSaveInterval = suggestedColorBufferInterval(for: processingConfig)
+        scanningVC.maxDepthResolution = captureTuning.maxDepthResolution
+        scanningVC.texturedMeshColorBufferSaveInterval = captureTuning.textureSaveInterval
         scanningVC.modalPresentationStyle = .fullScreen
         scanningVC.onRealtimeGuidance = { [weak scanFlowState] hint in
             guard let scanFlowState else { return }
@@ -203,19 +209,37 @@ final class ScanCoordinator {
         AVCaptureDevice.requestAccess(for: .video, completionHandler: completion)
     }
 
+    private func suggestedCaptureTuning(for config: SettingsStore.ProcessingConfig) -> ScanCaptureTuning {
+        // Heavier processing configs are more likely to destabilize live capture, so bias toward
+        // lower depth resolution and less frequent texture retention in exchange for steadier scans.
+        let isHeavyConfig = config.decimateRatio > 1.25 || config.meshResolution <= 5
+        let maxDepthResolution = isHeavyConfig ? 256 : 320
+        let scaledInterval = Int(round(8.0 * Double(max(0.5, config.decimateRatio))))
+        let minimumInterval = isHeavyConfig ? 6 : 4
+        let maximumInterval = isHeavyConfig ? 20 : 16
+        let textureSaveInterval = max(
+            minimumInterval,
+            min(maximumInterval, scaledInterval + (isHeavyConfig ? 2 : 0))
+        )
+        return ScanCaptureTuning(
+            maxDepthResolution: maxDepthResolution,
+            textureSaveInterval: textureSaveInterval
+        )
+    }
+
     private func suggestedDepthResolution(for config: SettingsStore.ProcessingConfig) -> Int {
-        if config.decimateRatio > 1.25 || config.meshResolution <= 5 {
-            return 256
-        }
-        return 320
+        suggestedCaptureTuning(for: config).maxDepthResolution
     }
 
     private func suggestedColorBufferInterval(for config: SettingsStore.ProcessingConfig) -> Int {
-        let scaled = Int(round(8.0 * Double(max(0.5, config.decimateRatio))))
-        return max(4, min(16, scaled))
+        suggestedCaptureTuning(for: config).textureSaveInterval
     }
 
 #if DEBUG
+    func debug_suggestedCaptureTuning(for config: SettingsStore.ProcessingConfig) -> ScanCaptureTuning {
+        suggestedCaptureTuning(for: config)
+    }
+
     func debug_suggestedDepthResolution(for config: SettingsStore.ProcessingConfig) -> Int {
         suggestedDepthResolution(for: config)
     }

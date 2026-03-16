@@ -2,6 +2,7 @@ import AVFoundation
 import CoreMotion
 import MediaPlayer
 import Metal
+import QuartzCore
 import StandardCyborgFusion
 import StandardCyborgUI
 import UIKit
@@ -140,6 +141,82 @@ protocol AppScanningViewControllerDelegate: AnyObject {
 final class AppScanningViewController: UIViewController, CameraManagerDelegate, SCReconstructionManagerDelegate {
     typealias ScanningTerminationReason = AppScanningTerminationReason
     private typealias State = AppScanningSessionState
+
+    private struct DistanceStabilityTracker {
+        private let maxSamples: Int
+        private var samples: [Float] = []
+        private var nextIndex = 0
+
+        init(maxSamples: Int = 8) {
+            self.maxSamples = maxSamples
+            self.samples.reserveCapacity(maxSamples)
+        }
+
+        mutating func reset() {
+            samples.removeAll(keepingCapacity: true)
+            nextIndex = 0
+        }
+
+        mutating func add(_ value: Float) {
+            if samples.count < maxSamples {
+                samples.append(value)
+                return
+            }
+            samples[nextIndex] = value
+            nextIndex = (nextIndex + 1) % maxSamples
+        }
+
+        func shouldWarn(threshold: Float) -> Bool {
+            guard samples.count >= maxSamples else { return false }
+            guard let minValue = samples.min(), let maxValue = samples.max() else { return false }
+            return (maxValue - minValue) > threshold
+        }
+    }
+
+    private struct ScanPerformanceMetrics {
+        private(set) var sampleCount = 0
+        private(set) var totalDuration: CFTimeInterval = 0
+        private(set) var peakDuration: CFTimeInterval = 0
+        private(set) var overBudgetCount = 0
+        private(set) var recentDurations: [CFTimeInterval] = []
+
+        mutating func reset() {
+            sampleCount = 0
+            totalDuration = 0
+            peakDuration = 0
+            overBudgetCount = 0
+            recentDurations.removeAll(keepingCapacity: true)
+        }
+
+        mutating func record(_ duration: CFTimeInterval, budget: CFTimeInterval) {
+            sampleCount += 1
+            totalDuration += duration
+            peakDuration = max(peakDuration, duration)
+            if duration > budget {
+                overBudgetCount += 1
+            }
+            if recentDurations.count == 32 {
+                recentDurations.removeFirst()
+            }
+            recentDurations.append(duration)
+        }
+
+        var averageDurationMs: Double {
+            guard sampleCount > 0 else { return 0 }
+            return (totalDuration / Double(sampleCount)) * 1000
+        }
+
+        var p95DurationMs: Double {
+            guard !recentDurations.isEmpty else { return 0 }
+            let sorted = recentDurations.sorted()
+            let index = min(sorted.count - 1, Int(Double(sorted.count - 1) * 0.95))
+            return sorted[index] * 1000
+        }
+
+        var peakDurationMs: Double {
+            peakDuration * 1000
+        }
+    }
 
     private enum Layout {
         static let topStatusInset: CGFloat = 10
@@ -312,8 +389,22 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
     private let minSucceededFramesForCompletion = 50
     private let maxReconstructionThreadCount: Int32 = 2
-    private let unstableMotionThreshold = 0.16
+    private let unstableMotionThreshold: Double = 0.16
     private let goodTrackingFrameInterval = 40
+    private let progressUpdateMinimumInterval: TimeInterval = 0.25
+    private let motionSampleWindowSize = 6
+    private let distanceInstabilityThreshold: Float = 0.08
+    private let textureSaveSuppressionAssimilationWindow = 8
+    private let cameraCallbackBudget: CFTimeInterval = 1.0 / 30.0
+    private let reconstructionDelegateBudget: CFTimeInterval = 0.012
+    private let previewDrawBudget: CFTimeInterval = 0.010
+    private var smoothedMotionSamples: [Double] = []
+    private var lastProgressUpdateAt: Date = .distantPast
+    private var distanceTracker = DistanceStabilityTracker()
+    private var suppressTextureSavingUntilAssimilationIndex = 0
+    private var cameraPerformanceMetrics = ScanPerformanceMetrics()
+    private var drawPerformanceMetrics = ScanPerformanceMetrics()
+    private var reconstructionPerformanceMetrics = ScanPerformanceMetrics()
 
     private func scanSheetProfile() -> ScanSheetProfile {
         Self.scanSheetProfile(forHeight: view.bounds.height, isPad: traitCollection.userInterfaceIdiom == .pad)
@@ -570,6 +661,13 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         sessionController.beginScanning()
         assimilatedFrameIndex = 0
         consecutiveFailedCount = 0
+        smoothedMotionSamples.removeAll(keepingCapacity: true)
+        lastProgressUpdateAt = .distantPast
+        distanceTracker.reset()
+        suppressTextureSavingUntilAssimilationIndex = 0
+        cameraPerformanceMetrics.reset()
+        drawPerformanceMetrics.reset()
+        reconstructionPerformanceMetrics.reset()
         meshTexturing.reset()
         captureProgressView.progress = 0
         hudController.resetForNewCapture()
@@ -651,17 +749,8 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         guard motionManager.isDeviceMotionAvailable else { return }
         motionManager.startDeviceMotionUpdates(to: OperationQueue.main) { [weak self] motion, _ in
             guard let self, let motion, self.state == .scanning else { return }
-            Log.scan.debug("Motion update received")
             self.reconstructionManager.accumulateDeviceMotion(motion)
-            let acceleration = motion.userAcceleration
-            let magnitude = sqrt(
-                acceleration.x * acceleration.x +
-                acceleration.y * acceleration.y +
-                acceleration.z * acceleration.z
-            )
-            if magnitude > self.unstableMotionThreshold {
-                self.emitGuidance(.moveSlower)
-            }
+            self.handleMotionGuidance(forMagnitude: self.smoothedMotionMagnitude(with: motion))
         }
     }
 
@@ -686,6 +775,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     // MARK: - CameraManagerDelegate
 
     func cameraDidOutput(colorBuffer: CVPixelBuffer, depthBuffer: CVPixelBuffer, depthCalibrationData: AVCameraCalibrationData) {
+        let callbackStart = CACurrentMediaTime()
         let isScanning = isActiveScanningState()
         let pointCloud: SCPointCloud
 
@@ -700,6 +790,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
             )
         }
 
+        let drawStart = CACurrentMediaTime()
         scanningViewRenderer.draw(
             colorBuffer: colorBuffer,
             pointCloud: pointCloud,
@@ -707,10 +798,17 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
             viewMatrix: latestViewMatrix,
             into: metalLayer
         )
+        if developerModeEnabled {
+            drawPerformanceMetrics.record(CACurrentMediaTime() - drawStart, budget: previewDrawBudget)
+        }
 
         if isScanning {
+            // Hot path: keep this callback limited to rendering + reconstruction-critical work only.
             // Keep the synchronized camera callback limited to reconstruction/rendering work.
             reconstructionManager.accumulate(depthBuffer: depthBuffer, colorBuffer: colorBuffer, calibrationData: depthCalibrationData)
+        }
+        if developerModeEnabled {
+            cameraPerformanceMetrics.record(CACurrentMediaTime() - callbackStart, budget: cameraCallbackBudget)
         }
     }
 
@@ -721,12 +819,18 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         didProcessWith metadata: SCAssimilatedFrameMetadata,
         statistics: SCReconstructionManagerStatistics
     ) {
+        let callbackStart = CACurrentMediaTime()
         guard state == .scanning else { return }
         latestViewMatrix = metadata.viewMatrix
+        updateDistanceGuidanceIfNeeded(with: metadata.viewMatrix)
 
         switch metadata.result {
         case .succeeded, .poorTracking:
-            if generatesTexturedMeshes,
+            // Texture retention is optional; suppress it briefly after instability so reconstruction
+            // stays prioritized while tracking recovers.
+            let shouldSaveTextureBuffer = generatesTexturedMeshes &&
+                assimilatedFrameIndex >= suppressTextureSavingUntilAssimilationIndex
+            if shouldSaveTextureBuffer,
                assimilatedFrameIndex % texturedMeshColorBufferSaveInterval == 0,
                let colorBuffer = metadata.colorBuffer?.takeUnretainedValue() {
                 meshTexturing.saveColorBufferForReconstruction(
@@ -740,6 +844,10 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
             consecutiveFailedCount = 0
             if metadata.result == .poorTracking {
                 emitGuidance(.poorTracking)
+                suppressTextureSavingUntilAssimilationIndex = max(
+                    suppressTextureSavingUntilAssimilationIndex,
+                    assimilatedFrameIndex + textureSaveSuppressionAssimilationWindow
+                )
             } else if assimilatedFrameIndex % goodTrackingFrameInterval == 0 {
                 emitGuidance(.goodTracking)
             }
@@ -749,6 +857,10 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
             }
             consecutiveFailedCount += 1
             emitGuidance(.trackingLost, force: true)
+            suppressTextureSavingUntilAssimilationIndex = max(
+                suppressTextureSavingUntilAssimilationIndex,
+                assimilatedFrameIndex + textureSaveSuppressionAssimilationWindow
+            )
             let belowMinFrames = statistics.succeededCount < minSucceededFramesForCompletion
             let exceededFailureTolerance = consecutiveFailedCount >= 5
             if belowMinFrames && exceededFailureTolerance {
@@ -761,6 +873,9 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
             break
         @unknown default:
             break
+        }
+        if developerModeEnabled {
+            reconstructionPerformanceMetrics.record(CACurrentMediaTime() - callbackStart, budget: reconstructionDelegateBudget)
         }
     }
 
@@ -831,6 +946,11 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
     private func updateCaptureProgress() {
         guard state == .scanning else { return }
+        let now = Date()
+        if now.timeIntervalSince(lastProgressUpdateAt) < progressUpdateMinimumInterval {
+            return
+        }
+        lastProgressUpdateAt = now
         let update = hudController.progressUpdate(
             autoFinishSeconds: autoFinishSeconds,
             autoFinishRemaining: sessionController.autoFinishRemaining,
@@ -838,7 +958,39 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
             minSucceededFramesForCompletion: minSucceededFramesForCompletion
         )
         progressLabel.text = update.text
-        developerDiagnosticsLabel.text = update.diagnostics
+        if developerModeEnabled {
+            developerDiagnosticsLabel.text = developerDiagnosticsText(baseDiagnostics: update.diagnostics)
+        } else {
+            developerDiagnosticsLabel.text = update.diagnostics
+        }
+    }
+
+    private func developerDiagnosticsText(baseDiagnostics: String) -> String {
+        guard developerModeEnabled else { return baseDiagnostics }
+        return String(
+            format: "%@ · camera %.1f/%.1f/%.1f ms ovr=%d · draw %.1f/%.1f/%.1f ms ovr=%d · recon %.1f/%.1f/%.1f ms ovr=%d",
+            baseDiagnostics,
+            cameraPerformanceMetrics.averageDurationMs,
+            cameraPerformanceMetrics.p95DurationMs,
+            cameraPerformanceMetrics.peakDurationMs,
+            cameraPerformanceMetrics.overBudgetCount,
+            drawPerformanceMetrics.averageDurationMs,
+            drawPerformanceMetrics.p95DurationMs,
+            drawPerformanceMetrics.peakDurationMs,
+            drawPerformanceMetrics.overBudgetCount,
+            reconstructionPerformanceMetrics.averageDurationMs,
+            reconstructionPerformanceMetrics.p95DurationMs,
+            reconstructionPerformanceMetrics.peakDurationMs,
+            reconstructionPerformanceMetrics.overBudgetCount
+        )
+    }
+
+    private func updateDistanceGuidanceIfNeeded(with viewMatrix: simd_float4x4) {
+        let translation = SIMD3<Float>(viewMatrix.columns.3.x, viewMatrix.columns.3.y, viewMatrix.columns.3.z)
+        distanceTracker.add(simd_length(translation))
+        if distanceTracker.shouldWarn(threshold: distanceInstabilityThreshold) {
+            emitGuidance(.adjustDistance)
+        }
     }
 
     private func updateHUDVisibility() {
@@ -949,6 +1101,31 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         stopScanning(reason: .canceled)
     }
 
+    private func smoothedMotionMagnitude(with motion: CMDeviceMotion) -> Double {
+        let acceleration = motion.userAcceleration
+        let magnitude = sqrt(
+            acceleration.x * acceleration.x +
+            acceleration.y * acceleration.y +
+            acceleration.z * acceleration.z
+        )
+        return smoothedMotionMagnitude(forMagnitude: magnitude)
+    }
+
+    private func smoothedMotionMagnitude(forMagnitude magnitude: Double) -> Double {
+        smoothedMotionSamples.append(magnitude)
+        if smoothedMotionSamples.count > motionSampleWindowSize {
+            smoothedMotionSamples.removeFirst()
+        }
+        let sum = smoothedMotionSamples.reduce(0, +)
+        return sum / Double(smoothedMotionSamples.count)
+    }
+
+    @discardableResult
+    private func handleMotionGuidance(forMagnitude magnitude: Double) -> Bool {
+        guard magnitude > unstableMotionThreshold else { return false }
+        return emitGuidance(.moveSlower)
+    }
+
 #if DEBUG
     static func debug_scanSheetProfile(height: CGFloat, isPad: Bool) -> (collapsed: CGFloat, half: CGFloat, full: CGFloat) {
         let p = scanSheetProfile(forHeight: height, isPad: isPad)
@@ -970,6 +1147,8 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
             return emitGuidance(.start, force: force)
         case "moveSlower":
             return emitGuidance(.moveSlower, force: force)
+        case "adjustDistance":
+            return emitGuidance(.adjustDistance, force: force)
         case "poorTracking":
             return emitGuidance(.poorTracking, force: force)
         case "goodTracking":
@@ -1021,6 +1200,56 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
     func debug_updateCaptureProgress() {
         updateCaptureProgress()
+    }
+
+    func debug_setLastProgressUpdate(_ date: Date) {
+        lastProgressUpdateAt = date
+    }
+
+    func debug_developerDiagnosticsText(baseDiagnostics: String) -> String {
+        developerDiagnosticsText(baseDiagnostics: baseDiagnostics)
+    }
+
+    func debug_recordCameraMetric(duration: CFTimeInterval, budget: CFTimeInterval) {
+        cameraPerformanceMetrics.record(duration, budget: budget)
+    }
+
+    func debug_recordReconstructionMetric(duration: CFTimeInterval, budget: CFTimeInterval) {
+        reconstructionPerformanceMetrics.record(duration, budget: budget)
+    }
+
+    func debug_recordDrawMetric(duration: CFTimeInterval, budget: CFTimeInterval) {
+        drawPerformanceMetrics.record(duration, budget: budget)
+    }
+
+    func debug_recordDistanceSamples(_ samples: [Float]) {
+        distanceTracker.reset()
+        for sample in samples {
+            distanceTracker.add(sample)
+        }
+    }
+
+    func debug_updateDistanceGuidance(with viewMatrix: simd_float4x4) {
+        updateDistanceGuidanceIfNeeded(with: viewMatrix)
+    }
+
+    func debug_smoothedMotionMagnitude(_ magnitudes: [Double]) -> Double {
+        smoothedMotionSamples.removeAll(keepingCapacity: true)
+        var result = 0.0
+        for magnitude in magnitudes {
+            result = smoothedMotionMagnitude(forMagnitude: magnitude)
+        }
+        return result
+    }
+
+    @discardableResult
+    func debug_handleMotionGuidance(forMagnitudes magnitudes: [Double]) -> Bool {
+        smoothedMotionSamples.removeAll(keepingCapacity: true)
+        var emitted = false
+        for magnitude in magnitudes {
+            emitted = handleMotionGuidance(forMagnitude: smoothedMotionMagnitude(forMagnitude: magnitude)) || emitted
+        }
+        return emitted
     }
 
     func debug_setStateCountdown(seconds: Int) {

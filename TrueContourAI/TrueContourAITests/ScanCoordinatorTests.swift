@@ -78,7 +78,7 @@ final class ScanCoordinatorTests: XCTestCase {
                 XCTAssertTrue(presented.requiresManualFinish)
                 XCTAssertTrue(presented.generatesTexturedMeshes)
                 XCTAssertEqual(presented.maxDepthResolution, 256)
-                XCTAssertEqual(presented.texturedMeshColorBufferSaveInterval, 10)
+                XCTAssertEqual(presented.texturedMeshColorBufferSaveInterval, 12)
                 exp.fulfill()
             }
         )
@@ -180,7 +180,29 @@ final class ScanCoordinatorTests: XCTestCase {
         var config = settingsStore.processingConfig
         config.decimateRatio = 3.0
         let coordinator = ScanCoordinator(settingsStore: settingsStore)
-        XCTAssertEqual(coordinator.debug_suggestedColorBufferInterval(for: config), 16)
+        XCTAssertEqual(coordinator.debug_suggestedColorBufferInterval(for: config), 20)
+    }
+
+    func testSuggestedCaptureTuningUsesHeavyConfigValues() {
+        var config = settingsStore.processingConfig
+        config.decimateRatio = 1.4
+        config.meshResolution = 5
+        let coordinator = ScanCoordinator(settingsStore: settingsStore)
+        let tuning = coordinator.debug_suggestedCaptureTuning(for: config)
+
+        XCTAssertEqual(tuning.maxDepthResolution, 256)
+        XCTAssertEqual(tuning.textureSaveInterval, 13)
+    }
+
+    func testSuggestedCaptureTuningUsesBalancedConfigValues() {
+        var config = settingsStore.processingConfig
+        config.decimateRatio = 1.0
+        config.meshResolution = 6
+        let coordinator = ScanCoordinator(settingsStore: settingsStore)
+        let tuning = coordinator.debug_suggestedCaptureTuning(for: config)
+
+        XCTAssertEqual(tuning.maxDepthResolution, 320)
+        XCTAssertEqual(tuning.textureSaveInterval, 8)
     }
 }
 
