@@ -223,6 +223,20 @@ Minimum checklist:
 5. `ear_landmarks.json` is non-empty only when landmarks succeed
 6. `Documents/Scans/EarDebug/ear-landmark-debug.json` is written in debug builds
 
+## Autonomous Test Coverage
+
+The repo now supports two autonomous ear-verification checks:
+
+1. unit/integration coverage
+- seeded preview scans include a deterministic `ear_view.png`
+- repository tests assert that the seeded verification image exists and can be resolved
+
+2. UI automation
+- seeded preview UI tests can open a scan, tap `Verify Ear`, and wait for a completion alert without manual scanning
+- device smoke coverage includes the same seeded-preview verification path on a connected iPhone
+
+This coverage validates workflow completion and artifact plumbing. It does not replace manual review of anatomical landmark quality.
+
 ## Default Decisions In Force
 
 1. Keep bbox MVP behavior stable

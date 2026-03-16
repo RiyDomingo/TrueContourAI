@@ -183,6 +183,32 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         XCTAssertTrue(waitForExists(startButton, timeout: 8.0), "Expected to return home after closing reopened preview")
     }
 
+    func testDeviceSmokeSeededPreviewVerifyEarCompletes() throws {
+#if targetEnvironment(simulator)
+        throw XCTSkip("TrueDepth smoke tests run only on physical iPhone hardware")
+#endif
+        let app = launchDeviceSmokeApp(extraArguments: ["ui-test-seed-scan"])
+        let openButton = app.buttons["scanOpenButton"].firstMatch
+        XCTAssertTrue(waitForExists(openButton, timeout: 8.0), "Expected seeded scan open button")
+        revealElementIfNeeded(openButton, in: app)
+        XCTAssertTrue(waitForHittable(openButton, timeout: 8.0), "Expected seeded scan open button to become hittable")
+        openButton.tap()
+
+        let verifyButton = app.buttons["verifyEarButton"]
+        XCTAssertTrue(waitForExists(verifyButton, timeout: 12.0), "Expected Verify Ear button in seeded preview")
+        XCTAssertTrue(waitForHittable(verifyButton, timeout: 8.0), "Expected Verify Ear button to be tappable")
+        verifyButton.tap()
+
+        let completionAlert = firstExistingAlert(
+            in: app,
+            identifiers: ["earVerifiedAlert", "noEarAlert", "earVerifyFailedAlert", "earUnavailableAlert"],
+            timeout: 15.0
+        )
+        XCTAssertNotNil(completionAlert, "Expected ear verification to complete from seeded preview")
+        completionAlert?.buttons.firstMatch.tap()
+        XCTAssertTrue(waitForExists(verifyButton, timeout: 6.0), "Expected preview to remain usable after ear verification")
+    }
+
     private func launchDeviceSmokeApp(skipEarML: Bool = false, extraArguments: [String] = []) -> XCUIApplication {
         XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication()
@@ -468,5 +494,23 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         for _ in 0..<maxScrolls where !element.isHittable {
             app.swipeUp()
         }
+    }
+
+    private func firstExistingAlert(
+        in app: XCUIApplication,
+        identifiers: [String],
+        timeout: TimeInterval
+    ) -> XCUIElement? {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            for identifier in identifiers {
+                let alert = app.alerts[identifier]
+                if alert.exists {
+                    return alert
+                }
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(Self.pollInterval))
+        }
+        return nil
     }
 }

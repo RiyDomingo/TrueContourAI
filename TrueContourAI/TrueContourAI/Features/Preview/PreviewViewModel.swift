@@ -56,9 +56,14 @@ final class PreviewViewModel {
     }
 
     @discardableResult
-    func beginExistingScanSession() -> UUID {
+    func beginExistingScanSession(
+        preservedEarVerificationImage: UIImage? = nil,
+        preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata? = nil
+    ) -> UUID {
         let sessionID = UUID()
         self.sessionID = sessionID
+        self.preservedEarVerificationImage = preservedEarVerificationImage
+        self.preservedEarVerificationSelectionMetadata = preservedEarVerificationSelectionMetadata
         sessionMetrics = nil
         qualityReport = nil
         measurementSummary = nil

@@ -333,6 +333,28 @@ final class ScanServiceTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("ear_landmarks.json").path))
     }
 
+    func testUITestSeedPreviewableScanCreatesEarVerificationImage() {
+        let seedRepository = ScanUITestSeedRepository(scansRootURL: tempDir, fileManager: .default)
+
+        seedRepository.seedPreviewableScanIfNeeded()
+
+        let folder = tempDir.appendingPathComponent("UITest-Seed", isDirectory: true)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("scene.gltf").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("ear_view.png").path))
+    }
+
+    func testRepositoryResolvesSeededEarVerificationImage() {
+        let seedRepository = ScanUITestSeedRepository(scansRootURL: tempDir, fileManager: .default)
+        seedRepository.seedPreviewableScanIfNeeded()
+
+        let folder = tempDir.appendingPathComponent("UITest-Seed", isDirectory: true)
+        let image = repository.resolveEarVerificationImage(from: folder)
+
+        XCTAssertNotNil(image)
+        XCTAssertGreaterThan(image?.size.width ?? 0, 0)
+        XCTAssertGreaterThan(image?.size.height ?? 0, 0)
+    }
+
     private func makeDummyImage(color: UIColor) -> UIImage {
         let size = CGSize(width: 2, height: 2)
         UIGraphicsBeginImageContextWithOptions(size, false, 1.0)

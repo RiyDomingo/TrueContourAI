@@ -49,6 +49,7 @@ This project follows a simple keep-a-changelog style:
 - `Verify Ear` now lives in the normal preview summary UI instead of the developer-only section.
 - Ear verification now prefers a preserved capture-faithful scan frame over preview snapshot fallback, while keeping the full-scene overlay for UI context and the crop overlay for QA.
 - Scan-time ear verification image selection now scores capture frames for side-profile strength and tracking quality, preferring the best candidate over the simple latest-frame policy and recording the winning frame metadata in debug output.
+- UI-test scan seeding now includes a deterministic `ear_view.png`, and autonomous preview/device-smoke tests can trigger `Verify Ear` without a fresh manual scan.
 
 ### Fixed
 - Stabilized settings UI-test helpers to wait for an always-visible settings control instead of a non-visible storage-row anchor

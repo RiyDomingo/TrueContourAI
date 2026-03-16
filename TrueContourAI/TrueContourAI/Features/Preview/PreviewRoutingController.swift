@@ -38,7 +38,22 @@ final class PreviewRoutingController {
         configureFitModelUI: @escaping (ScenePreviewViewController) -> Void
     ) {
         guard let presenter else { return }
-        let sessionID = previewSessionController.beginExistingScanSession()
+        let preservedEarVerificationImage = existingScanWorkflow.resolveEarVerificationImage(for: item)
+        let selectionMetadata = preservedEarVerificationImage.map { _ in
+            EarVerificationSelectionMetadata(
+                source: .latestCaptureFallback,
+                frameIndex: nil,
+                totalScore: nil,
+                profileScore: nil,
+                trackingScore: nil,
+                guidanceScore: nil,
+                timingScore: nil
+            )
+        }
+        let sessionID = previewSessionController.beginExistingScanSession(
+            preservedEarVerificationImage: preservedEarVerificationImage,
+            preservedEarVerificationSelectionMetadata: selectionMetadata
+        )
         guard let presentation = existingScanWorkflow.makePresentation(
             item: item,
             presenter: presenter,

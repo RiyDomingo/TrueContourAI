@@ -7,6 +7,7 @@ import simd
 protocol PreviewScanReading: ScanSummaryReading, LastScanReading, ScanFolderSharing {
     var scansRootURL: URL { get }
     func sceneForScan(_ item: ScanItem) -> SCScene?
+    func resolveEarVerificationImage(from folder: URL) -> UIImage?
     func resolveLastScanFolderURL() -> URL?
 }
 
@@ -448,6 +449,10 @@ final class PreviewExistingScanWorkflow {
             )
         }
         configureFitModelUI(previewVC)
+    }
+
+    func resolveEarVerificationImage(for item: ScanItem) -> UIImage? {
+        scanReader.resolveEarVerificationImage(from: item.folderURL)
     }
 }
 

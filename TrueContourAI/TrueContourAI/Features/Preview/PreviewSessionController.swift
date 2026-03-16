@@ -14,8 +14,14 @@ final class PreviewSessionController {
     }
 
     @discardableResult
-    func beginExistingScanSession() -> UUID {
-        viewModel.beginExistingScanSession()
+    func beginExistingScanSession(
+        preservedEarVerificationImage: UIImage? = nil,
+        preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata? = nil
+    ) -> UUID {
+        viewModel.beginExistingScanSession(
+            preservedEarVerificationImage: preservedEarVerificationImage,
+            preservedEarVerificationSelectionMetadata: preservedEarVerificationSelectionMetadata
+        )
     }
 
     @discardableResult
