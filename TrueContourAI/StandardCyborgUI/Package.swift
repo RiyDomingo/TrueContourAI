@@ -33,6 +33,11 @@ let package = Package(
                 .linkedFramework("QuartzCore"),
                 .linkedFramework("CoreVideo")
             ]
+        ),
+        .testTarget(
+            name: "StandardCyborgUITests",
+            dependencies: ["StandardCyborgUI"],
+            path: "Tests/StandardCyborgUITests"
         )
     ],
     swiftLanguageModes: [.v5],

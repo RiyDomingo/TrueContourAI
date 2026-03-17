@@ -60,7 +60,7 @@ typedef struct {
 @property (nonatomic) CGRect normalizedFrameClipRegion;
 
 /** The camera calibration data used by the most recently passed depth frame. */
-@property (nonatomic, readonly) AVCameraCalibrationData *latestCameraCalibrationData;
+@property (nonatomic, readonly, nullable) AVCameraCalibrationData *latestCameraCalibrationData;
 @property (nonatomic, readonly) NSInteger latestCameraCalibrationFrameWidth;
 @property (nonatomic, readonly) NSInteger latestCameraCalibrationFrameHeight;
 
@@ -99,7 +99,10 @@ NS_SWIFT_NAME(accumulate(depthBuffer:colorBuffer:calibrationData:));
 /** Resets manual clipping distance back to center-weighted strategy */
 - (void)clearMaxDepth;
 
-/** May be called at any point during or after scanning to build a copy of the currently reconstructed point cloud */
+/** May be called at any point during or after scanning to build a copy-backed snapshot of the currently reconstructed point cloud */
+- (nullable SCPointCloud *)buildPointCloudSnapshot;
+
+/** Compatibility API. During active scanning this may expose live surfel memory; prefer -buildPointCloudSnapshot for active preview use. */
 - (SCPointCloud *)buildPointCloud;
 
 @end

@@ -37,6 +37,48 @@ using namespace standard_cyborg;
 
 NS_ASSUME_NONNULL_BEGIN
 
+SCReconstructionManagerStatistics
+SCReconstructionManagerStatisticsByRecordingPendingFrameOverwrite(SCReconstructionManagerStatistics statistics,
+                                                                  BOOL didOverwritePendingFrame)
+{
+    if (didOverwritePendingFrame) {
+        statistics.droppedFrameCount += 1;
+    }
+    return statistics;
+}
+
+float
+SCReconstructionManagerAdaptiveMaxDepth(float currentMaxDepth,
+                                        float observedDepth,
+                                        SCReconstructionManagerDepthRangeMode depthRangeMode,
+                                        BOOL userSetMaxDepth)
+{
+    if (depthRangeMode != SCReconstructionManagerDepthRangeModeAdaptive || userSetMaxDepth) {
+        return currentMaxDepth;
+    }
+    
+    if (isnan(observedDepth) || observedDepth <= 0) {
+        return currentMaxDepth;
+    }
+    
+    static const float kCenterDepthExpansionRatio = 1.4f;
+    static const float kAdaptiveMaxDepthIncreaseMetersPerFrame = 0.03f;
+    static const float kAdaptiveMaxDepthIncreaseRatioPerFrame = 1.05f;
+    
+    float candidateMaxDepth = observedDepth * kCenterDepthExpansionRatio;
+    if (isnan(candidateMaxDepth) || candidateMaxDepth <= currentMaxDepth) {
+        return currentMaxDepth;
+    }
+    
+    if (currentMaxDepth <= 0) {
+        return candidateMaxDepth;
+    }
+    
+    float allowedIncrease = fmaxf(currentMaxDepth + kAdaptiveMaxDepthIncreaseMetersPerFrame,
+                                  currentMaxDepth * kAdaptiveMaxDepthIncreaseRatioPerFrame);
+    return fminf(candidateMaxDepth, allowedIncrease);
+}
+
 @interface _IncomingFrameData : NSObject
 @property (nonatomic, readonly) int sequence;
 @property (nonatomic, readonly) CVPixelBufferRef depthBuffer;
@@ -102,6 +144,9 @@ NS_ASSUME_NONNULL_BEGIN
     SCReconstructionManagerStatistics _inputQueue_statistics;
     BOOL _inputQueue_stopped;
     BOOL _inputQueue_shuttingDown;
+    NSLock *_snapshotLock;
+    SCPointCloud *_snapshotPointCloud;
+    BOOL _snapshotRequested;
     
     dispatch_queue_t _modelQueue;
     PBFModel *_modelQueue_model;
@@ -112,6 +157,8 @@ NS_ASSUME_NONNULL_BEGIN
     BOOL _modelQueue_hasCalculatedModelConfig;
     BOOL _finalized;
     BOOL _wroteIntrinsicsToFile;
+    SCReconstructionManagerDepthRangeMode _depthRangeMode;
+    SCTrackingClassificationConfiguration _trackingClassificationConfig;
     
     GravityEstimator _gravityEstimator;
 }
@@ -127,6 +174,9 @@ NS_ASSUME_NONNULL_BEGIN
 
         _modelQueue_maxDepth = _surfelFusionConfig.maxDepth;
         _userSetMaxDepth = NO;
+        _depthRangeMode = SCReconstructionManagerDepthRangeModeFixedInitial;
+        _snapshotLock = [[NSLock alloc] init];
+        _snapshotRequested = NO;
         
         NSString *fusionBundlePath = [[NSBundle mainBundle] pathForResource:@"StandardCyborgFusion_StandardCyborgFusion" ofType:@"bundle"];
         NSBundle *scFusionBundle = [NSBundle bundleWithPath:fusionBundlePath];
@@ -137,6 +187,8 @@ NS_ASSUME_NONNULL_BEGIN
         
         _icpConfig.maxIterations = (int)[[NSUserDefaults standardUserDefaults] integerForKey:@"icp_max_iteration_count"] ?: _icpConfig.maxIterations;
         _icpConfig.tolerance = [[NSUserDefaults standardUserDefaults] floatForKey:@"icp_tolerance"] ?: _icpConfig.tolerance;
+        _trackingClassificationConfig.poorTrackingQualityThreshold = 0.1f;
+        _trackingClassificationConfig.maxConsecutiveLostTrackingCount = 8;
         
         _modelQueue_depthProcessor = new MetalDepthProcessor(device, library, commandQueue);
         
@@ -227,6 +279,28 @@ NS_ASSUME_NONNULL_BEGIN
     _icpConfig.maxIterations = maxIterations;
 }
 
+- (float)poorTrackingQualityThreshold
+{
+    return _trackingClassificationConfig.poorTrackingQualityThreshold;
+}
+
+- (void)setPoorTrackingQualityThreshold:(float)threshold
+{
+    NSParameterAssert(threshold >= 0);
+    _trackingClassificationConfig.poorTrackingQualityThreshold = threshold;
+}
+
+- (NSInteger)maxConsecutiveLostTrackingCount
+{
+    return _trackingClassificationConfig.maxConsecutiveLostTrackingCount;
+}
+
+- (void)setMaxConsecutiveLostTrackingCount:(NSInteger)count
+{
+    NSParameterAssert(count >= 1);
+    _trackingClassificationConfig.maxConsecutiveLostTrackingCount = count;
+}
+
 - (float)minDepth
 {
     return _surfelFusionConfig.minDepth;
@@ -252,6 +326,16 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)clearMaxDepth
 {
     _userSetMaxDepth = NO;
+}
+
+- (SCReconstructionManagerDepthRangeMode)depthRangeMode
+{
+    return _depthRangeMode;
+}
+
+- (void)setDepthRangeMode:(SCReconstructionManagerDepthRangeMode)depthRangeMode
+{
+    _depthRangeMode = depthRangeMode;
 }
 
 // MARK: -
@@ -384,6 +468,7 @@ NS_ASSUME_NONNULL_BEGIN
         
         // We only use the most recent raw frame, dropping any other ones that haven't had a chance to process
         BOOL dropped = _inputQueue_incomingFrameData != nil;
+        _inputQueue_statistics = SCReconstructionManagerStatisticsByRecordingPendingFrameOverwrite(_inputQueue_statistics, dropped);
         _inputQueue_incomingFrameData = data;
         
         if (!dropped) {
@@ -429,6 +514,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (SCPointCloud *)buildPointCloud
 {
+    // Compatibility path: while scanning this can reference live surfel memory.
+    // Active preview callers should use -buildPointCloudSnapshot.
     // TODO: Fix threading/queuing and run off of a copy in PBFModel
     const Surfels& surfels = _modelQueue_model->getSurfels();
     NSData *surfelData;
@@ -443,6 +530,15 @@ NS_ASSUME_NONNULL_BEGIN
     simd_float3 gravity = [self gravity];
     
     return [[SCPointCloud alloc] initWithSurfelData:surfelData gravity:gravity];
+}
+
+- (nullable SCPointCloud *)buildPointCloudSnapshot
+{
+    [_snapshotLock lock];
+    _snapshotRequested = YES;
+    SCPointCloud *snapshot = _snapshotPointCloud;
+    [_snapshotLock unlock];
+    return snapshot;
 }
 
 - (void)reset
@@ -463,6 +559,11 @@ NS_ASSUME_NONNULL_BEGIN
         // Allows _modelQueue to run a loop
         dispatch_semaphore_signal(_incomingFrameDataSemaphore);
     });
+    
+    [_snapshotLock lock];
+    _snapshotPointCloud = nil;
+    _snapshotRequested = NO;
+    [_snapshotLock unlock];
 }
 
 // MARK: - Internal
@@ -505,9 +606,11 @@ static const float kCenterDepthExpansionRatio = 1.4;
         
         // Assimilate!
         PBFAssimilatedFrameMetadata pbfMetadata = [self _modelQueue_assimilateIncomingFrameData:incomingFrameData];
+        [self _modelQueue_updateSnapshotIfRequested];
         
         SCAssimilatedFrameMetadata metadata = SCAssimilatedFrameMetadataFromPBFAssimilatedFrameMetadata(pbfMetadata,
-                                                                                                        _inputQueue_statistics.consecutiveLostTrackingCount);
+                                                                                                        _inputQueue_statistics.consecutiveLostTrackingCount,
+                                                                                                        _trackingClassificationConfig);
         
         if (_includesDepthBuffersInMetadata) {
             metadata.depthBuffer = CVPixelBufferRetain(incomingFrameData.depthBuffer);
@@ -575,6 +678,7 @@ static const float kCenterDepthExpansionRatio = 1.4;
     [self _modelQueue_unprojectRawFrameIntoFrame];
     
     [self _modelQueue_configureModelForRawFrame];
+    [self _modelQueue_updateAdaptiveDepthRangeFromDepthBuffer:data.depthBuffer];
     
     auto metadata = _modelQueue_model->assimilate(*_modelQueue_frame, _pbfConfig, _icpConfig, _surfelFusionConfig, startTime);
     
@@ -586,6 +690,28 @@ static const float kCenterDepthExpansionRatio = 1.4;
 #endif
     
     return metadata;
+}
+
+- (void)_modelQueue_updateSnapshotIfRequested
+{
+    [_snapshotLock lock];
+    BOOL snapshotRequested = _snapshotRequested;
+    [_snapshotLock unlock];
+    
+    if (!snapshotRequested) { return; }
+    
+    SCPointCloud *snapshot = nil;
+    const Surfels& surfels = _modelQueue_model->getSurfels();
+    if (!surfels.empty()) {
+        NSData *surfelData = [NSData dataWithBytes:(void *)surfels.data() length:surfels.size() * sizeof(Surfel)];
+        simd_float3 gravity = _gravityEstimator.getGravity();
+        snapshot = [[SCPointCloud alloc] initWithSurfelData:surfelData gravity:gravity];
+    }
+    
+    [_snapshotLock lock];
+    _snapshotPointCloud = snapshot;
+    _snapshotRequested = NO;
+    [_snapshotLock unlock];
 }
 
 - (void)_modelQueue_fillRawFrameWithData:(_IncomingFrameData *)data
@@ -648,6 +774,21 @@ static const float kCenterDepthExpansionRatio = 1.4;
     _modelQueue_maxDepth = _surfelFusionConfig.maxDepth;
     _modelQueue_hasCalculatedModelConfig = YES;
     printf("Average depth at center was %f; set max depth to %f\n", averageDepthAtCenter, _surfelFusionConfig.maxDepth);
+}
+
+- (void)_modelQueue_updateAdaptiveDepthRangeFromDepthBuffer:(CVPixelBufferRef)depthBuffer
+{
+    if (!_modelQueue_hasCalculatedModelConfig) { return; }
+    
+    float observedDepth = CVPixelBufferAverageDepthAroundCenter(depthBuffer);
+    float adaptiveMaxDepth = SCReconstructionManagerAdaptiveMaxDepth(_surfelFusionConfig.maxDepth,
+                                                                     observedDepth,
+                                                                     _depthRangeMode,
+                                                                     _userSetMaxDepth);
+    if (adaptiveMaxDepth > _surfelFusionConfig.maxDepth) {
+        _surfelFusionConfig.maxDepth = adaptiveMaxDepth;
+        _modelQueue_maxDepth = adaptiveMaxDepth;
+    }
 }
 
 + (void)_fillFloatVector:(std::vector<float>&)vectorOut

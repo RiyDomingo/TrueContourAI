@@ -8,6 +8,7 @@
 #import <XCTest/XCTest.h>
 #import <iostream>
 #import <cmath>
+#import <Metal/Metal.h>
 
 #import <standard_cyborg/math/Mat3x4.hpp>
 #import <standard_cyborg/math/Mat3x3.hpp>
@@ -19,6 +20,8 @@
 #import "MetalDepthProcessor.hpp"
 #import "PBFModel.hpp"
 #import "PointCloudIO.hpp"
+#import "../../Sources/StandardCyborgFusion/Private/SCAssimilatedFrameMetadata_Private.h"
+#import "../../Sources/StandardCyborgFusion/Private/SCReconstructionManager_Private.h"
 
 #import "Helpers/PathHelpers.h"
 #import "Helpers/ReconstructionHelpers.hpp"
@@ -178,6 +181,153 @@ using namespace standard_cyborg;
         // for this reason, we have to add a bit of a margin to the tests.
         XCTAssertLessThan(abs((float)surfels.size() - 45428.0f), 350.0f);
     }
+}
+
+- (void)testPendingFrameOverwriteIncrementsDroppedFrameCount
+{
+    SCReconstructionManagerStatistics stats = SCReconstructionManagerStatistics();
+
+    stats = SCReconstructionManagerStatisticsByRecordingPendingFrameOverwrite(stats, NO);
+    XCTAssertEqual(stats.droppedFrameCount, 0);
+
+    stats = SCReconstructionManagerStatisticsByRecordingPendingFrameOverwrite(stats, YES);
+    XCTAssertEqual(stats.droppedFrameCount, 1);
+
+    stats = SCReconstructionManagerStatisticsByRecordingPendingFrameOverwrite(stats, YES);
+    XCTAssertEqual(stats.droppedFrameCount, 2);
+}
+
+- (void)testNonOverwriteStatsRemainUnchanged
+{
+    SCReconstructionManagerStatistics stats = SCReconstructionManagerStatistics();
+    stats.succeededCount = 4;
+    stats.lostTrackingCount = 2;
+    stats.consecutiveLostTrackingCount = 1;
+    stats.droppedFrameCount = 3;
+
+    SCReconstructionManagerStatistics updated = SCReconstructionManagerStatisticsByRecordingPendingFrameOverwrite(stats, NO);
+
+    XCTAssertEqual(updated.succeededCount, 4);
+    XCTAssertEqual(updated.lostTrackingCount, 2);
+    XCTAssertEqual(updated.consecutiveLostTrackingCount, 1);
+    XCTAssertEqual(updated.droppedFrameCount, 3);
+}
+
+- (void)testOverwriteOnlyIncrementsDroppedFrameCount
+{
+    SCReconstructionManagerStatistics stats = SCReconstructionManagerStatistics();
+    stats.succeededCount = 7;
+    stats.lostTrackingCount = 5;
+    stats.consecutiveLostTrackingCount = 2;
+    stats.droppedFrameCount = 9;
+
+    SCReconstructionManagerStatistics updated = SCReconstructionManagerStatisticsByRecordingPendingFrameOverwrite(stats, YES);
+
+    XCTAssertEqual(updated.succeededCount, 7);
+    XCTAssertEqual(updated.lostTrackingCount, 5);
+    XCTAssertEqual(updated.consecutiveLostTrackingCount, 2);
+    XCTAssertEqual(updated.droppedFrameCount, 10);
+}
+
+- (void)testTrackingClassificationDefaultsPreserveExistingBehavior
+{
+    PBFAssimilatedFrameMetadata mergedMeta = {};
+    mergedMeta.isMerged = true;
+    mergedMeta.icpUnusedIterationFraction = 0.05f;
+
+    SCTrackingClassificationConfiguration config = { .poorTrackingQualityThreshold = 0.1f, .maxConsecutiveLostTrackingCount = 8 };
+    SCAssimilatedFrameMetadata poorTracking = SCAssimilatedFrameMetadataFromPBFAssimilatedFrameMetadata(mergedMeta, 0, config);
+    XCTAssertEqual(poorTracking.result, SCAssimilatedFrameResultPoorTracking);
+
+    PBFAssimilatedFrameMetadata rejectedMeta = {};
+    rejectedMeta.isMerged = false;
+
+    SCAssimilatedFrameMetadata lostTracking = SCAssimilatedFrameMetadataFromPBFAssimilatedFrameMetadata(rejectedMeta, 6, config);
+    XCTAssertEqual(lostTracking.result, SCAssimilatedFrameResultLostTracking);
+
+    SCAssimilatedFrameMetadata failed = SCAssimilatedFrameMetadataFromPBFAssimilatedFrameMetadata(rejectedMeta, 7, config);
+    XCTAssertEqual(failed.result, SCAssimilatedFrameResultFailed);
+}
+
+- (void)testTrackingClassificationUsesConfigurablePoorTrackingThreshold
+{
+    PBFAssimilatedFrameMetadata mergedMeta = {};
+    mergedMeta.isMerged = true;
+    mergedMeta.icpUnusedIterationFraction = 0.15f;
+
+    SCTrackingClassificationConfiguration relaxedConfig = { .poorTrackingQualityThreshold = 0.1f, .maxConsecutiveLostTrackingCount = 8 };
+    SCAssimilatedFrameMetadata succeeded = SCAssimilatedFrameMetadataFromPBFAssimilatedFrameMetadata(mergedMeta, 0, relaxedConfig);
+    XCTAssertEqual(succeeded.result, SCAssimilatedFrameResultSucceeded);
+
+    SCTrackingClassificationConfiguration strictConfig = { .poorTrackingQualityThreshold = 0.2f, .maxConsecutiveLostTrackingCount = 8 };
+    SCAssimilatedFrameMetadata poorTracking = SCAssimilatedFrameMetadataFromPBFAssimilatedFrameMetadata(mergedMeta, 0, strictConfig);
+    XCTAssertEqual(poorTracking.result, SCAssimilatedFrameResultPoorTracking);
+}
+
+- (void)testTrackingClassificationUsesConfigurableFailureThreshold
+{
+    PBFAssimilatedFrameMetadata rejectedMeta = {};
+    rejectedMeta.isMerged = false;
+
+    SCTrackingClassificationConfiguration defaultConfig = { .poorTrackingQualityThreshold = 0.1f, .maxConsecutiveLostTrackingCount = 8 };
+    SCAssimilatedFrameMetadata lostTracking = SCAssimilatedFrameMetadataFromPBFAssimilatedFrameMetadata(rejectedMeta, 2, defaultConfig);
+    XCTAssertEqual(lostTracking.result, SCAssimilatedFrameResultLostTracking);
+
+    SCTrackingClassificationConfiguration aggressiveFailConfig = { .poorTrackingQualityThreshold = 0.1f, .maxConsecutiveLostTrackingCount = 3 };
+    SCAssimilatedFrameMetadata failed = SCAssimilatedFrameMetadataFromPBFAssimilatedFrameMetadata(rejectedMeta, 2, aggressiveFailConfig);
+    XCTAssertEqual(failed.result, SCAssimilatedFrameResultFailed);
+}
+
+- (void)testAdaptiveDepthRangeKeepsFixedInitialModeUnchanged
+{
+    float currentMaxDepth = 0.56f;
+    float updatedMaxDepth = SCReconstructionManagerAdaptiveMaxDepth(currentMaxDepth,
+                                                                    0.7f,
+                                                                    SCReconstructionManagerDepthRangeModeFixedInitial,
+                                                                    NO);
+    XCTAssertEqualWithAccuracy(updatedMaxDepth, currentMaxDepth, FLT_EPSILON);
+}
+
+- (void)testAdaptiveDepthRangeConservativelyExpandsMaxDepth
+{
+    float currentMaxDepth = 0.56f;
+    float updatedMaxDepth = SCReconstructionManagerAdaptiveMaxDepth(currentMaxDepth,
+                                                                    0.8f,
+                                                                    SCReconstructionManagerDepthRangeModeAdaptive,
+                                                                    NO);
+    XCTAssertEqualWithAccuracy(updatedMaxDepth, 0.59f, 1.0e-6f);
+}
+
+- (void)testAdaptiveDepthRangeRespectsManualMaxDepthOverride
+{
+    float currentMaxDepth = 0.56f;
+    float updatedMaxDepth = SCReconstructionManagerAdaptiveMaxDepth(currentMaxDepth,
+                                                                    0.8f,
+                                                                    SCReconstructionManagerDepthRangeModeAdaptive,
+                                                                    YES);
+    XCTAssertEqualWithAccuracy(updatedMaxDepth, currentMaxDepth, FLT_EPSILON);
+}
+
+- (void)testBuildPointCloudSnapshotReturnsPromptlyWhileModelQueueLoopIsRunning
+{
+    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+    XCTAssertNotNil(device);
+    id<MTLCommandQueue> commandQueue = [device newCommandQueue];
+    XCTAssertNotNil(commandQueue);
+    
+    SCReconstructionManager *manager = [[SCReconstructionManager alloc] initWithDevice:device
+                                                                           commandQueue:commandQueue
+                                                                         maxThreadCount:2];
+    XCTAssertNotNil(manager);
+    
+    XCTestExpectation *expectation = [self expectationWithDescription:@"snapshot returns"];
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        SCPointCloud *snapshot = [manager buildPointCloudSnapshot];
+        XCTAssertNil(snapshot);
+        [expectation fulfill];
+    });
+    
+    [self waitForExpectations:@[expectation] timeout:0.5];
 }
 
 @end

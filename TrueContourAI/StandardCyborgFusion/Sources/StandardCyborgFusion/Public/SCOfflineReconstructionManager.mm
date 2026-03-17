@@ -43,6 +43,7 @@ using namespace standard_cyborg;
     ICPConfiguration _icpConfig;
     SurfelFusionConfiguration _surfelFusionConfig;
     BOOL _hasFinalized;
+    SCReconstructionManagerDepthRangeMode _depthRangeMode;
 }
 
 // MARK: SCReconstructionManagerParameters
@@ -115,6 +116,16 @@ using namespace standard_cyborg;
 - (void)setMaxDepth:(float)maxDepth
 {
     _surfelFusionConfig.maxDepth = maxDepth;
+}
+
+- (SCReconstructionManagerDepthRangeMode)depthRangeMode
+{
+    return _depthRangeMode;
+}
+
+- (void)setDepthRangeMode:(SCReconstructionManagerDepthRangeMode)depthRangeMode
+{
+    _depthRangeMode = depthRangeMode;
 }
 
 // MARK: - Public
@@ -356,7 +367,8 @@ using namespace standard_cyborg;
 
     CFAbsoluteTime endTime = CFAbsoluteTimeGetCurrent();
 
-    SCAssimilatedFrameMetadata metadata = SCAssimilatedFrameMetadataFromPBFAssimilatedFrameMetadata(pbfMetadata, 0);
+    SCTrackingClassificationConfiguration config = { .poorTrackingQualityThreshold = 0.1f, .maxConsecutiveLostTrackingCount = 8 };
+    SCAssimilatedFrameMetadata metadata = SCAssimilatedFrameMetadataFromPBFAssimilatedFrameMetadata(pbfMetadata, 0, config);
     metadata.assimilationTime = endTime - startTime;
     return metadata;
 }

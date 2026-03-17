@@ -10,6 +10,61 @@ import AVFoundation
 import Foundation
 import UIKit
 
+public struct CameraManagerStatistics: Sendable, Equatable {
+    public var deliveredSynchronizedPairCount: Int
+    public var droppedSynchronizedPairCount: Int
+    public var droppedDepthDataCount: Int
+    public var droppedVideoDataCount: Int
+    public var missingSynchronizedDataCount: Int
+
+    public init(
+        deliveredSynchronizedPairCount: Int = 0,
+        droppedSynchronizedPairCount: Int = 0,
+        droppedDepthDataCount: Int = 0,
+        droppedVideoDataCount: Int = 0,
+        missingSynchronizedDataCount: Int = 0
+    ) {
+        self.deliveredSynchronizedPairCount = deliveredSynchronizedPairCount
+        self.droppedSynchronizedPairCount = droppedSynchronizedPairCount
+        self.droppedDepthDataCount = droppedDepthDataCount
+        self.droppedVideoDataCount = droppedVideoDataCount
+        self.missingSynchronizedDataCount = missingSynchronizedDataCount
+    }
+}
+
+enum CameraManagerSynchronizedPairEvent {
+    case delivered
+    case droppedDepth
+    case droppedVideo
+    case droppedDepthAndVideo
+    case missingSynchronizedData
+}
+
+extension CameraManagerStatistics {
+    func byRecording(_ event: CameraManagerSynchronizedPairEvent) -> CameraManagerStatistics {
+        var updated = self
+
+        switch event {
+        case .delivered:
+            updated.deliveredSynchronizedPairCount += 1
+        case .droppedDepth:
+            updated.droppedSynchronizedPairCount += 1
+            updated.droppedDepthDataCount += 1
+        case .droppedVideo:
+            updated.droppedSynchronizedPairCount += 1
+            updated.droppedVideoDataCount += 1
+        case .droppedDepthAndVideo:
+            updated.droppedSynchronizedPairCount += 1
+            updated.droppedDepthDataCount += 1
+            updated.droppedVideoDataCount += 1
+        case .missingSynchronizedData:
+            updated.missingSynchronizedDataCount += 1
+        }
+
+        return updated
+    }
+}
+
 @objc public protocol CameraManagerDelegate: AnyObject {
     func cameraDidOutput(colorBuffer: CVPixelBuffer, depthBuffer: CVPixelBuffer, depthCalibrationData: AVCameraCalibrationData)
     @objc optional func cameraManagerDidStartSession(_ manager: CameraManager)
@@ -51,7 +106,7 @@ public extension Notification.Name {
     }
     
     /** The mechanism for clients of CameraManager to be provided with streaming camera and depth frames */
-    @objc public weak var delegate: CameraManagerDelegate!
+    @objc public weak var delegate: CameraManagerDelegate?
     
     /** Configures the minimum color camera shutter speed. Defaults to 1/60s */
     @objc public var minColorExposureDuration: TimeInterval = 1.0/60.0
@@ -109,6 +164,7 @@ public extension Notification.Name {
                     self._addObservers()
                     self._dataOutputQueue.async {
                         self._dataOutputQueue_renderingEnabled = true
+                        self._dataOutputQueue_statistics = CameraManagerStatistics()
                     }
                     
                     self._captureSession.startRunning()
@@ -161,6 +217,14 @@ public extension Notification.Name {
             }
         }
     }
+
+    public var statisticsSnapshot: CameraManagerStatistics {
+        var snapshot = CameraManagerStatistics()
+        _dataOutputQueue.sync {
+            snapshot = _dataOutputQueue_statistics
+        }
+        return snapshot
+    }
     
     /** Fixes the RGB camera's focus at the current focal distance when true */
     @objc public var isFocusLocked: Bool = false {
@@ -195,6 +259,7 @@ public extension Notification.Name {
     private let _depthDataOutput = AVCaptureDepthDataOutput()
     private var _outputSynchronizer: AVCaptureDataOutputSynchronizer?
     private var _dataOutputQueue_renderingEnabled = true
+    private var _dataOutputQueue_statistics = CameraManagerStatistics()
     
     // MARK: - KVO and Notifications
     
@@ -307,18 +372,22 @@ public extension Notification.Name {
                                        didOutput synchronizedDataCollection: AVCaptureSynchronizedDataCollection)
     {
         guard _dataOutputQueue_renderingEnabled else { return }
-        
-        // Read all outputs
+
         guard
-            let syncedDepthData: AVCaptureSynchronizedDepthData =
-                    synchronizedDataCollection.synchronizedData(for: _depthDataOutput) as? AVCaptureSynchronizedDepthData,
-            let syncedVideoData: AVCaptureSynchronizedSampleBufferData =
-                    synchronizedDataCollection.synchronizedData(for: _videoDataOutput) as? AVCaptureSynchronizedSampleBufferData
-        else { return /* Only work on synced pairs */ }
-        
-        guard !syncedDepthData.depthDataWasDropped &&
-              !syncedVideoData.sampleBufferWasDropped
-        else { return }
+            let syncedDepthData = synchronizedDataCollection.synchronizedData(for: _depthDataOutput) as? AVCaptureSynchronizedDepthData,
+            let syncedVideoData = synchronizedDataCollection.synchronizedData(for: _videoDataOutput) as? AVCaptureSynchronizedSampleBufferData
+        else {
+            _dataOutputQueue_statistics = _dataOutputQueue_statistics.byRecording(.missingSynchronizedData)
+            return
+        }
+
+        let pairEvent = _synchronizedPairEvent(
+            depthDataWasDropped: syncedDepthData.depthDataWasDropped,
+            videoDataWasDropped: syncedVideoData.sampleBufferWasDropped
+        )
+        _dataOutputQueue_statistics = _dataOutputQueue_statistics.byRecording(pairEvent)
+
+        guard pairEvent == .delivered else { return }
         
         let depthData = syncedDepthData.depthData
         let depthBuffer = depthData.depthDataMap
@@ -327,7 +396,7 @@ public extension Notification.Name {
               let depthCalibrationData = depthData.cameraCalibrationData
         else { return }
         
-        delegate.cameraDidOutput(colorBuffer: colorBuffer, depthBuffer: depthBuffer, depthCalibrationData: depthCalibrationData)
+        delegate?.cameraDidOutput(colorBuffer: colorBuffer, depthBuffer: depthBuffer, depthCalibrationData: depthCalibrationData)
     }
     
     // MARK: - Private
@@ -455,6 +524,21 @@ public extension Notification.Name {
             } catch {
                 print("Could not lock device for configuration: \(error)")
             }
+        }
+    }
+
+    private func _synchronizedPairEvent(depthDataWasDropped: Bool,
+                                        videoDataWasDropped: Bool) -> CameraManagerSynchronizedPairEvent
+    {
+        switch (depthDataWasDropped, videoDataWasDropped) {
+        case (false, false):
+            return .delivered
+        case (true, false):
+            return .droppedDepth
+        case (false, true):
+            return .droppedVideo
+        case (true, true):
+            return .droppedDepthAndVideo
         }
     }
     
