@@ -488,6 +488,26 @@ final class AppScanningViewControllerTests: XCTestCase {
         XCTAssertFalse(vc.debug_previewSnapshotStats().hasCache)
     }
 
+    func testActiveScanningPreviewThrottlesSnapshotRequestsWhileSnapshotIsUnavailable() {
+        let reconstruction = ReconstructionManagerFake()
+        reconstruction.snapshotPointCloud = nil
+        let vc = makeController(
+            reconstruction: reconstruction,
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.loadViewIfNeeded()
+        vc.debug_setStateScanning()
+
+        vc.debug_refreshActivePreviewSnapshot(at: 10.0)
+        vc.debug_refreshActivePreviewSnapshot(at: 10.05)
+        vc.debug_refreshActivePreviewSnapshot(at: 10.10)
+        vc.debug_refreshActivePreviewSnapshot(at: 10.30)
+
+        XCTAssertEqual(reconstruction.buildPointCloudSnapshotCount, 2)
+        XCTAssertFalse(vc.debug_previewSnapshotStats().hasCache)
+    }
+
     func testActiveScanningPreviewSnapshotThrottleCachesWithinWindow() throws {
         let reconstruction = ReconstructionManagerFake()
         let vc = makeController(

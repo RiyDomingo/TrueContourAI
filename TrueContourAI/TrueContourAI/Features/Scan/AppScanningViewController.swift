@@ -7,10 +7,6 @@ import StandardCyborgFusion
 import StandardCyborgUI
 import UIKit
 
-private let debugDisableLiveReconstructionAccumulation = false
-private let debugDisableReconstructionCallbackHandling = false
-private let debugDisablePreviewSnapshotRefresh = true
-
 protocol ReconstructionManaging: AnyObject {
     var delegate: SCReconstructionManagerDelegate? { get set }
     var includesColorBuffersInMetadata: Bool { get set }
@@ -436,6 +432,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     private var reconstructionPerformanceMetrics = ScanPerformanceMetrics()
     private var previewSnapshotCache: SCPointCloud?
     private var lastPreviewSnapshotBuiltAt: CFTimeInterval = -.greatestFiniteMagnitude
+    private var lastPreviewSnapshotRequestedAt: CFTimeInterval = -.greatestFiniteMagnitude
     private var previewSnapshotBuildCount = 0
     private var previewSnapshotReuseCount = 0
     private var latestReconstructionStatistics = SCReconstructionManagerStatistics()
@@ -695,17 +692,13 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     }
 
     private func startScanning() {
-        Log.scan.info("startScanning: begin")
         sessionController.autoFinishSeconds = autoFinishSeconds
-        Log.scan.info("startScanning: auto-finish configured")
         sessionController.beginScanning()
-        Log.scan.info("startScanning: session began")
         assimilatedFrameIndex = 0
         consecutiveFailedCount = 0
         smoothedMotionSamples.removeAll(keepingCapacity: true)
         lastProgressUpdateAt = .distantPast
         invalidatePreviewSnapshotCache()
-        Log.scan.info("startScanning: preview cache invalidated")
         distanceTracker.reset()
         suppressTextureSavingUntilAssimilationIndex = 0
         cameraPerformanceMetrics.reset()
@@ -713,13 +706,10 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         reconstructionPerformanceMetrics.reset()
         captureProgressView.progress = 0
         hudController.resetForNewCapture()
-        Log.scan.info("startScanning: hud reset")
         stopPromptLoop()
         applyGuidanceUpdate(hudController.initialActiveScanGuidance())
-        Log.scan.info("startScanning: guidance applied")
         emitGuidance(.start, force: true)
         updateCaptureProgress()
-        Log.scan.info("startScanning: complete")
     }
 
     private func stopScanning(reason: ScanningTerminationReason) {
@@ -773,13 +763,11 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     }
 
     private func prepareMeshTexturingForNextScan() {
-        Log.scan.info("prepareMeshTexturingForNextScan: begin")
         backgroundWorkRunner { [weak self] in
             let nextMeshTexturing = SCMeshTexturing()
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
                 self.meshTexturing = nextMeshTexturing
-                Log.scan.info("prepareMeshTexturingForNextScan: ready")
             }
         }
     }
@@ -872,9 +860,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         if isScanning {
             // Hot path: keep this callback limited to rendering + reconstruction-critical work only.
             // Keep the synchronized camera callback limited to reconstruction/rendering work.
-            if !debugDisableLiveReconstructionAccumulation {
-                reconstructionManager.accumulate(depthBuffer: depthBuffer, colorBuffer: colorBuffer, calibrationData: depthCalibrationData)
-            }
+            reconstructionManager.accumulate(depthBuffer: depthBuffer, colorBuffer: colorBuffer, calibrationData: depthCalibrationData)
         }
         if developerModeEnabled {
             cameraPerformanceMetrics.record(CACurrentMediaTime() - callbackStart, budget: cameraCallbackBudget)
@@ -901,10 +887,10 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     private func refreshActivePreviewSnapshotIfNeeded(now: CFTimeInterval) {
         guard isActiveScanningState() else { return }
 
-        if previewSnapshotCache != nil,
-           (now - lastPreviewSnapshotBuiltAt) < previewSnapshotMinimumInterval {
+        if (now - lastPreviewSnapshotRequestedAt) < previewSnapshotMinimumInterval {
             return
         }
+        lastPreviewSnapshotRequestedAt = now
 
         guard let snapshot = reconstructionManager.buildPointCloudSnapshot() else {
             return
@@ -917,6 +903,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     private func invalidatePreviewSnapshotCache() {
         previewSnapshotCache = nil
         lastPreviewSnapshotBuiltAt = -.greatestFiniteMagnitude
+        lastPreviewSnapshotRequestedAt = -.greatestFiniteMagnitude
     }
 
     // MARK: - SCReconstructionManagerDelegate
@@ -928,16 +915,13 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     ) {
         let callbackStart = CACurrentMediaTime()
         guard state == .scanning else { return }
-        if debugDisableReconstructionCallbackHandling { return }
         latestViewMatrix = metadata.viewMatrix
         latestReconstructionStatistics = statistics
         updateDistanceGuidanceIfNeeded(with: metadata.viewMatrix)
 
         switch metadata.result {
         case .succeeded, .poorTracking:
-            if !debugDisablePreviewSnapshotRefresh {
-                refreshActivePreviewSnapshotIfNeeded(now: callbackStart)
-            }
+            refreshActivePreviewSnapshotIfNeeded(now: callbackStart)
             // Texture retention is optional; suppress it briefly after instability so reconstruction
             // stays prioritized while tracking recovers.
             let shouldSaveTextureBuffer = generatesTexturedMeshes &&
@@ -998,7 +982,6 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     // MARK: - UI helpers
 
     private func updateUI() {
-        Log.scan.info("updateUI: state=\(String(describing: self.state), privacy: .public)")
         hudController.updateForSessionState(self.state)
         switch self.state {
         case .default:
