@@ -57,7 +57,9 @@ protocol ScanHistoryReading: ScanItemListing, ScanSummaryReading {}
 protocol PreviewScanLibraryReading:
     ScanSummaryReading,
     LastScanReading,
-    ScanFolderSharing {}
+    ScanFolderSharing {
+    func resolveEarVerificationImage(from folder: URL) -> UIImage?
+}
 
 protocol ScanRootSharing: ScansRootEnsuring, ScanFolderSharing {}
 
@@ -166,6 +168,16 @@ final class ScanService {
             Log.export.error("Failed to decode scan summary: \(error.localizedDescription, privacy: .public)")
             return nil
         }
+    }
+
+    func resolveEarVerificationImage(from folder: URL) -> UIImage? {
+        let imageURL = folder.appendingPathComponent("ear_view.png")
+        guard FileManager.default.fileExists(atPath: imageURL.path),
+              let data = try? Data(contentsOf: imageURL),
+              let image = UIImage(data: data) else {
+            return nil
+        }
+        return image
     }
 
     func listScans() -> [ScanItem] {
@@ -310,6 +322,11 @@ final class ScanService {
 
             if let png = artifacts.earOverlay.pngData() {
                 let url = folderURL.appendingPathComponent("thumbnail_ear_overlay.png")
+                try? png.write(to: url, options: [.atomic])
+            }
+
+            if let png = artifacts.earCropOverlay.pngData() {
+                let url = folderURL.appendingPathComponent("ear_crop_overlay.png")
                 try? png.write(to: url, options: [.atomic])
             }
 

@@ -31,6 +31,28 @@ TrueContourAI scan runtime is built on StandardCyborg components and most closel
 - Delegates countdown/auto-finish/session timing to `ScanSessionController`.
 - Delegates thermal + idle-timer lifecycle to `ScanRuntimeController`.
 - Delegates guidance/prompt/progress/HUD visibility state to `ScanHUDController`.
+- Hot-path rule: camera callbacks must not create `UIImage` / `CIImage` / `CIContext`, run ML, or do heavy scoring/allocation work. Any preserved-frame design must use bounded retention and defer conversion until after scanning.
+
+## Hot Path Constraints
+- Allowed in camera / reconstruction callbacks:
+  - lightweight scalar bookkeeping
+  - preview rendering
+  - reconstruction accumulation
+  - bounded guidance / progress state updates
+- Not allowed in camera / reconstruction callbacks:
+  - image conversion
+  - Core ML
+  - verbose per-frame logging
+  - repeated expensive string formatting
+  - unbounded array growth or repeated heavy allocation
+- Any new capture-time feature must prove it does not materially increase callback cost on a physical TrueDepth iPhone.
+
+## Scan Stability Checklist
+- No per-frame or per-motion logs in active scanning.
+- UI updates are throttled; critical transitions remain immediate.
+- No image / ML / heavy diagnostics work runs in the synchronized camera callback.
+- Validate depth resolution and texture-save interval on the connected TrueDepth iPhone before and after changes.
+- Compare tracking stability, preview output, and export behavior against the pre-change device baseline.
 
 3. Reconstruction callbacks
 - Uses `SCReconstructionManagerDelegate` callbacks for tracking state.
@@ -60,6 +82,11 @@ TrueContourAI scan runtime is built on StandardCyborg components and most closel
 - `ScanningHapticFeedbackProviding`
 
 These seams allow deterministic unit tests of cancel/finish/error lifecycle without live hardware runtime coupling.
+
+## Ear Verification Note
+Ear verification recovery work, coordinate contracts, and device-debug workflow are documented in:
+
+- [docs/EAR_LANDMARKING_RECOVERY.md](./EAR_LANDMARKING_RECOVERY.md)
 
 ## Quality Gate Behavior
 Quality is evaluated from point cloud properties:

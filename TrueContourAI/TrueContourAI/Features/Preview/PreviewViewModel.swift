@@ -8,6 +8,12 @@ final class PreviewSessionState {
 }
 
 final class PreviewViewModel {
+    enum EarVerificationImageSource: String {
+        case bestCaptureFrame
+        case latestCaptureFallback
+        case previewSnapshotFallback
+    }
+
     enum Phase {
         case idle
         case preview
@@ -24,6 +30,10 @@ final class PreviewViewModel {
     private(set) var verifiedEarImage: UIImage?
     private(set) var verifiedEarResult: EarLandmarksResult?
     private(set) var verifiedEarOverlay: UIImage?
+    private(set) var verifiedEarCropOverlay: UIImage?
+    private(set) var preservedEarVerificationImage: UIImage?
+    private(set) var preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata?
+    private(set) var earVerificationImageSource: EarVerificationImageSource?
     private(set) var latestFitCheckResult: FitModelCheckResult?
     private(set) var latestFitMeshData: FitModelPackService.MeshData?
     private(set) var manualEarLeftMeters: SIMD3<Float>?
@@ -46,9 +56,14 @@ final class PreviewViewModel {
     }
 
     @discardableResult
-    func beginExistingScanSession() -> UUID {
+    func beginExistingScanSession(
+        preservedEarVerificationImage: UIImage? = nil,
+        preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata? = nil
+    ) -> UUID {
         let sessionID = UUID()
         self.sessionID = sessionID
+        self.preservedEarVerificationImage = preservedEarVerificationImage
+        self.preservedEarVerificationSelectionMetadata = preservedEarVerificationSelectionMetadata
         sessionMetrics = nil
         qualityReport = nil
         measurementSummary = nil
@@ -65,10 +80,17 @@ final class PreviewViewModel {
     }
 
     @discardableResult
-    func beginPreviewSession(sessionMetrics: ScanFlowState.ScanSessionMetrics?) -> UUID {
+    func beginPreviewSession(
+        sessionMetrics: ScanFlowState.ScanSessionMetrics?,
+        preservedEarVerificationImage: UIImage? = nil,
+        preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata? = nil
+    ) -> UUID {
         let sessionID = UUID()
         self.sessionID = sessionID
         self.sessionMetrics = sessionMetrics
+        self.preservedEarVerificationImage = preservedEarVerificationImage
+        self.preservedEarVerificationSelectionMetadata = preservedEarVerificationSelectionMetadata
+        self.earVerificationImageSource = nil
         qualityReport = nil
         measurementSummary = nil
         meshForExport = nil
@@ -152,10 +174,15 @@ final class PreviewViewModel {
         self.phase = phase
     }
 
-    func setVerifiedEar(image: UIImage, result: EarLandmarksResult, overlay: UIImage) {
+    func setVerifiedEar(image: UIImage, result: EarLandmarksResult, overlay: UIImage, cropOverlay: UIImage) {
         verifiedEarImage = image
         verifiedEarResult = result
         verifiedEarOverlay = overlay
+        verifiedEarCropOverlay = cropOverlay
+    }
+
+    func setEarVerificationImageSource(_ source: EarVerificationImageSource) {
+        earVerificationImageSource = source
     }
 
     func evaluateScanQuality(report: ScanQualityReport) -> ScanQuality {
@@ -203,6 +230,8 @@ final class PreviewViewModel {
         verifiedEarImage = nil
         verifiedEarResult = nil
         verifiedEarOverlay = nil
+        verifiedEarCropOverlay = nil
+        earVerificationImageSource = nil
     }
 
     func clearPreviewArtifacts() {
@@ -212,6 +241,8 @@ final class PreviewViewModel {
         measurementSummary = nil
         meshForExport = nil
         scanQuality = nil
+        preservedEarVerificationImage = nil
+        preservedEarVerificationSelectionMetadata = nil
         clearVerification()
         resetFitState()
         phase = .idle

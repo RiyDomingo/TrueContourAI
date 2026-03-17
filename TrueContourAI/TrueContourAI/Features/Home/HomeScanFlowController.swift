@@ -46,15 +46,13 @@ final class HomeScanFlowController {
 
     func handleScanCompleted(
         from controller: UIViewController,
-        pointCloud: SCPointCloud,
-        meshTexturing: SCMeshTexturing
+        payload: ScanPreviewInput
     ) {
         scanSessionController.recordScanCompleted()
         latestScanMetrics = scanFlowState.completeScanSession()
         previewCoordinator.presentPreviewAfterScan(
             from: controller,
-            pointCloud: pointCloud,
-            meshTexturing: meshTexturing,
+            payload: payload,
             sessionMetrics: latestScanMetrics
         )
     }

@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 final class PreviewSessionController {
     let viewModel: PreviewViewModel
@@ -13,13 +14,27 @@ final class PreviewSessionController {
     }
 
     @discardableResult
-    func beginExistingScanSession() -> UUID {
-        viewModel.beginExistingScanSession()
+    func beginExistingScanSession(
+        preservedEarVerificationImage: UIImage? = nil,
+        preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata? = nil
+    ) -> UUID {
+        viewModel.beginExistingScanSession(
+            preservedEarVerificationImage: preservedEarVerificationImage,
+            preservedEarVerificationSelectionMetadata: preservedEarVerificationSelectionMetadata
+        )
     }
 
     @discardableResult
-    func beginPreviewSession(sessionMetrics: ScanFlowState.ScanSessionMetrics?) -> UUID {
-        viewModel.beginPreviewSession(sessionMetrics: sessionMetrics)
+    func beginPreviewSession(
+        sessionMetrics: ScanFlowState.ScanSessionMetrics?,
+        preservedEarVerificationImage: UIImage? = nil,
+        preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata? = nil
+    ) -> UUID {
+        viewModel.beginPreviewSession(
+            sessionMetrics: sessionMetrics,
+            preservedEarVerificationImage: preservedEarVerificationImage,
+            preservedEarVerificationSelectionMetadata: preservedEarVerificationSelectionMetadata
+        )
     }
 
     func invalidateSession() {

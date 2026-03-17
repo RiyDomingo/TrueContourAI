@@ -90,7 +90,7 @@ final class PreviewOverlayUIController {
             spinner.trailingAnchor.constraint(lessThanOrEqualTo: buttonWrap.trailingAnchor)
         ])
 
-        developerStack.insertArrangedSubview(buttonWrap, at: 0)
+        summaryStack.insertArrangedSubview(buttonWrap, at: 0)
         verifyEarButton = button
         verifyEarActivityIndicator = spinner
 

@@ -66,6 +66,12 @@ If behavior/structure changed, update:
 - `ARCHITECTURE.md`
 - `DEVELOPMENT.md`
 - `docs/SCAN_ENGINE.md` or `docs/REPO_LAYOUT.md` as applicable
+- Feature-specific engineering notes in `docs/` when the change introduces or revises a technical contract, recovery workflow, or device-validation rule
+
+For ML / scan verification changes, also confirm:
+- Coordinate-space contracts are documented explicitly
+- Debug artifact locations and meanings are documented
+- Physical-device findings and remaining open risks are recorded in-repo, not only in chat or PR comments
 
 ## 9) Reviewer Output Template
 Use this simple summary format:

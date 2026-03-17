@@ -173,6 +173,27 @@ final class TrueContourAIUITests: XCTestCase {
         alert.buttons.firstMatch.tap()
     }
 
+    func testSeededPreviewVerifyEarCompletesAutonomously() throws {
+        let app = launchApp(seedScan: true)
+
+        openFirstScan(in: app)
+
+        let verifyButton = app.buttons["verifyEarButton"]
+        XCTAssertTrue(waitForElement(verifyButton, timeout: Self.defaultTimeout + 4.0))
+        XCTAssertTrue(verifyButton.isHittable || waitForCondition(timeout: 2.0, poll: 0.4) { verifyButton.exists && verifyButton.isHittable })
+        verifyButton.tap()
+
+        let completionAlert = firstExistingAlert(
+            in: app,
+            identifiers: ["earVerifiedAlert", "noEarAlert", "earVerifyFailedAlert", "earUnavailableAlert"],
+            timeout: 12.0
+        )
+        XCTAssertNotNil(completionAlert, "Expected ear verification to complete with a visible alert")
+        completionAlert?.buttons.firstMatch.tap()
+
+        XCTAssertTrue(waitForElement(verifyButton, timeout: 4.0))
+    }
+
     func testFilteredEmptyStateClearFilterRestoresScans() throws {
         let app = launchApp(seedScan: true)
 
@@ -256,6 +277,24 @@ final class TrueContourAIUITests: XCTestCase {
         scrollElementIntoView(openButton, in: table)
         XCTAssertTrue(openButton.isHittable || waitForCondition(timeout: 1.0, poll: 0.4) { openButton.exists && openButton.isHittable })
         openButton.tap()
+    }
+
+    private func firstExistingAlert(
+        in app: XCUIApplication,
+        identifiers: [String],
+        timeout: TimeInterval
+    ) -> XCUIElement? {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            for identifier in identifiers {
+                let alert = app.alerts[identifier]
+                if alert.exists {
+                    return alert
+                }
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(Self.pollInterval))
+        }
+        return nil
     }
 
     private func openSettings(in app: XCUIApplication) {

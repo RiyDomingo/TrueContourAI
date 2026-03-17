@@ -101,7 +101,8 @@ final class PreviewViewModelTests: XCTestCase {
                 landmarks: [],
                 usedLeftEarMirroringHeuristic: false
             ),
-            overlay: UIImage()
+            overlay: UIImage(),
+            cropOverlay: UIImage()
         )
         XCTAssertTrue(viewModel.hasVerifiedEar)
 

@@ -7,6 +7,7 @@ import simd
 protocol PreviewScanReading: ScanSummaryReading, LastScanReading, ScanFolderSharing {
     var scansRootURL: URL { get }
     func sceneForScan(_ item: ScanItem) -> SCScene?
+    func resolveEarVerificationImage(from folder: URL) -> UIImage?
     func resolveLastScanFolderURL() -> URL?
 }
 
@@ -449,6 +450,10 @@ final class PreviewExistingScanWorkflow {
         }
         configureFitModelUI(previewVC)
     }
+
+    func resolveEarVerificationImage(for item: ScanItem) -> UIImage? {
+        scanReader.resolveEarVerificationImage(from: item.folderURL)
+    }
 }
 
 final class PreviewLifecycleWorkflow {
@@ -577,8 +582,9 @@ struct PreviewExportWorkflow {
         let earArtifacts: ScanEarArtifacts?
         if let earImage = previewViewModel.verifiedEarImage,
            let earResult = previewViewModel.verifiedEarResult,
-           let earOverlay = previewViewModel.verifiedEarOverlay {
-            earArtifacts = .init(earImage: earImage, earResult: earResult, earOverlay: earOverlay)
+           let earOverlay = previewViewModel.verifiedEarOverlay,
+           let earCropOverlay = previewViewModel.verifiedEarCropOverlay {
+            earArtifacts = .init(earImage: earImage, earResult: earResult, earOverlay: earOverlay, earCropOverlay: earCropOverlay)
         } else {
             earArtifacts = nil
         }
@@ -1080,7 +1086,17 @@ final class PreviewEarVerificationWorkflow {
         isCurrentSession: @escaping () -> Bool,
         onComplete: @escaping () -> Void
     ) {
-        let snapshot = previewVC.renderedSceneImage ?? previewVC.sceneView.snapshot()
+        let previewSnapshot = previewVC.renderedSceneImage ?? previewVC.sceneView.snapshot()
+        let verificationImage = previewViewModel.preservedEarVerificationImage ?? previewSnapshot
+        let verificationSource: PreviewViewModel.EarVerificationImageSource =
+            previewViewModel.preservedEarVerificationSelectionMetadata.map {
+                switch $0.source {
+                case .bestCaptureFrame:
+                    return .bestCaptureFrame
+                case .latestCaptureFallback:
+                    return .latestCaptureFallback
+                }
+            } ?? (previewViewModel.preservedEarVerificationImage != nil ? .latestCaptureFallback : .previewSnapshotFallback)
         let mlStart = CFAbsoluteTimeGetCurrent()
         beginVerificationUI()
 
@@ -1093,7 +1109,12 @@ final class PreviewEarVerificationWorkflow {
             }
 
             do {
-                guard let result = try service.detect(in: snapshot) else {
+                guard let verification = try service.verify(
+                    in: verificationImage,
+                    verificationSource: verificationSource.rawValue,
+                    usedPreviewSnapshotFallback: verificationSource == .previewSnapshotFallback,
+                    selectionMetadata: previewViewModel.preservedEarVerificationSelectionMetadata
+                ) else {
                     DispatchQueue.main.async {
                         guard isCurrentSession() else { return }
                         self.finishVerificationUI(title: L("scan.preview.verify"))
@@ -1109,25 +1130,19 @@ final class PreviewEarVerificationWorkflow {
                     return
                 }
 
-                let overlay = service.renderOverlay(
-                    on: snapshot,
-                    result: result,
-                    drawBoundingBox: true,
-                    flipY: true,
-                    flipX: false
-                )
-
                 DispatchQueue.main.async {
                     guard isCurrentSession() else { return }
+                    self.previewViewModel.setEarVerificationImageSource(verificationSource)
                     self.previewViewModel.setVerifiedEar(
-                        image: snapshot,
-                        result: result,
-                        overlay: overlay
+                        image: verification.verificationImage,
+                        result: verification.result,
+                        overlay: verification.fullSceneOverlay,
+                        cropOverlay: verification.cropOverlay
                     )
 
                     let mlElapsed = CFAbsoluteTimeGetCurrent() - mlStart
                     Log.ml.info("Ear verification completed in \(mlElapsed, privacy: .public)")
-                    self.previewOverlayUI.showBadge(image: overlay)
+                    self.previewOverlayUI.showBadge(image: verification.fullSceneOverlay)
                     self.finishVerificationUI(title: L("scan.preview.verified"))
                     self.previewOverlayUI.removeVerifyHint()
 
@@ -1139,7 +1154,7 @@ final class PreviewEarVerificationWorkflow {
                         ),
                         animated: true
                     )
-                    Log.ml.info("Ear verification succeeded, landmarks: \(result.landmarks.count, privacy: .public)")
+                    Log.ml.info("Ear verification succeeded, landmarks: \(verification.result.landmarks.count, privacy: .public)")
                 }
             } catch {
                 DispatchQueue.main.async {

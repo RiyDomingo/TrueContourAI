@@ -322,13 +322,37 @@ final class ScanServiceTests: XCTestCase {
             landmarks: [.init(x: 0.1, y: 0.2)],
             usedLeftEarMirroringHeuristic: false
         )
-        let artifacts = ScanEarArtifacts(earImage: image, earResult: result, earOverlay: overlay)
+        let cropOverlay = makeDummyImage(color: .yellow)
+        let artifacts = ScanEarArtifacts(earImage: image, earResult: result, earOverlay: overlay, earCropOverlay: cropOverlay)
 
         exporter._writeEarArtifactsForTest(folderURL: folder, artifacts: artifacts)
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("ear_view.png").path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("thumbnail_ear_overlay.png").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("ear_crop_overlay.png").path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("ear_landmarks.json").path))
+    }
+
+    func testUITestSeedPreviewableScanCreatesEarVerificationImage() {
+        let seedRepository = ScanUITestSeedRepository(scansRootURL: tempDir, fileManager: .default)
+
+        seedRepository.seedPreviewableScanIfNeeded()
+
+        let folder = tempDir.appendingPathComponent("UITest-Seed", isDirectory: true)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("scene.gltf").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent("ear_view.png").path))
+    }
+
+    func testRepositoryResolvesSeededEarVerificationImage() {
+        let seedRepository = ScanUITestSeedRepository(scansRootURL: tempDir, fileManager: .default)
+        seedRepository.seedPreviewableScanIfNeeded()
+
+        let folder = tempDir.appendingPathComponent("UITest-Seed", isDirectory: true)
+        let image = repository.resolveEarVerificationImage(from: folder)
+
+        XCTAssertNotNil(image)
+        XCTAssertGreaterThan(image?.size.width ?? 0, 0)
+        XCTAssertGreaterThan(image?.size.height ?? 0, 0)
     }
 
     private func makeDummyImage(color: UIColor) -> UIImage {

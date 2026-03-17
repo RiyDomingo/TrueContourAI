@@ -67,6 +67,16 @@ final class ScanRepository:
         }
     }
 
+    func resolveEarVerificationImage(from folder: URL) -> UIImage? {
+        let imageURL = folder.appendingPathComponent("ear_view.png")
+        guard FileManager.default.fileExists(atPath: imageURL.path),
+              let data = try? Data(contentsOf: imageURL),
+              let image = UIImage(data: data) else {
+            return nil
+        }
+        return image
+    }
+
     func listScans() -> [ScanItem] {
         if case .failure = ensureScansRootFolder() {
             return []

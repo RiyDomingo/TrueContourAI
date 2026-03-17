@@ -62,6 +62,18 @@ final class AccessibilitySmokeTests: XCTestCase {
         XCTAssertEqual(verifyButton.accessibilityHint, L("scan.preview.accessibility.verify.hint"))
     }
 
+    func testPreviewVerifyButtonRemainsVisibleWithoutDeveloperMode() {
+        let overlay = PreviewOverlayUIController()
+        let host = UIView(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+
+        _ = overlay.addVerifyEarUI(to: host, showHint: false)
+        overlay.setDeveloperModeEnabled(false)
+
+        let verifyButton = host.findView(withAccessibilityIdentifier: "verifyEarButton")
+        XCTAssertNotNil(verifyButton)
+        XCTAssertFalse(verifyButton?.isHidden ?? true)
+    }
+
     func testFitBrowSliderAppearsOnlyInDeveloperMode() {
         let hostView = UIView(frame: CGRect(x: 0, y: 0, width: 320, height: 640))
 

@@ -38,7 +38,22 @@ final class PreviewRoutingController {
         configureFitModelUI: @escaping (ScenePreviewViewController) -> Void
     ) {
         guard let presenter else { return }
-        let sessionID = previewSessionController.beginExistingScanSession()
+        let preservedEarVerificationImage = existingScanWorkflow.resolveEarVerificationImage(for: item)
+        let selectionMetadata = preservedEarVerificationImage.map { _ in
+            EarVerificationSelectionMetadata(
+                source: .latestCaptureFallback,
+                frameIndex: nil,
+                totalScore: nil,
+                profileScore: nil,
+                trackingScore: nil,
+                guidanceScore: nil,
+                timingScore: nil
+            )
+        }
+        let sessionID = previewSessionController.beginExistingScanSession(
+            preservedEarVerificationImage: preservedEarVerificationImage,
+            preservedEarVerificationSelectionMetadata: selectionMetadata
+        )
         guard let presentation = existingScanWorkflow.makePresentation(
             item: item,
             presenter: presenter,
@@ -75,21 +90,24 @@ final class PreviewRoutingController {
 
     func presentPreviewAfterScan(
         from scanningVC: UIViewController,
-        pointCloud: SCPointCloud,
-        meshTexturing: SCMeshTexturing,
+        payload: ScanPreviewInput,
         sessionMetrics: ScanFlowState.ScanSessionMetrics?,
         onClose: @escaping () -> Void,
         onSave: @escaping () -> Void
     ) {
         guard let presenter else { return }
-        let previewSessionID = previewSessionController.beginPreviewSession(sessionMetrics: sessionMetrics)
+        let previewSessionID = previewSessionController.beginPreviewSession(
+            sessionMetrics: sessionMetrics,
+            preservedEarVerificationImage: payload.earVerificationImage,
+            preservedEarVerificationSelectionMetadata: payload.earVerificationSelectionMetadata
+        )
 
         Log.scan.info("Presenting preview after scan")
         let context = postScanPresentationWorkflow.makePresentationContext(
             scanningVC: scanningVC,
             presenter: presenter,
-            pointCloud: pointCloud,
-            meshTexturing: meshTexturing,
+            pointCloud: payload.pointCloud,
+            meshTexturing: payload.meshTexturing,
             previewSessionID: previewSessionID,
             onCloseHandler: onClose,
             onSaveHandler: onSave,

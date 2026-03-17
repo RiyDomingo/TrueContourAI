@@ -211,6 +211,10 @@ struct ScanUITestSeedRepository {
         {"asset":{"version":"2.0"},"scene":0,"scenes":[{"nodes":[]}]}
         """
         try? gltf.data(using: .utf8)?.write(to: gltfURL, options: [.atomic])
+        let earViewURL = seedFolder.appendingPathComponent("ear_view.png")
+        if let png = Self.makeEarVerificationPNG() {
+            try? png.write(to: earViewURL, options: [.atomic])
+        }
     }
 
     func seedMissingSceneScanIfNeeded() {
@@ -221,6 +225,41 @@ struct ScanUITestSeedRepository {
         if let png = makeThumbnailPNG() {
             try? png.write(to: thumbURL, options: [.atomic])
         }
+    }
+
+    static func makeEarVerificationPNG() -> Data? {
+        let size = CGSize(width: 320, height: 320)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let image = renderer.image { context in
+            UIColor(red: 0.90, green: 0.91, blue: 0.94, alpha: 1).setFill()
+            context.fill(CGRect(origin: .zero, size: size))
+
+            UIColor(red: 0.63, green: 0.45, blue: 0.34, alpha: 1).setFill()
+            let outer = UIBezierPath(ovalIn: CGRect(x: 56, y: 28, width: 208, height: 260))
+            outer.fill()
+
+            UIColor(red: 0.83, green: 0.67, blue: 0.55, alpha: 1).setFill()
+            let inner = UIBezierPath(ovalIn: CGRect(x: 86, y: 58, width: 148, height: 200))
+            inner.fill()
+
+            UIColor(red: 0.56, green: 0.33, blue: 0.26, alpha: 1).setStroke()
+            let helix = UIBezierPath()
+            helix.move(to: CGPoint(x: 103, y: 88))
+            helix.addCurve(to: CGPoint(x: 122, y: 228), controlPoint1: CGPoint(x: 82, y: 124), controlPoint2: CGPoint(x: 80, y: 194))
+            helix.addCurve(to: CGPoint(x: 210, y: 234), controlPoint1: CGPoint(x: 152, y: 250), controlPoint2: CGPoint(x: 188, y: 246))
+            helix.lineWidth = 12
+            helix.lineCapStyle = .round
+            helix.stroke()
+
+            let concha = UIBezierPath()
+            concha.move(to: CGPoint(x: 182, y: 114))
+            concha.addCurve(to: CGPoint(x: 142, y: 183), controlPoint1: CGPoint(x: 206, y: 136), controlPoint2: CGPoint(x: 185, y: 182))
+            concha.addCurve(to: CGPoint(x: 202, y: 216), controlPoint1: CGPoint(x: 162, y: 189), controlPoint2: CGPoint(x: 188, y: 204))
+            concha.lineWidth = 10
+            concha.lineCapStyle = .round
+            concha.stroke()
+        }
+        return image.pngData()
     }
 
     private func makeThumbnailPNG() -> Data? {

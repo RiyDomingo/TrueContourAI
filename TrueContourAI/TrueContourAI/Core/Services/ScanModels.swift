@@ -111,6 +111,29 @@ struct StoredScanEarArtifacts {
     let earImage: UIImage
     let earResult: EarLandmarksResult
     let earOverlay: UIImage
+    let earCropOverlay: UIImage
+}
+
+struct EarVerificationSelectionMetadata {
+    enum Source: String, Codable {
+        case bestCaptureFrame
+        case latestCaptureFallback
+    }
+
+    let source: Source
+    let frameIndex: Int?
+    let totalScore: Double?
+    let profileScore: Double?
+    let trackingScore: Double?
+    let guidanceScore: Double?
+    let timingScore: Double?
+}
+
+struct ScanPreviewInput {
+    let pointCloud: SCPointCloud
+    let meshTexturing: SCMeshTexturing
+    let earVerificationImage: UIImage?
+    let earVerificationSelectionMetadata: EarVerificationSelectionMetadata?
 }
 
 enum StoredScanExportResult {

@@ -331,11 +331,13 @@
 "scanning.autofinish" = "Auto-finish in %ds";
 "scanning.guidance.start" = "Move slowly around your head";
 "scanning.guidance.motion" = "Move slower and keep your head steady";
+"scanning.guidance.distance" = "Keep the same distance from your head";
 "scanning.guidance.poorTracking" = "Tracking is weak. Keep face in view and move slowly";
 "scanning.guidance.goodTracking" = "Great tracking. Continue rotating";
 "scanning.guidance.trackingLost" = "Tracking lost. Pause briefly, then continue";
 "scanning.guidance.short.start" = "Move around your head slowly";
 "scanning.guidance.short.motion" = "Move slower";
+"scanning.guidance.short.distance" = "Keep distance steady";
 "scanning.guidance.short.poorTracking" = "Keep face in frame";
 "scanning.guidance.short.goodTracking" = "Tracking good";
 "scanning.guidance.short.trackingLost" = "Tracking lost";

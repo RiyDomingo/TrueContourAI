@@ -21,6 +21,7 @@ struct AppScanHUDVisibility {
 enum AppScanGuidanceState {
     case start
     case moveSlower
+    case adjustDistance
     case poorTracking
     case goodTracking
     case trackingLost
@@ -31,6 +32,8 @@ enum AppScanGuidanceState {
             return L("scanning.guidance.short.start")
         case .moveSlower:
             return L("scanning.guidance.short.motion")
+        case .adjustDistance:
+            return L("scanning.guidance.short.distance")
         case .poorTracking:
             return L("scanning.guidance.short.poorTracking")
         case .goodTracking:
@@ -46,7 +49,7 @@ enum AppScanGuidanceState {
             return 0
         case .goodTracking:
             return 1
-        case .moveSlower:
+        case .moveSlower, .adjustDistance:
             return 2
         case .poorTracking:
             return 3
@@ -279,7 +282,7 @@ final class ScanHUDController {
         case .trackingLost:
             status = .lost
             currentHUDState = .critical
-        case .poorTracking, .moveSlower:
+        case .poorTracking, .moveSlower, .adjustDistance:
             status = .caution
             currentHUDState = .warning
         case .goodTracking:
