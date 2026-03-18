@@ -110,6 +110,7 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         let shutter = try waitForScanShutter(app: app)
         shutter.tap()
         let finishButton = try waitForFinishButton(app: app)
+        XCTAssertTrue(waitForCaptureProgress(app: app, minimumCapturedSeconds: 2, timeout: 18.0))
         finishButton.tap()
         XCTAssertTrue(waitForExists(app.buttons["previewSaveButton"], timeout: 30))
         XCTAssertTrue(waitForEnabled(app.buttons["previewSaveButton"], timeout: 25))
@@ -243,6 +244,7 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         let shutter = try waitForScanShutter(app: app)
         shutter.tap()
         let finishButton = try waitForFinishButton(app: app)
+        XCTAssertTrue(waitForCaptureProgress(app: app, minimumCapturedSeconds: 2, timeout: 18.0))
         finishButton.tap()
         let saveButton = app.buttons["previewSaveButton"]
         let saveStateView = app.otherElements["previewSaveStateView"]
@@ -364,6 +366,26 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         revealElementIfNeeded(finishButton, in: app)
         XCTAssertTrue(waitForHittable(finishButton, timeout: 4), "Expected finish button to become hittable during device smoke flow")
         return finishButton
+    }
+
+    private func waitForCaptureProgress(
+        app: XCUIApplication,
+        minimumCapturedSeconds: Int,
+        timeout: TimeInterval
+    ) -> Bool {
+        let progressLabel = app.staticTexts["scanProgressLabel"]
+        return waitForCondition(timeout: timeout) {
+            guard progressLabel.exists else { return false }
+            return Self.capturedSeconds(from: progressLabel.label) >= minimumCapturedSeconds
+        }
+    }
+
+    private static func capturedSeconds(from progressText: String) -> Int {
+        guard let match = progressText.range(of: #"(\d+)\s*/"#, options: .regularExpression) else {
+            return 0
+        }
+        let digits = progressText[match].filter(\.isNumber)
+        return Int(digits) ?? 0
     }
 
     private func waitForExists(_ element: XCUIElement, timeout: TimeInterval = 8.0) -> Bool {
