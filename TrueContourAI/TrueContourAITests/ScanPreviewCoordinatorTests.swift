@@ -6,6 +6,11 @@ import StandardCyborgUI
 
 @MainActor
 final class ScanPreviewCoordinatorTests: XCTestCase {
+    private final class PreviewSaveExportSurfaceFake: PreviewSaveExportSurface {
+        let hostView = UIView()
+        let leftActionButton = UIButton(type: .system)
+        let rightActionButton = UIButton(type: .system)
+    }
 
     private final class TestPresenter: UIViewController {
         var lastPresented: UIViewController?
@@ -172,27 +177,26 @@ final class ScanPreviewCoordinatorTests: XCTestCase {
     }
 
     func testSaveExportViewStateTransitionsThroughMeshingAndReady() {
-        let previewVC = ScenePreviewViewController(scScene: SCScene(pointCloud: nil, mesh: nil))
-        previewVC.loadViewIfNeeded()
+        let previewSurface = PreviewSaveExportSurfaceFake()
         let stateController = SaveExportViewStateController()
 
-        stateController.configure(previewVC: previewVC)
-        XCTAssertEqual(accessibilityValue(for: previewVC, identifier: "previewSaveStateView"), "idle")
-        XCTAssertFalse(previewVC.rightButton.isEnabled)
+        stateController.configure(surface: previewSurface)
+        XCTAssertEqual(accessibilityValue(in: previewSurface.hostView, identifier: "previewSaveStateView"), "idle")
+        XCTAssertFalse(previewSurface.rightActionButton.isEnabled)
 
         stateController.markSaveMeshing()
         stateController.setMeshingStatusText(L("scan.preview.meshing"))
         stateController.setMeshingSpinnerActive(true)
-        XCTAssertEqual(accessibilityValue(for: previewVC, identifier: "previewSaveStateView"), "meshing")
-        XCTAssertFalse(previewVC.rightButton.isEnabled)
+        XCTAssertEqual(accessibilityValue(in: previewSurface.hostView, identifier: "previewSaveStateView"), "meshing")
+        XCTAssertFalse(previewSurface.rightActionButton.isEnabled)
 
         stateController.markSaveReady()
-        XCTAssertEqual(accessibilityValue(for: previewVC, identifier: "previewSaveStateView"), "ready")
-        XCTAssertTrue(previewVC.rightButton.isEnabled)
+        XCTAssertEqual(accessibilityValue(in: previewSurface.hostView, identifier: "previewSaveStateView"), "ready")
+        XCTAssertTrue(previewSurface.rightActionButton.isEnabled)
 
         stateController.markSaveBlocked()
-        XCTAssertEqual(accessibilityValue(for: previewVC, identifier: "previewSaveStateView"), "blocked")
-        XCTAssertTrue(previewVC.rightButton.isEnabled)
+        XCTAssertEqual(accessibilityValue(in: previewSurface.hostView, identifier: "previewSaveStateView"), "blocked")
+        XCTAssertTrue(previewSurface.rightActionButton.isEnabled)
     }
 
     private func findView(withAccessibilityIdentifier identifier: String, in view: UIView?) -> UIView? {
@@ -208,7 +212,7 @@ final class ScanPreviewCoordinatorTests: XCTestCase {
         return nil
     }
 
-    private func accessibilityValue(for previewVC: ScenePreviewViewController, identifier: String) -> String? {
-        findView(withAccessibilityIdentifier: identifier, in: previewVC.view)?.accessibilityValue
+    private func accessibilityValue(in hostView: UIView, identifier: String) -> String? {
+        findView(withAccessibilityIdentifier: identifier, in: hostView)?.accessibilityValue
     }
 }

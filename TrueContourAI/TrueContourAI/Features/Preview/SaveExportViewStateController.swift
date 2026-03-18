@@ -13,7 +13,7 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
         case blocked
     }
 
-    private weak var previewVC: ScenePreviewViewController?
+    private weak var surface: (any PreviewSaveExportSurface)?
     private weak var savingOverlayView: UIView?
     private weak var meshingStatusContainer: UIView?
     private weak var meshingStatusLabel: UILabel?
@@ -22,20 +22,20 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
 
     private var currentSaveState: SaveState = .idle
 
-    func configure(previewVC: ScenePreviewViewController) {
-        self.previewVC = previewVC
-        ensureMeshingStatusView(in: previewVC)
-        ensureSaveStateAccessibilityView(in: previewVC)
+    func configure(surface: any PreviewSaveExportSurface) {
+        self.surface = surface
+        ensureMeshingStatusView(in: surface.hostView)
+        ensureSaveStateAccessibilityView(in: surface.hostView)
         setSaveButtonEnabled(false)
         updateSaveState(.idle)
     }
 
     func setButtonsEnabled(_ isEnabled: Bool) {
-        guard let previewVC else { return }
-        previewVC.leftButton.isEnabled = isEnabled
-        previewVC.rightButton.isEnabled = isEnabled
-        DesignSystem.updateButtonEnabled(previewVC.leftButton, style: .secondary)
-        DesignSystem.updateButtonEnabled(previewVC.rightButton, style: .primary)
+        guard let surface else { return }
+        surface.leftActionButton.isEnabled = isEnabled
+        surface.rightActionButton.isEnabled = isEnabled
+        DesignSystem.updateButtonEnabled(surface.leftActionButton, style: .secondary)
+        DesignSystem.updateButtonEnabled(surface.rightActionButton, style: .primary)
     }
 
     func markSaveMeshing() {
@@ -79,7 +79,7 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
 
     func showSavingToast() {
         guard savingOverlayView == nil else { return }
-        guard let previewVC else { return }
+        guard let surface else { return }
 
         let dimView = UIView()
         dimView.translatesAutoresizingMaskIntoConstraints = false
@@ -120,12 +120,12 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
         card.addSubview(titleLabel)
         card.addSubview(subtitleLabel)
         dimView.addSubview(card)
-        previewVC.view.addSubview(dimView)
+        surface.hostView.addSubview(dimView)
         NSLayoutConstraint.activate([
-            dimView.topAnchor.constraint(equalTo: previewVC.view.topAnchor),
-            dimView.leadingAnchor.constraint(equalTo: previewVC.view.leadingAnchor),
-            dimView.trailingAnchor.constraint(equalTo: previewVC.view.trailingAnchor),
-            dimView.bottomAnchor.constraint(equalTo: previewVC.view.bottomAnchor),
+            dimView.topAnchor.constraint(equalTo: surface.hostView.topAnchor),
+            dimView.leadingAnchor.constraint(equalTo: surface.hostView.leadingAnchor),
+            dimView.trailingAnchor.constraint(equalTo: surface.hostView.trailingAnchor),
+            dimView.bottomAnchor.constraint(equalTo: surface.hostView.bottomAnchor),
 
             card.centerXAnchor.constraint(equalTo: dimView.centerXAnchor),
             card.centerYAnchor.constraint(equalTo: dimView.centerYAnchor),
@@ -199,7 +199,7 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
     }
 
     func clear() {
-        previewVC = nil
+        surface = nil
         savingOverlayView?.removeFromSuperview()
         savingOverlayView = nil
         meshingStatusContainer?.removeFromSuperview()
@@ -211,7 +211,7 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
         currentSaveState = .idle
     }
 
-    private func ensureMeshingStatusView(in previewVC: ScenePreviewViewController) {
+    private func ensureMeshingStatusView(in hostView: UIView) {
         guard meshingStatusContainer == nil else { return }
 
         let container = UIView()
@@ -235,12 +235,12 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
 
         container.addSubview(spinner)
         container.addSubview(label)
-        previewVC.view.addSubview(container)
+        hostView.addSubview(container)
 
         NSLayoutConstraint.activate([
-            container.leadingAnchor.constraint(equalTo: previewVC.view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            container.trailingAnchor.constraint(lessThanOrEqualTo: previewVC.view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
-            container.bottomAnchor.constraint(equalTo: previewVC.view.safeAreaLayoutGuide.bottomAnchor, constant: -92),
+            container.leadingAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            container.trailingAnchor.constraint(lessThanOrEqualTo: hostView.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            container.bottomAnchor.constraint(equalTo: hostView.safeAreaLayoutGuide.bottomAnchor, constant: -92),
 
             spinner.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
             spinner.centerYAnchor.constraint(equalTo: container.centerYAnchor),
@@ -257,12 +257,12 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
     }
 
     private func setSaveButtonEnabled(_ isEnabled: Bool) {
-        guard let previewVC else { return }
-        previewVC.rightButton.isEnabled = isEnabled
-        DesignSystem.updateButtonEnabled(previewVC.rightButton, style: .primary)
+        guard let surface else { return }
+        surface.rightActionButton.isEnabled = isEnabled
+        DesignSystem.updateButtonEnabled(surface.rightActionButton, style: .primary)
     }
 
-    private func ensureSaveStateAccessibilityView(in previewVC: ScenePreviewViewController) {
+    private func ensureSaveStateAccessibilityView(in hostView: UIView) {
         guard saveStateAccessibilityView == nil else { return }
 
         let stateView = UIView()
@@ -272,10 +272,10 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
         stateView.accessibilityLabel = "Preview save state"
         stateView.accessibilityValue = SaveState.idle.rawValue
 
-        previewVC.view.addSubview(stateView)
+        hostView.addSubview(stateView)
         NSLayoutConstraint.activate([
-            stateView.topAnchor.constraint(equalTo: previewVC.view.topAnchor),
-            stateView.leadingAnchor.constraint(equalTo: previewVC.view.leadingAnchor),
+            stateView.topAnchor.constraint(equalTo: hostView.topAnchor),
+            stateView.leadingAnchor.constraint(equalTo: hostView.leadingAnchor),
             stateView.widthAnchor.constraint(equalToConstant: 1),
             stateView.heightAnchor.constraint(equalToConstant: 1)
         ])

@@ -17,10 +17,14 @@ protocol ScanExporting {
     func setLastScanFolder(_ folderURL: URL)
 }
 
+protocol PreviewSaveExportSurface: AnyObject {
+    var hostView: UIView { get }
+    var leftActionButton: UIButton { get }
+    var rightActionButton: UIButton { get }
+}
+
 protocol SaveExportUIStateAdapting {
-    func configure(
-        previewVC: ScenePreviewViewController
-    )
+    func configure(surface: any PreviewSaveExportSurface)
     func setButtonsEnabled(_ isEnabled: Bool)
     func markSaveMeshing()
     func markSaveReady()
@@ -33,6 +37,12 @@ protocol SaveExportUIStateAdapting {
     func markSaveCompleted()
     func markSaveFailed()
     func clear()
+}
+
+extension ScenePreviewViewController: PreviewSaveExportSurface {
+    var hostView: UIView { view }
+    var leftActionButton: UIButton { leftButton }
+    var rightActionButton: UIButton { rightButton }
 }
 
 final class ScanPreviewCoordinator {

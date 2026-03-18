@@ -101,7 +101,7 @@ final class PreviewPresentationWorkflow {
         vc.rightButton.accessibilityIdentifier = "previewSaveButton"
         vc.rightButton.isEnabled = false
         DesignSystem.updateButtonEnabled(vc.rightButton, style: .primary)
-        saveExportViewState.configure(previewVC: vc)
+        saveExportViewState.configure(surface: vc)
         return vc
     }
 
