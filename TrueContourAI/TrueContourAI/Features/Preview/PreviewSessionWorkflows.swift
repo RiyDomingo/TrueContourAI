@@ -433,7 +433,7 @@ final class PreviewExistingScanWorkflow {
     func finalizePresentation(
         summary: ScanSummary?,
         previewVC: ScenePreviewViewController,
-        configureFitModelUI: (ScenePreviewViewController) -> Void
+        configureSceneUI: (ScenePreviewViewController) -> Void
     ) {
         if let derived = summary?.derivedMeasurements {
             overlayWorkflow.renderDerivedMeasurements(
@@ -448,7 +448,7 @@ final class PreviewExistingScanWorkflow {
                 hostView: previewVC.view
             )
         }
-        configureFitModelUI(previewVC)
+        configureSceneUI(previewVC)
     }
 
     func resolveEarVerificationImage(for item: ScanItem) -> UIImage? {

@@ -436,6 +436,9 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     private var previewSnapshotBuildCount = 0
     private var previewSnapshotReuseCount = 0
     private var latestReconstructionStatistics = SCReconstructionManagerStatistics()
+#if DEBUG
+    private var debugFinishCompletionHandler: (() -> Void)?
+#endif
 
     private func scanSheetProfile() -> ScanSheetProfile {
         Self.scanSheetProfile(forHeight: view.bounds.height, isPad: traitCollection.userInterfaceIdiom == .pad)
@@ -756,6 +759,9 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
                             meshTexturing: completedMeshTexturing
                         )
                         self.prepareMeshTexturingForNextScan()
+#if DEBUG
+                        self.debugFinishCompletionHandler?()
+#endif
                     }
                 }
             }
@@ -1404,6 +1410,10 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
     func debug_handleCriticalThermalState() {
         handleCriticalThermalState()
+    }
+
+    func debug_onFinishCompletion(_ handler: (() -> Void)?) {
+        debugFinishCompletionHandler = handler
     }
 
 #endif

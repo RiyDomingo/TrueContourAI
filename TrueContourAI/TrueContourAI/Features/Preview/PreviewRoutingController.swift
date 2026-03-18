@@ -35,7 +35,7 @@ final class PreviewRoutingController {
         shareTarget: AnyObject,
         closeAction: Selector,
         shareAction: Selector,
-        configureFitModelUI: @escaping (ScenePreviewViewController) -> Void
+        configureSceneUI: @escaping (ScenePreviewViewController) -> Void
     ) {
         guard let presenter else { return }
         let preservedEarVerificationImage = existingScanWorkflow.resolveEarVerificationImage(for: item)
@@ -82,7 +82,7 @@ final class PreviewRoutingController {
             self.existingScanWorkflow.finalizePresentation(
                 summary: existingSummary,
                 previewVC: sceneVC,
-                configureFitModelUI: configureFitModelUI
+                configureSceneUI: configureSceneUI
             )
         }
         Log.ui.info("Presented existing scan preview: \(item.displayName, privacy: .public)")

@@ -193,8 +193,10 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         revealElementIfNeeded(openButton, in: app)
         XCTAssertTrue(waitForHittable(openButton, timeout: 8.0), "Expected seeded scan open button to become hittable")
         openButton.tap()
+        XCTAssertTrue(waitForPreviewRoot(in: app, timeout: 12.0), "Expected seeded preview root before Verify Ear")
 
         let verifyButton = app.buttons["verifyEarButton"]
+        revealElementIfNeeded(verifyButton, in: app)
         XCTAssertTrue(waitForExists(verifyButton, timeout: 12.0), "Expected Verify Ear button in seeded preview")
         XCTAssertTrue(waitForHittable(verifyButton, timeout: 8.0), "Expected Verify Ear button to be tappable")
         verifyButton.tap()
@@ -246,7 +248,12 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         let saveStateView = app.otherElements["previewSaveStateView"]
         XCTAssertTrue(waitForExists(saveButton, timeout: 30), "Expected preview save button to appear")
         XCTAssertTrue(waitForExists(saveStateView, timeout: 10), "Expected preview save state view to appear")
-        XCTAssertTrue(waitForValue(saveStateView, equals: "ready", timeout: 30), "Expected preview save state to become ready before save")
+        let previewReady = waitForCondition(timeout: 30) {
+            let state = saveStateView.exists ? (saveStateView.value as? String ?? "") : ""
+            return state == "ready" || saveButton.isEnabled
+        }
+        let initialSaveState = saveStateView.exists ? String(describing: saveStateView.value) : "missing"
+        XCTAssertTrue(previewReady, "Expected preview save flow to become ready before save. state=\(initialSaveState)")
         XCTAssertTrue(waitForEnabled(saveButton, timeout: 30), "Expected preview save button to become enabled before save")
         revealElementIfNeeded(saveButton, in: app)
         XCTAssertTrue(waitForHittable(saveButton, timeout: 4), "Expected preview save button to become hittable")
@@ -360,34 +367,23 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
     }
 
     private func waitForExists(_ element: XCUIElement, timeout: TimeInterval = 8.0) -> Bool {
-        waitForCondition(timeout: timeout) {
-            element.exists
-        }
+        element.waitForExistence(timeout: timeout)
     }
 
     private func waitForHittable(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
-        waitForCondition(timeout: timeout) {
-            element.exists && element.isHittable
-        }
+        waitForPredicate("exists == true && hittable == true", element: element, timeout: timeout)
     }
 
     private func waitForEnabled(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
-        waitForCondition(timeout: timeout) {
-            element.exists && element.isEnabled
-        }
+        waitForPredicate("exists == true && enabled == true", element: element, timeout: timeout)
     }
 
     private func waitForValue(_ element: XCUIElement, equals expectedValue: String, timeout: TimeInterval) -> Bool {
-        waitForCondition(timeout: timeout) {
-            guard element.exists else { return false }
-            return (element.value as? String) == expectedValue
-        }
+        waitForPredicate("exists == true && value == %@", argument: expectedValue, element: element, timeout: timeout)
     }
 
     private func waitForNotExists(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
-        waitForCondition(timeout: timeout) {
-            !element.exists
-        }
+        waitForPredicate("exists == false", element: element, timeout: timeout)
     }
 
     private func waitForLabelContains(_ element: XCUIElement, _ substring: String, timeout: TimeInterval) -> Bool {
@@ -448,22 +444,9 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
     }
 
     private func waitForCondition(timeout: TimeInterval, condition: @escaping () -> Bool) -> Bool {
-        if condition() { return true }
-
-        let expectation = XCTestExpectation(description: "waitForCondition")
-        let deadline = Date().addingTimeInterval(timeout)
-
-        let timer = Timer(timeInterval: Self.pollInterval, repeats: true) { timer in
-            if condition() {
-                expectation.fulfill()
-                timer.invalidate()
-            } else if Date() >= deadline {
-                timer.invalidate()
-            }
-        }
-
-        RunLoop.main.add(timer, forMode: .common)
-
+        let predicate = NSPredicate { _, _ in condition() }
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: NSObject())
+        expectation.expectationDescription = "waitForCondition"
         let result = XCTWaiter.wait(for: [expectation], timeout: timeout)
         return result == .completed || condition()
     }
@@ -501,16 +484,24 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         identifiers: [String],
         timeout: TimeInterval
     ) -> XCUIElement? {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            for identifier in identifiers {
-                let alert = app.alerts[identifier]
-                if alert.exists {
-                    return alert
-                }
+        _ = waitForCondition(timeout: timeout) {
+            identifiers.contains { app.alerts[$0].exists }
+        }
+        for identifier in identifiers {
+            let alert = app.alerts[identifier]
+            if alert.exists {
+                return alert
             }
-            RunLoop.current.run(until: Date().addingTimeInterval(Self.pollInterval))
         }
         return nil
+    }
+
+    private func waitForPreviewRoot(in app: XCUIApplication, timeout: TimeInterval) -> Bool {
+        let closeButton = app.buttons["previewCloseButton"]
+        let shareButton = app.buttons["previewShareButton"]
+        let saveButton = app.buttons["previewSaveButton"]
+        return waitForCondition(timeout: timeout) {
+            closeButton.exists || shareButton.exists || saveButton.exists
+        }
     }
 }

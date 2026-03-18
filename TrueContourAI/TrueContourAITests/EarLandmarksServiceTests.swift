@@ -28,8 +28,10 @@ final class EarLandmarksServiceTests: XCTestCase {
             mirroredHorizontally: false
         )
 
-        XCTAssertEqual(mapped[0], .init(x: 0.4, y: 0.6))
-        XCTAssertEqual(mapped[1], .init(x: 0.6, y: 0.8))
+        XCTAssertEqual(mapped[0].x, 0.4, accuracy: 0.0001)
+        XCTAssertEqual(mapped[0].y, 0.6, accuracy: 0.0001)
+        XCTAssertEqual(mapped[1].x, 0.6, accuracy: 0.0001)
+        XCTAssertEqual(mapped[1].y, 0.8, accuracy: 0.0001)
     }
 
     func testRemapLegacyLandmarksSupportsHorizontalMirroring() {

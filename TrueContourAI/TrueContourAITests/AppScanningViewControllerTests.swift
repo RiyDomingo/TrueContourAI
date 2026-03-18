@@ -105,6 +105,7 @@ final class AppScanningViewControllerTests: XCTestCase {
 
         vc.debug_setAutoFinishForProgress(seconds: 0, remaining: 0)
         vc.debug_setAssimilatedFramesForProgress(12)
+        vc.debug_setLastProgressUpdate(Date(timeIntervalSinceNow: -1))
         vc.debug_updateCaptureProgress()
         XCTAssertEqual(vc.debug_progressLabelText(), L("scanning.progress.capturing"))
     }
@@ -199,8 +200,13 @@ final class AppScanningViewControllerTests: XCTestCase {
         let vc = makeController(reconstruction: reconstruction, camera: camera, haptics: haptics)
         vc.delegate = delegate
         vc.debug_setStateScanning()
+        let completion = expectation(description: "finish completion")
+        vc.debug_onFinishCompletion {
+            completion.fulfill()
+        }
 
         vc.debug_stopScanning(reason: .finished)
+        wait(for: [completion], timeout: 1.0)
 
         XCTAssertEqual(reconstruction.finalizeCount, 1)
         XCTAssertEqual(reconstruction.resetCount, 1)
@@ -245,8 +251,13 @@ final class AppScanningViewControllerTests: XCTestCase {
         let vc = makeController(reconstruction: reconstruction, camera: camera, haptics: haptics)
         vc.delegate = delegate
         vc.debug_setStateScanning()
+        let completion = expectation(description: "finish without calibration")
+        vc.debug_onFinishCompletion {
+            completion.fulfill()
+        }
 
         vc.debug_stopScanning(reason: .finished)
+        wait(for: [completion], timeout: 1.0)
 
         XCTAssertEqual(delegate.scanCount, 1)
         XCTAssertEqual(delegate.cancelCount, 0)
@@ -268,8 +279,13 @@ final class AppScanningViewControllerTests: XCTestCase {
         let vc = makeController(reconstruction: reconstruction, camera: camera, haptics: haptics)
         vc.delegate = delegate
         vc.debug_setStateScanning()
+        let completion = expectation(description: "finish idempotence")
+        vc.debug_onFinishCompletion {
+            completion.fulfill()
+        }
 
         vc.debug_stopScanning(reason: .finished)
+        wait(for: [completion], timeout: 1.0)
         vc.debug_stopScanning(reason: .canceled)
         vc.debug_stopScanning(reason: .finished)
 
@@ -327,8 +343,13 @@ final class AppScanningViewControllerTests: XCTestCase {
         vc.delegate = delegate
         vc.loadViewIfNeeded()
         vc.debug_setStateScanning()
+        let completion = expectation(description: "thermal finish completion")
+        vc.debug_onFinishCompletion {
+            completion.fulfill()
+        }
 
         vc.debug_handleCriticalThermalState()
+        wait(for: [completion], timeout: 1.0)
 
         XCTAssertEqual(reconstruction.finalizeCount, 1)
         XCTAssertEqual(reconstruction.resetCount, 1)
@@ -619,6 +640,7 @@ private final class ReconstructionManagerFake: ReconstructionManaging {
     var latestCameraCalibrationFrameWidth = 1
     var latestCameraCalibrationFrameHeight = 1
     var snapshotPointCloud: SCPointCloud?
+    var returnsFreshSnapshotPerBuild = true
 
     private(set) var resetCount = 0
     private(set) var finalizeCount = 0
@@ -646,6 +668,10 @@ private final class ReconstructionManagerFake: ReconstructionManaging {
 
     func buildPointCloudSnapshot() -> SCPointCloud? {
         buildPointCloudSnapshotCount += 1
+        guard snapshotPointCloud != nil else { return nil }
+        if returnsFreshSnapshotPerBuild {
+            return placeholderPointCloud()
+        }
         return snapshotPointCloud
     }
 

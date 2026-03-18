@@ -216,7 +216,8 @@ final class PreviewCoordinatorComponents {
         self.onExportResult = onExportResult
     }
 
-    func configureExistingScanFitUI(previewVC: ScenePreviewViewController) {
+    func configureExistingScanSceneUI(previewVC: ScenePreviewViewController) {
+        interactionController.addVerifyEarUI(to: previewVC)
         sceneUIController.configureFitModelUIIfNeeded(previewVC: previewVC)
     }
 }

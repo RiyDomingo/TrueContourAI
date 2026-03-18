@@ -84,8 +84,8 @@ final class ScanPreviewCoordinator {
             shareTarget: components.interactionController,
             closeAction: #selector(PreviewActionController.dismissPreviewTapped),
             shareAction: #selector(PreviewInteractionController.shareOpenedScanTapped),
-            configureFitModelUI: { [weak self] previewVC in
-                self?.components.configureExistingScanFitUI(previewVC: previewVC)
+            configureSceneUI: { [weak self] previewVC in
+                self?.components.configureExistingScanSceneUI(previewVC: previewVC)
             }
         )
     }
