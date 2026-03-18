@@ -6,6 +6,7 @@ import StandardCyborgUI
 
 @MainActor
 final class ScanPreviewCoordinatorTests: XCTestCase {
+    @MainActor
     private final class PreviewSaveExportSurfaceFake: PreviewSaveExportSurface {
         let hostView = UIView()
         let leftActionButton = UIButton(type: .system)

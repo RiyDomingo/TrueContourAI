@@ -38,7 +38,7 @@ final class PreviewRoutingController {
         configureSceneUI: @escaping (ScenePreviewViewController) -> Void
     ) {
         guard let presenter else { return }
-        DispatchQueue.global(qos: .userInitiated).async { [weak self, weak presenter] in
+        PreviewQoSQueues.existingScanLoad.async { [weak self, weak presenter] in
             guard let self, let presenter else { return }
             let presentationData = self.existingScanWorkflow.loadPresentationData(
                 item: item,

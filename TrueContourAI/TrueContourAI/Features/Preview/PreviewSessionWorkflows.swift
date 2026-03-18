@@ -4,6 +4,23 @@ import StandardCyborgFusion
 import SceneKit
 import simd
 
+enum PreviewQoSQueues {
+    static let export = DispatchQueue(
+        label: "com.truecontour.preview.export",
+        qos: .userInitiated
+    )
+
+    static let earVerification = DispatchQueue(
+        label: "com.truecontour.preview.earVerification",
+        qos: .userInitiated
+    )
+
+    static let existingScanLoad = DispatchQueue(
+        label: "com.truecontour.preview.existingScanLoad",
+        qos: .userInitiated
+    )
+}
+
 protocol PreviewScanReading: ScanSummaryReading, LastScanReading, ScanFolderSharing {
     var scansRootURL: URL { get }
     func sceneForScan(_ item: ScanItem) -> SCScene?
@@ -384,10 +401,40 @@ final class PreviewExistingScanWorkflow {
         item: ScanItem,
         skipGLTF: Bool
     ) -> PresentationData {
-        PresentationData(
-            summary: scanReader.resolveScanSummary(from: item.folderURL),
-            scene: skipGLTF ? nil : scanReader.sceneForScan(item),
-            preservedEarVerificationImage: scanReader.resolveEarVerificationImage(from: item.folderURL)
+        let loadStart = CFAbsoluteTimeGetCurrent()
+
+        let summaryLoadStart = CFAbsoluteTimeGetCurrent()
+        let summary = scanReader.resolveScanSummary(from: item.folderURL)
+        let summaryLoadMs = Int((CFAbsoluteTimeGetCurrent() - summaryLoadStart) * 1000)
+
+        var scene: SCScene?
+        var sceneLoadMs: Int?
+        if !skipGLTF {
+            let sceneLoadStart = CFAbsoluteTimeGetCurrent()
+            scene = scanReader.sceneForScan(item)
+            sceneLoadMs = Int((CFAbsoluteTimeGetCurrent() - sceneLoadStart) * 1000)
+        }
+
+        let earImageLoadStart = CFAbsoluteTimeGetCurrent()
+        let preservedEarVerificationImage = scanReader.resolveEarVerificationImage(from: item.folderURL)
+        let earImageLoadMs = Int((CFAbsoluteTimeGetCurrent() - earImageLoadStart) * 1000)
+
+#if DEBUG
+        ScanDiagnostics.recordExistingPreviewLoadTimings(
+            .init(
+                totalMs: Int((CFAbsoluteTimeGetCurrent() - loadStart) * 1000),
+                summaryLoadMs: summaryLoadMs,
+                sceneLoadMs: sceneLoadMs,
+                earImageLoadMs: earImageLoadMs,
+                skipsGLTF: skipGLTF
+            )
+        )
+#endif
+
+        return PresentationData(
+            summary: summary,
+            scene: scene,
+            preservedEarVerificationImage: preservedEarVerificationImage
         )
     }
 
@@ -757,7 +804,7 @@ final class PreviewSaveWorkflow {
             return
         }
 
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        PreviewQoSQueues.export.async { [weak self] in
             guard let self else { return }
             let exportStart = CFAbsoluteTimeGetCurrent()
             let exportResult = self.scanExporter.exportScanFolder(
@@ -1119,7 +1166,7 @@ final class PreviewEarVerificationWorkflow {
         let mlStart = CFAbsoluteTimeGetCurrent()
         beginVerificationUI()
 
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        PreviewQoSQueues.earVerification.async { [weak self] in
             guard let self else { return }
             defer {
                 DispatchQueue.main.async {
@@ -1289,10 +1336,9 @@ final class PreviewExportResultWorkflow {
             }
 #if DEBUG
             if self.environment.isDeviceSmokeMode {
-                let diag = ScanDiagnostics.snapshot()
-                self.onToast?(
-                    "diag:gltf=\(diag.hasSceneGLTF ? 1 : 0),obj=\(diag.hasHeadMeshOBJ ? 1 : 0),folder=\(diag.lastExportFolderName ?? "none")"
-                )
+                if let diagnosticsText = ScanDiagnostics.currentDiagnosticsText() {
+                    self.onToast?("diag:\(diagnosticsText)")
+                }
             }
 #endif
             self.onExportResult?(

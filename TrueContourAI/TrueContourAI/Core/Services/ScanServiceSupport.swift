@@ -143,6 +143,15 @@ struct ScanFolderExporter {
         includeGLTF: Bool,
         includeOBJ: Bool
     ) -> ScanExportResult {
+#if DEBUG
+        let exportStart = CFAbsoluteTimeGetCurrent()
+        var createFolderMs = 0
+        var gltfWriteMs = 0
+        var thumbnailWriteMs: Int?
+        var objWriteMs: Int?
+        var earArtifactsWriteMs: Int?
+        var summaryWriteMs: Int?
+#endif
         guard includeGLTF else {
             return .failure(L("settings.export.minimum.message"))
         }
@@ -151,14 +160,26 @@ struct ScanFolderExporter {
         let folderURL = scansRootURL.appendingPathComponent(timestamp, isDirectory: true)
 
         do {
+#if DEBUG
+            let createFolderStart = CFAbsoluteTimeGetCurrent()
+#endif
             try FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true)
+#if DEBUG
+            createFolderMs = Int((CFAbsoluteTimeGetCurrent() - createFolderStart) * 1000)
+#endif
         } catch {
             Log.export.error("Failed to create scan folder: \(error.localizedDescription, privacy: .public)")
             return .failure(String(format: L("scan.service.createFolderFailed"), error.localizedDescription))
         }
 
         let gltfURL = folderURL.appendingPathComponent("scene.gltf")
+#if DEBUG
+        let gltfWriteStart = CFAbsoluteTimeGetCurrent()
+#endif
         scene.writeToGLTF(atPath: gltfURL.path)
+#if DEBUG
+        gltfWriteMs = Int((CFAbsoluteTimeGetCurrent() - gltfWriteStart) * 1000)
+#endif
         if !FileManager.default.fileExists(atPath: gltfURL.path) {
             Log.export.error("Failed to write scene.gltf at \(gltfURL.path, privacy: .private)")
             cleanupFolder(folderURL)
@@ -168,17 +189,29 @@ struct ScanFolderExporter {
         autoreleasepool {
             if let thumbnail, let png = thumbnail.pngData() {
                 let thumbnailURL = folderURL.appendingPathComponent("thumbnail.png")
+#if DEBUG
+                let thumbnailWriteStart = CFAbsoluteTimeGetCurrent()
+#endif
                 do { try png.write(to: thumbnailURL, options: [.atomic]) }
                 catch {
                     Log.export.error("Failed to write thumbnail.png: \(error.localizedDescription, privacy: .public)")
                 }
+#if DEBUG
+                thumbnailWriteMs = Int((CFAbsoluteTimeGetCurrent() - thumbnailWriteStart) * 1000)
+#endif
             }
         }
 
         if includeOBJ {
             let objURL = folderURL.appendingPathComponent("head_mesh.obj")
             do {
+#if DEBUG
+                let objWriteStart = CFAbsoluteTimeGetCurrent()
+#endif
                 try writeOBJ(mesh, objURL)
+#if DEBUG
+                objWriteMs = Int((CFAbsoluteTimeGetCurrent() - objWriteStart) * 1000)
+#endif
             } catch {
                 Log.export.error("Failed to write OBJ: \(error.localizedDescription, privacy: .public)")
                 cleanupFolder(folderURL)
@@ -187,12 +220,37 @@ struct ScanFolderExporter {
         }
 
         if let earArtifacts {
+#if DEBUG
+            let earArtifactsWriteStart = CFAbsoluteTimeGetCurrent()
+#endif
             writeEarArtifacts(folderURL, earArtifacts)
+#if DEBUG
+            earArtifactsWriteMs = Int((CFAbsoluteTimeGetCurrent() - earArtifactsWriteStart) * 1000)
+#endif
         }
         if let scanSummary {
+#if DEBUG
+            let summaryWriteStart = CFAbsoluteTimeGetCurrent()
+#endif
             writeScanSummary(folderURL, scanSummary)
+#if DEBUG
+            summaryWriteMs = Int((CFAbsoluteTimeGetCurrent() - summaryWriteStart) * 1000)
+#endif
         }
 
+#if DEBUG
+        ScanDiagnostics.recordExportTimings(
+            .init(
+                totalMs: Int((CFAbsoluteTimeGetCurrent() - exportStart) * 1000),
+                createFolderMs: createFolderMs,
+                gltfWriteMs: gltfWriteMs,
+                thumbnailWriteMs: thumbnailWriteMs,
+                objWriteMs: objWriteMs,
+                earArtifactsWriteMs: earArtifactsWriteMs,
+                summaryWriteMs: summaryWriteMs
+            )
+        )
+#endif
         Log.export.info("Export completed: \(folderURL.lastPathComponent, privacy: .public)")
         return .success(folderURL: folderURL)
     }
