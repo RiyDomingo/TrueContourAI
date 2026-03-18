@@ -216,6 +216,50 @@ enum ScanDiagnostics {
         }
     }
 
+    struct ExportTimingDiagnostics: Equatable {
+        let totalMs: Int
+        let createFolderMs: Int
+        let gltfWriteMs: Int
+        let thumbnailWriteMs: Int?
+        let objWriteMs: Int?
+        let earArtifactsWriteMs: Int?
+        let summaryWriteMs: Int?
+
+        var text: String {
+            var parts = [
+                "expTotalMs=\(totalMs)",
+                "mkdirMs=\(createFolderMs)",
+                "gltfMs=\(gltfWriteMs)"
+            ]
+            if let thumbnailWriteMs { parts.append("thumbMs=\(thumbnailWriteMs)") }
+            if let objWriteMs { parts.append("objMs=\(objWriteMs)") }
+            if let earArtifactsWriteMs { parts.append("earMs=\(earArtifactsWriteMs)") }
+            if let summaryWriteMs { parts.append("summaryMs=\(summaryWriteMs)") }
+            return parts.joined(separator: ",")
+        }
+    }
+
+    struct ExistingPreviewTimingDiagnostics: Equatable {
+        let totalMs: Int
+        let summaryLoadMs: Int
+        let sceneLoadMs: Int?
+        let earImageLoadMs: Int
+        let skipsGLTF: Bool
+
+        var text: String {
+            var parts = [
+                "openMs=\(totalMs)",
+                "sumMs=\(summaryLoadMs)",
+                "earImgMs=\(earImageLoadMs)",
+                "skipGLTF=\(skipsGLTF ? 1 : 0)"
+            ]
+            if let sceneLoadMs {
+                parts.append("sceneMs=\(sceneLoadMs)")
+            }
+            return parts.joined(separator: ",")
+        }
+    }
+
     struct Snapshot: Equatable {
         let scanStartTimestamp: TimeInterval?
         let finalizeCompletionTimestamp: TimeInterval?
@@ -223,6 +267,8 @@ enum ScanDiagnostics {
         let hasHeadMeshOBJ: Bool
         let lastExportFolderName: String?
         let committedExportDiagnostics: ExportDiagnostics?
+        let exportTimingDiagnostics: ExportTimingDiagnostics?
+        let existingPreviewTimingDiagnostics: ExistingPreviewTimingDiagnostics?
     }
 
     private static let lock = NSLock()
@@ -232,6 +278,8 @@ enum ScanDiagnostics {
     private static var hasHeadMeshOBJ = false
     private static var lastExportFolderName: String?
     private static var committedExportDiagnostics: ExportDiagnostics?
+    private static var exportTimingDiagnostics: ExportTimingDiagnostics?
+    private static var existingPreviewTimingDiagnostics: ExistingPreviewTimingDiagnostics?
 
     static func recordScanStart(date: Date = Date()) {
         lock.lock()
@@ -266,10 +314,38 @@ enum ScanDiagnostics {
         }
     }
 
+    static func recordExportTimings(_ diagnostics: ExportTimingDiagnostics) {
+        lock.lock()
+        exportTimingDiagnostics = diagnostics
+        lock.unlock()
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: didChangeNotification, object: nil)
+        }
+    }
+
+    static func recordExistingPreviewLoadTimings(_ diagnostics: ExistingPreviewTimingDiagnostics) {
+        lock.lock()
+        existingPreviewTimingDiagnostics = diagnostics
+        lock.unlock()
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: didChangeNotification, object: nil)
+        }
+    }
+
     static func currentDiagnosticsText() -> String? {
         lock.lock()
         defer { lock.unlock() }
-        return committedExportDiagnostics?.text
+        var parts: [String] = []
+        if let committedExportDiagnostics {
+            parts.append(committedExportDiagnostics.text)
+        }
+        if let exportTimingDiagnostics {
+            parts.append(exportTimingDiagnostics.text)
+        }
+        if let existingPreviewTimingDiagnostics {
+            parts.append(existingPreviewTimingDiagnostics.text)
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: ",")
     }
 
     static func snapshot() -> Snapshot {
@@ -281,7 +357,9 @@ enum ScanDiagnostics {
             hasSceneGLTF: hasSceneGLTF,
             hasHeadMeshOBJ: hasHeadMeshOBJ,
             lastExportFolderName: lastExportFolderName,
-            committedExportDiagnostics: committedExportDiagnostics
+            committedExportDiagnostics: committedExportDiagnostics,
+            exportTimingDiagnostics: exportTimingDiagnostics,
+            existingPreviewTimingDiagnostics: existingPreviewTimingDiagnostics
         )
     }
 
@@ -293,6 +371,8 @@ enum ScanDiagnostics {
         hasHeadMeshOBJ = false
         lastExportFolderName = nil
         committedExportDiagnostics = nil
+        exportTimingDiagnostics = nil
+        existingPreviewTimingDiagnostics = nil
         lock.unlock()
         DispatchQueue.main.async {
             NotificationCenter.default.post(name: didChangeNotification, object: nil)

@@ -35,57 +35,68 @@ final class PreviewRoutingController {
         shareTarget: AnyObject,
         closeAction: Selector,
         shareAction: Selector,
-        configureFitModelUI: @escaping (ScenePreviewViewController) -> Void
+        configureSceneUI: @escaping (ScenePreviewViewController) -> Void
     ) {
         guard let presenter else { return }
-        let preservedEarVerificationImage = existingScanWorkflow.resolveEarVerificationImage(for: item)
-        let selectionMetadata = preservedEarVerificationImage.map { _ in
-            EarVerificationSelectionMetadata(
-                source: .latestCaptureFallback,
-                frameIndex: nil,
-                totalScore: nil,
-                profileScore: nil,
-                trackingScore: nil,
-                guidanceScore: nil,
-                timingScore: nil
+        PreviewQoSQueues.existingScanLoad.async { [weak self, weak presenter] in
+            guard let self, let presenter else { return }
+            let presentationData = self.existingScanWorkflow.loadPresentationData(
+                item: item,
+                skipGLTF: self.environment.skipsGLTFPreview
             )
-        }
-        let sessionID = previewSessionController.beginExistingScanSession(
-            preservedEarVerificationImage: preservedEarVerificationImage,
-            preservedEarVerificationSelectionMetadata: selectionMetadata
-        )
-        guard let presentation = existingScanWorkflow.makePresentation(
-            item: item,
-            presenter: presenter,
-            skipGLTF: environment.skipsGLTFPreview,
-            closeTarget: closeTarget,
-            shareTarget: shareTarget,
-            onClose: closeAction,
-            onShare: shareAction
-        ) else {
-            return
-        }
+            let selectionMetadata = presentationData.preservedEarVerificationImage.map { _ in
+                EarVerificationSelectionMetadata(
+                    source: .latestCaptureFallback,
+                    frameIndex: nil,
+                    totalScore: nil,
+                    profileScore: nil,
+                    trackingScore: nil,
+                    guidanceScore: nil,
+                    timingScore: nil
+                )
+            }
 
-        let vc = presentation.0
-        let sceneVC = presentation.1
-        let existingSummary = presentation.2
+            DispatchQueue.main.async { [weak self, weak presenter] in
+                guard let self, let presenter else { return }
+                let sessionID = self.previewSessionController.beginExistingScanSession(
+                    preservedEarVerificationImage: presentationData.preservedEarVerificationImage,
+                    preservedEarVerificationSelectionMetadata: selectionMetadata
+                )
+                guard let presentation = self.existingScanWorkflow.makePresentation(
+                    item: item,
+                    presenter: presenter,
+                    skipGLTF: self.environment.skipsGLTFPreview,
+                    presentationData: presentationData,
+                    closeTarget: closeTarget,
+                    shareTarget: shareTarget,
+                    onClose: closeAction,
+                    onShare: shareAction
+                ) else {
+                    return
+                }
 
-        presentationController.setExistingPreview(viewController: vc, scenePreviewViewController: sceneVC)
+                let vc = presentation.0
+                let sceneVC = presentation.1
+                let existingSummary = presentation.2
 
-        if sceneVC == nil {
-            presenter.present(vc, animated: true)
-            return
+                self.presentationController.setExistingPreview(viewController: vc, scenePreviewViewController: sceneVC)
+
+                if sceneVC == nil {
+                    presenter.present(vc, animated: true)
+                    return
+                }
+
+                presenter.present(vc, animated: true) { [weak self, weak sceneVC] in
+                    guard let self, let sceneVC, self.previewSessionController.isCurrentSession(sessionID) else { return }
+                    self.existingScanWorkflow.finalizePresentation(
+                        summary: existingSummary,
+                        previewVC: sceneVC,
+                        configureSceneUI: configureSceneUI
+                    )
+                }
+                Log.ui.info("Presented existing scan preview: \(item.displayName, privacy: .public)")
+            }
         }
-
-        presenter.present(vc, animated: true) { [weak self, weak sceneVC] in
-            guard let self, let sceneVC, self.previewSessionController.isCurrentSession(sessionID) else { return }
-            self.existingScanWorkflow.finalizePresentation(
-                summary: existingSummary,
-                previewVC: sceneVC,
-                configureFitModelUI: configureFitModelUI
-            )
-        }
-        Log.ui.info("Presented existing scan preview: \(item.displayName, privacy: .public)")
     }
 
     func presentPreviewAfterScan(

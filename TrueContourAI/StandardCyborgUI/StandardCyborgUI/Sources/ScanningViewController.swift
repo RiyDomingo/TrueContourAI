@@ -105,10 +105,12 @@ import UIKit
         
         if reason == .finished {
             _cameraManager.stopSession()
-            
-            meshTexturing.cameraCalibrationData = _reconstructionManager.latestCameraCalibrationData
-            meshTexturing.cameraCalibrationFrameWidth = _reconstructionManager.latestCameraCalibrationFrameWidth
-            meshTexturing.cameraCalibrationFrameHeight = _reconstructionManager.latestCameraCalibrationFrameHeight
+
+            if let calibrationData = _reconstructionManager.latestCameraCalibrationData {
+                meshTexturing.cameraCalibrationData = calibrationData
+                meshTexturing.cameraCalibrationFrameWidth = _reconstructionManager.latestCameraCalibrationFrameWidth
+                meshTexturing.cameraCalibrationFrameHeight = _reconstructionManager.latestCameraCalibrationFrameHeight
+            }
             
             // Do final cleanup on the scan
             _reconstructionManager.finalize {

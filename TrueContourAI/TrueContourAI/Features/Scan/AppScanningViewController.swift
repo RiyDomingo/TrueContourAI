@@ -10,13 +10,14 @@ import UIKit
 protocol ReconstructionManaging: AnyObject {
     var delegate: SCReconstructionManagerDelegate? { get set }
     var includesColorBuffersInMetadata: Bool { get set }
-    var latestCameraCalibrationData: AVCameraCalibrationData! { get }
+    var latestCameraCalibrationData: AVCameraCalibrationData? { get }
     var latestCameraCalibrationFrameWidth: Int { get }
     var latestCameraCalibrationFrameHeight: Int { get }
 
     func reset()
     func finalize(_ completion: @escaping () -> Void)
     func buildPointCloud() -> SCPointCloud
+    func buildPointCloudSnapshot() -> SCPointCloud?
     func reconstructSingleDepthBuffer(
         _ depthBuffer: CVPixelBuffer,
         colorBuffer: CVPixelBuffer?,
@@ -28,8 +29,11 @@ protocol ReconstructionManaging: AnyObject {
 }
 
 protocol CameraManaging: AnyObject {
-    var delegate: CameraManagerDelegate! { get set }
+    typealias DiagnosticsSnapshot = CameraDiagnosticsSnapshot
+
+    var delegate: CameraManagerDelegate? { get set }
     var isSessionRunning: Bool { get }
+    var diagnosticsSnapshot: CameraDiagnosticsSnapshot { get }
 
     func configureCaptureSession(maxResolution: Int)
     func startSession(_ completion: ((CameraManager.SessionSetupResult) -> Void)?)
@@ -45,6 +49,14 @@ protocol ScanningHapticFeedbackProviding: AnyObject {
 }
 
 extension ScanningHapticFeedbackEngine: ScanningHapticFeedbackProviding {}
+
+struct CameraDiagnosticsSnapshot {
+    var deliveredSynchronizedPairCount = 0
+    var droppedSynchronizedPairCount = 0
+    var droppedDepthDataCount = 0
+    var droppedVideoDataCount = 0
+    var missingSynchronizedDataCount = 0
+}
 
 final class SCReconstructionManagerAdapter: ReconstructionManaging {
     private let manager: SCReconstructionManager
@@ -67,13 +79,14 @@ final class SCReconstructionManagerAdapter: ReconstructionManaging {
         set { manager.includesColorBuffersInMetadata = newValue }
     }
 
-    var latestCameraCalibrationData: AVCameraCalibrationData! { manager.latestCameraCalibrationData }
+    var latestCameraCalibrationData: AVCameraCalibrationData? { manager.latestCameraCalibrationData }
     var latestCameraCalibrationFrameWidth: Int { manager.latestCameraCalibrationFrameWidth }
     var latestCameraCalibrationFrameHeight: Int { manager.latestCameraCalibrationFrameHeight }
 
     func reset() { manager.reset() }
     func finalize(_ completion: @escaping () -> Void) { manager.finalize(completion) }
     func buildPointCloud() -> SCPointCloud { manager.buildPointCloud() }
+    func buildPointCloudSnapshot() -> SCPointCloud? { manager.buildPointCloudSnapshot() }
 
     func reconstructSingleDepthBuffer(
         _ depthBuffer: CVPixelBuffer,
@@ -101,12 +114,22 @@ final class SCReconstructionManagerAdapter: ReconstructionManaging {
 final class CameraManagerAdapter: CameraManaging {
     private let manager = CameraManager()
 
-    var delegate: CameraManagerDelegate! {
+    var delegate: CameraManagerDelegate? {
         get { manager.delegate }
         set { manager.delegate = newValue }
     }
 
     var isSessionRunning: Bool { manager.isSessionRunning }
+    var diagnosticsSnapshot: CameraDiagnosticsSnapshot {
+        let stats = manager.statisticsSnapshot
+        return CameraDiagnosticsSnapshot(
+            deliveredSynchronizedPairCount: stats.deliveredSynchronizedPairCount,
+            droppedSynchronizedPairCount: stats.droppedSynchronizedPairCount,
+            droppedDepthDataCount: stats.droppedDepthDataCount,
+            droppedVideoDataCount: stats.droppedVideoDataCount,
+            missingSynchronizedDataCount: stats.missingSynchronizedDataCount
+        )
+    }
 
     func configureCaptureSession(maxResolution: Int) {
         manager.configureCaptureSession(maxResolution: maxResolution)
@@ -250,7 +273,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         didSet { reconstructionManager.includesColorBuffersInMetadata = generatesTexturedMeshes }
     }
     var texturedMeshColorBufferSaveInterval: Int = 8
-    let meshTexturing = SCMeshTexturing()
+    private var meshTexturing = SCMeshTexturing()
 
     private let metalContainerView = UIView()
     private let metalLayer = CAMetalLayer()
@@ -367,6 +390,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         commandQueue: visualizationCommandQueue
     )
     private let reconstructionManagerFactory: (MTLDevice, MTLCommandQueue, Int32) -> ReconstructionManaging
+    private let backgroundWorkRunner: (@escaping () -> Void) -> Void
     private let cameraManager: CameraManaging
     private let hapticEngine: ScanningHapticFeedbackProviding
     private lazy var sessionController = makeSessionController()
@@ -398,6 +422,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     private let cameraCallbackBudget: CFTimeInterval = 1.0 / 30.0
     private let reconstructionDelegateBudget: CFTimeInterval = 0.012
     private let previewDrawBudget: CFTimeInterval = 0.010
+    private let previewSnapshotMinimumInterval: CFTimeInterval = 0.15
     private var smoothedMotionSamples: [Double] = []
     private var lastProgressUpdateAt: Date = .distantPast
     private var distanceTracker = DistanceStabilityTracker()
@@ -405,6 +430,15 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     private var cameraPerformanceMetrics = ScanPerformanceMetrics()
     private var drawPerformanceMetrics = ScanPerformanceMetrics()
     private var reconstructionPerformanceMetrics = ScanPerformanceMetrics()
+    private var previewSnapshotCache: SCPointCloud?
+    private var lastPreviewSnapshotBuiltAt: CFTimeInterval = -.greatestFiniteMagnitude
+    private var lastPreviewSnapshotRequestedAt: CFTimeInterval = -.greatestFiniteMagnitude
+    private var previewSnapshotBuildCount = 0
+    private var previewSnapshotReuseCount = 0
+    private var latestReconstructionStatistics = SCReconstructionManagerStatistics()
+#if DEBUG
+    private var debugFinishCompletionHandler: (() -> Void)?
+#endif
 
     private func scanSheetProfile() -> ScanSheetProfile {
         Self.scanSheetProfile(forHeight: view.bounds.height, isPad: traitCollection.userInterfaceIdiom == .pad)
@@ -425,9 +459,13 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
             SCReconstructionManagerAdapter(device: $0, commandQueue: $1, maxThreadCount: $2)
         },
         cameraManager: CameraManaging = CameraManagerAdapter(),
-        hapticEngine: ScanningHapticFeedbackProviding = ScanningHapticFeedbackEngine.shared
+        hapticEngine: ScanningHapticFeedbackProviding = ScanningHapticFeedbackEngine.shared,
+        backgroundWorkRunner: @escaping (@escaping () -> Void) -> Void = { work in
+            DispatchQueue.global(qos: .userInitiated).async(execute: work)
+        }
     ) {
         self.reconstructionManagerFactory = reconstructionManagerFactory
+        self.backgroundWorkRunner = backgroundWorkRunner
         self.cameraManager = cameraManager
         self.hapticEngine = hapticEngine
         super.init(nibName: nil, bundle: nil)
@@ -549,8 +587,8 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         controller.autoFinishSeconds = autoFinishSeconds
         controller.onStateChange = { [weak self] state in
             guard let self else { return }
-            setActiveScanningState(state == .scanning)
-            updateUI()
+            self.setActiveScanningState(state == .scanning)
+            self.updateUI()
         }
         controller.onAutoFinishRemainingChange = { [weak self] _ in
             guard let self else { return }
@@ -663,12 +701,12 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         consecutiveFailedCount = 0
         smoothedMotionSamples.removeAll(keepingCapacity: true)
         lastProgressUpdateAt = .distantPast
+        invalidatePreviewSnapshotCache()
         distanceTracker.reset()
         suppressTextureSavingUntilAssimilationIndex = 0
         cameraPerformanceMetrics.reset()
         drawPerformanceMetrics.reset()
         reconstructionPerformanceMetrics.reset()
-        meshTexturing.reset()
         captureProgressView.progress = 0
         hudController.resetForNewCapture()
         stopPromptLoop()
@@ -679,8 +717,8 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
     private func stopScanning(reason: ScanningTerminationReason) {
         guard sessionController.stopScanning(reason: reason) else { return }
+        invalidatePreviewSnapshotCache()
         latestViewMatrix = matrix_identity_float4x4
-        meshTexturing.reset()
         hudController.resetAfterCapture()
         currentHUDState = hudController.currentHUDState
         startPromptLoop()
@@ -689,6 +727,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         case .canceled:
             reconstructionManager.reset()
             delegate?.appScanningViewControllerDidCancel(self)
+            prepareMeshTexturingForNextScan()
         case .finished:
             cameraManager.stopSession(nil)
             if let calibrationData = reconstructionManager.latestCameraCalibrationData {
@@ -700,20 +739,41 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
             }
             reconstructionManager.finalize { [weak self] in
                 guard let self else { return }
-                let pointCloud = self.reconstructionManager.buildPointCloud()
-                self.reconstructionManager.reset()
-                let payload = ScanPreviewInput(
-                    pointCloud: pointCloud,
-                    meshTexturing: self.meshTexturing,
-                    earVerificationImage: nil,
-                    earVerificationSelectionMetadata: nil
-                )
-                self.delegate?.appScanningViewController(self, didCompleteScan: payload)
-                self.delegate?.appScanningViewController(
-                    self,
-                    didScan: pointCloud,
-                    meshTexturing: self.meshTexturing
-                )
+                let completedMeshTexturing = self.meshTexturing
+                self.backgroundWorkRunner { [weak self] in
+                    guard let self else { return }
+                    let pointCloud = self.reconstructionManager.buildPointCloud()
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self else { return }
+                        self.reconstructionManager.reset()
+                        let payload = ScanPreviewInput(
+                            pointCloud: pointCloud,
+                            meshTexturing: completedMeshTexturing,
+                            earVerificationImage: nil,
+                            earVerificationSelectionMetadata: nil
+                        )
+                        self.delegate?.appScanningViewController(self, didCompleteScan: payload)
+                        self.delegate?.appScanningViewController(
+                            self,
+                            didScan: pointCloud,
+                            meshTexturing: completedMeshTexturing
+                        )
+                        self.prepareMeshTexturingForNextScan()
+#if DEBUG
+                        self.debugFinishCompletionHandler?()
+#endif
+                    }
+                }
+            }
+        }
+    }
+
+    private func prepareMeshTexturingForNextScan() {
+        backgroundWorkRunner { [weak self] in
+            let nextMeshTexturing = SCMeshTexturing()
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.meshTexturing = nextMeshTexturing
             }
         }
     }
@@ -777,11 +837,12 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     func cameraDidOutput(colorBuffer: CVPixelBuffer, depthBuffer: CVPixelBuffer, depthCalibrationData: AVCameraCalibrationData) {
         let callbackStart = CACurrentMediaTime()
         let isScanning = isActiveScanningState()
-        let pointCloud: SCPointCloud
+        let pointCloud: SCPointCloud?
 
         if isScanning {
-            pointCloud = reconstructionManager.buildPointCloud()
+            pointCloud = activeScanPreviewPointCloud(now: callbackStart)
         } else {
+            invalidatePreviewSnapshotCache()
             pointCloud = reconstructionManager.reconstructSingleDepthBuffer(
                 depthBuffer,
                 colorBuffer: nil,
@@ -812,6 +873,45 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         }
     }
 
+    private func activeScanPreviewPointCloud(now: CFTimeInterval) -> SCPointCloud? {
+        if let cachedSnapshot = previewSnapshotCache,
+           (now - lastPreviewSnapshotBuiltAt) < previewSnapshotMinimumInterval {
+            previewSnapshotReuseCount += 1
+            return cachedSnapshot
+        }
+
+        if let cachedSnapshot = previewSnapshotCache {
+            previewSnapshotReuseCount += 1
+            return cachedSnapshot
+        }
+        
+        // Do not synchronously build snapshots on the synchronized camera callback.
+        // Let reconstruction callbacks refresh the preview once assimilation has completed.
+        return nil
+    }
+
+    private func refreshActivePreviewSnapshotIfNeeded(now: CFTimeInterval) {
+        guard isActiveScanningState() else { return }
+
+        if (now - lastPreviewSnapshotRequestedAt) < previewSnapshotMinimumInterval {
+            return
+        }
+        lastPreviewSnapshotRequestedAt = now
+
+        guard let snapshot = reconstructionManager.buildPointCloudSnapshot() else {
+            return
+        }
+        previewSnapshotCache = snapshot
+        lastPreviewSnapshotBuiltAt = now
+        previewSnapshotBuildCount += 1
+    }
+
+    private func invalidatePreviewSnapshotCache() {
+        previewSnapshotCache = nil
+        lastPreviewSnapshotBuiltAt = -.greatestFiniteMagnitude
+        lastPreviewSnapshotRequestedAt = -.greatestFiniteMagnitude
+    }
+
     // MARK: - SCReconstructionManagerDelegate
 
     func reconstructionManager(
@@ -822,10 +922,12 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         let callbackStart = CACurrentMediaTime()
         guard state == .scanning else { return }
         latestViewMatrix = metadata.viewMatrix
+        latestReconstructionStatistics = statistics
         updateDistanceGuidanceIfNeeded(with: metadata.viewMatrix)
 
         switch metadata.result {
         case .succeeded, .poorTracking:
+            refreshActivePreviewSnapshotIfNeeded(now: callbackStart)
             // Texture retention is optional; suppress it briefly after instability so reconstruction
             // stays prioritized while tracking recovers.
             let shouldSaveTextureBuffer = generatesTexturedMeshes &&
@@ -886,8 +988,8 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     // MARK: - UI helpers
 
     private func updateUI() {
-        hudController.updateForSessionState(state)
-        switch state {
+        hudController.updateForSessionState(self.state)
+        switch self.state {
         case .default:
             shutterButton.shutterButtonState = .default
             countdownLabel.isHidden = true
@@ -967,9 +1069,16 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
     private func developerDiagnosticsText(baseDiagnostics: String) -> String {
         guard developerModeEnabled else { return baseDiagnostics }
+        let cameraStats = cameraManager.diagnosticsSnapshot
+        let reconStats = latestReconstructionStatistics
         return String(
-            format: "%@ · camera %.1f/%.1f/%.1f ms ovr=%d · draw %.1f/%.1f/%.1f ms ovr=%d · recon %.1f/%.1f/%.1f ms ovr=%d",
+            format: "%@ · camera pair=%d drop=%d depth=%d video=%d miss=%d %.1f/%.1f/%.1f ms ovr=%d · draw %.1f/%.1f/%.1f ms ovr=%d · recon ok=%ld lost=%ld drop=%ld %.1f/%.1f/%.1f ms ovr=%d",
             baseDiagnostics,
+            cameraStats.deliveredSynchronizedPairCount,
+            cameraStats.droppedSynchronizedPairCount,
+            cameraStats.droppedDepthDataCount,
+            cameraStats.droppedVideoDataCount,
+            cameraStats.missingSynchronizedDataCount,
             cameraPerformanceMetrics.averageDurationMs,
             cameraPerformanceMetrics.p95DurationMs,
             cameraPerformanceMetrics.peakDurationMs,
@@ -978,6 +1087,9 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
             drawPerformanceMetrics.p95DurationMs,
             drawPerformanceMetrics.peakDurationMs,
             drawPerformanceMetrics.overBudgetCount,
+            reconStats.succeededCount,
+            reconStats.lostTrackingCount,
+            reconStats.droppedFrameCount,
             reconstructionPerformanceMetrics.averageDurationMs,
             reconstructionPerformanceMetrics.p95DurationMs,
             reconstructionPerformanceMetrics.peakDurationMs,
@@ -1008,7 +1120,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         case .countdown:
             bottomSheet.setSnapPoint(.collapsed, animated: true)
         case .capturing, .warning, .critical:
-            bottomSheet.setSnapPoint(.half, animated: true)
+            bottomSheet.setSnapPoint(.half, animated: false)
         }
     }
 
@@ -1218,8 +1330,36 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         reconstructionPerformanceMetrics.record(duration, budget: budget)
     }
 
+    func debug_setLatestReconstructionStatistics(_ statistics: SCReconstructionManagerStatistics) {
+        latestReconstructionStatistics = statistics
+    }
+
     func debug_recordDrawMetric(duration: CFTimeInterval, budget: CFTimeInterval) {
         drawPerformanceMetrics.record(duration, budget: budget)
+    }
+
+    func debug_buildActivePreviewPointCloud() -> SCPointCloud? {
+        activeScanPreviewPointCloud(now: CACurrentMediaTime())
+    }
+
+    func debug_buildActivePreviewPointCloud(at timestamp: CFTimeInterval) -> SCPointCloud? {
+        activeScanPreviewPointCloud(now: timestamp)
+    }
+
+    func debug_refreshActivePreviewSnapshot(at timestamp: CFTimeInterval) {
+        refreshActivePreviewSnapshotIfNeeded(now: timestamp)
+    }
+
+    func debug_previewSnapshotStats() -> (buildCount: Int, reuseCount: Int, hasCache: Bool) {
+        (previewSnapshotBuildCount, previewSnapshotReuseCount, previewSnapshotCache != nil)
+    }
+
+    func debug_previewSnapshotMinimumInterval() -> CFTimeInterval {
+        previewSnapshotMinimumInterval
+    }
+
+    func debug_invalidatePreviewSnapshotCache() {
+        invalidatePreviewSnapshotCache()
     }
 
     func debug_recordDistanceSamples(_ samples: [Float]) {
@@ -1270,6 +1410,10 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
     func debug_handleCriticalThermalState() {
         handleCriticalThermalState()
+    }
+
+    func debug_onFinishCompletion(_ handler: (() -> Void)?) {
+        debugFinishCompletionHandler = handler
     }
 
 #endif

@@ -10,13 +10,16 @@
 #import "PBFAssimilatedFrameMetadata.hpp"
 #import "EigenHelpers.hpp"
 
+typedef struct {
+    float poorTrackingQualityThreshold;
+    NSInteger maxConsecutiveLostTrackingCount;
+} SCTrackingClassificationConfiguration;
+
 static SCAssimilatedFrameMetadata
 SCAssimilatedFrameMetadataFromPBFAssimilatedFrameMetadata(PBFAssimilatedFrameMetadata pbfMetadata,
-                                                          NSInteger consecutiveFailedFrameCount)
+                                                          NSInteger consecutiveFailedFrameCount,
+                                                          SCTrackingClassificationConfiguration config)
 {
-    static const float kPoorTrackingQualityThreshold = 0.1;
-    static const NSInteger kMaxConsecutiveFailedFrameCount = 8;
-    
     SCAssimilatedFrameMetadata metadata;
     metadata.viewMatrix = toSimdFloat4x4(pbfMetadata.viewMatrix);
 
@@ -24,11 +27,11 @@ SCAssimilatedFrameMetadataFromPBFAssimilatedFrameMetadata(PBFAssimilatedFrameMet
     metadata.colorBuffer = NULL;
     metadata.depthBuffer = NULL;
     
-    if (pbfMetadata.isMerged == false && consecutiveFailedFrameCount + 1 >= kMaxConsecutiveFailedFrameCount) {
+    if (pbfMetadata.isMerged == false && consecutiveFailedFrameCount + 1 >= config.maxConsecutiveLostTrackingCount) {
         metadata.result = SCAssimilatedFrameResultFailed;
     } else if (pbfMetadata.isMerged == false) {
         metadata.result = SCAssimilatedFrameResultLostTracking;
-    } else if (pbfMetadata.icpUnusedIterationFraction < kPoorTrackingQualityThreshold) {
+    } else if (pbfMetadata.icpUnusedIterationFraction < config.poorTrackingQualityThreshold) {
         metadata.result = SCAssimilatedFrameResultPoorTracking;
     } else {
         metadata.result = SCAssimilatedFrameResultSucceeded;

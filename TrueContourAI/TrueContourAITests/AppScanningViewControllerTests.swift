@@ -105,6 +105,7 @@ final class AppScanningViewControllerTests: XCTestCase {
 
         vc.debug_setAutoFinishForProgress(seconds: 0, remaining: 0)
         vc.debug_setAssimilatedFramesForProgress(12)
+        vc.debug_setLastProgressUpdate(Date(timeIntervalSinceNow: -1))
         vc.debug_updateCaptureProgress()
         XCTAssertEqual(vc.debug_progressLabelText(), L("scanning.progress.capturing"))
     }
@@ -185,6 +186,8 @@ final class AppScanningViewControllerTests: XCTestCase {
         XCTAssertEqual(delegate.cancelCount, 1)
         XCTAssertEqual(delegate.scanCount, 0)
         XCTAssertEqual(reconstruction.resetCount, 1)
+        XCTAssertEqual(reconstruction.buildPointCloudCount, 0)
+        XCTAssertEqual(reconstruction.buildPointCloudSnapshotCount, 0)
         XCTAssertEqual(haptics.cancelCount, 1)
     }
 
@@ -197,11 +200,18 @@ final class AppScanningViewControllerTests: XCTestCase {
         let vc = makeController(reconstruction: reconstruction, camera: camera, haptics: haptics)
         vc.delegate = delegate
         vc.debug_setStateScanning()
+        let completion = expectation(description: "finish completion")
+        vc.debug_onFinishCompletion {
+            completion.fulfill()
+        }
 
         vc.debug_stopScanning(reason: .finished)
+        wait(for: [completion], timeout: 1.0)
 
         XCTAssertEqual(reconstruction.finalizeCount, 1)
         XCTAssertEqual(reconstruction.resetCount, 1)
+        XCTAssertEqual(reconstruction.buildPointCloudCount, 1)
+        XCTAssertEqual(reconstruction.buildPointCloudSnapshotCount, 0)
         XCTAssertEqual(delegate.scanCount, 1)
         XCTAssertEqual(delegate.cancelCount, 0)
         XCTAssertEqual(delegate.completedPayloads.count, 1)
@@ -241,8 +251,13 @@ final class AppScanningViewControllerTests: XCTestCase {
         let vc = makeController(reconstruction: reconstruction, camera: camera, haptics: haptics)
         vc.delegate = delegate
         vc.debug_setStateScanning()
+        let completion = expectation(description: "finish without calibration")
+        vc.debug_onFinishCompletion {
+            completion.fulfill()
+        }
 
         vc.debug_stopScanning(reason: .finished)
+        wait(for: [completion], timeout: 1.0)
 
         XCTAssertEqual(delegate.scanCount, 1)
         XCTAssertEqual(delegate.cancelCount, 0)
@@ -251,6 +266,8 @@ final class AppScanningViewControllerTests: XCTestCase {
         XCTAssertNil(delegate.completedPayloads[0].earVerificationSelectionMetadata)
         XCTAssertEqual(reconstruction.finalizeCount, 1)
         XCTAssertEqual(reconstruction.resetCount, 1)
+        XCTAssertEqual(reconstruction.buildPointCloudCount, 1)
+        XCTAssertEqual(reconstruction.buildPointCloudSnapshotCount, 0)
     }
 
     func testDoubleStopIsIdempotentAfterFinish() {
@@ -262,8 +279,13 @@ final class AppScanningViewControllerTests: XCTestCase {
         let vc = makeController(reconstruction: reconstruction, camera: camera, haptics: haptics)
         vc.delegate = delegate
         vc.debug_setStateScanning()
+        let completion = expectation(description: "finish idempotence")
+        vc.debug_onFinishCompletion {
+            completion.fulfill()
+        }
 
         vc.debug_stopScanning(reason: .finished)
+        wait(for: [completion], timeout: 1.0)
         vc.debug_stopScanning(reason: .canceled)
         vc.debug_stopScanning(reason: .finished)
 
@@ -321,8 +343,13 @@ final class AppScanningViewControllerTests: XCTestCase {
         vc.delegate = delegate
         vc.loadViewIfNeeded()
         vc.debug_setStateScanning()
+        let completion = expectation(description: "thermal finish completion")
+        vc.debug_onFinishCompletion {
+            completion.fulfill()
+        }
 
         vc.debug_handleCriticalThermalState()
+        wait(for: [completion], timeout: 1.0)
 
         XCTAssertEqual(reconstruction.finalizeCount, 1)
         XCTAssertEqual(reconstruction.resetCount, 1)
@@ -398,6 +425,39 @@ final class AppScanningViewControllerTests: XCTestCase {
         XCTAssertTrue(diagnostics.contains("ovr="))
     }
 
+    func testDeveloperDiagnosticsIncludeCameraAndReconstructionCounters() {
+        let camera = CameraManagerFake()
+        camera.diagnosticsSnapshot = CameraDiagnosticsSnapshot(
+            deliveredSynchronizedPairCount: 12,
+            droppedSynchronizedPairCount: 3,
+            droppedDepthDataCount: 2,
+            droppedVideoDataCount: 1,
+            missingSynchronizedDataCount: 4
+        )
+        let vc = makeController(
+            reconstruction: ReconstructionManagerFake(),
+            camera: camera,
+            haptics: HapticsFake()
+        )
+        vc.developerModeEnabled = true
+        var reconstructionStats = SCReconstructionManagerStatistics()
+        reconstructionStats.succeededCount = 21
+        reconstructionStats.lostTrackingCount = 5
+        reconstructionStats.droppedFrameCount = 7
+        vc.debug_setLatestReconstructionStatistics(reconstructionStats)
+
+        let diagnostics = vc.debug_developerDiagnosticsText(baseDiagnostics: "Frames: 12 · Progress: 24%")
+
+        XCTAssertTrue(diagnostics.contains("pair=12"))
+        XCTAssertTrue(diagnostics.contains("drop=3"))
+        XCTAssertTrue(diagnostics.contains("depth=2"))
+        XCTAssertTrue(diagnostics.contains("video=1"))
+        XCTAssertTrue(diagnostics.contains("miss=4"))
+        XCTAssertTrue(diagnostics.contains("ok=21"))
+        XCTAssertTrue(diagnostics.contains("lost=5"))
+        XCTAssertTrue(diagnostics.contains("drop=7"))
+    }
+
     func testDeveloperDiagnosticsRemainBaseTextWhenDeveloperModeDisabled() {
         let vc = makeController(
             reconstruction: ReconstructionManagerFake(),
@@ -411,6 +471,106 @@ final class AppScanningViewControllerTests: XCTestCase {
             vc.debug_developerDiagnosticsText(baseDiagnostics: "Frames: 12 · Progress: 24%"),
             "Frames: 12 · Progress: 24%"
         )
+    }
+
+    func testActiveScanningPreviewUsesSnapshotBuilder() {
+        let reconstruction = ReconstructionManagerFake()
+        let vc = makeController(
+            reconstruction: reconstruction,
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.loadViewIfNeeded()
+        vc.debug_setStateScanning()
+        vc.debug_refreshActivePreviewSnapshot(at: 10.0)
+
+        _ = vc.debug_buildActivePreviewPointCloud(at: 10.01)
+
+        XCTAssertEqual(reconstruction.buildPointCloudSnapshotCount, 1)
+        XCTAssertEqual(reconstruction.buildPointCloudCount, 0)
+    }
+
+    func testActiveScanningPreviewHandlesMissingSnapshotUntilReconstructionProducesOne() {
+        let reconstruction = ReconstructionManagerFake()
+        reconstruction.snapshotPointCloud = nil
+        let vc = makeController(
+            reconstruction: reconstruction,
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.loadViewIfNeeded()
+        vc.debug_setStateScanning()
+
+        let preview = vc.debug_buildActivePreviewPointCloud(at: 10.0)
+
+        XCTAssertNil(preview)
+        XCTAssertEqual(reconstruction.buildPointCloudSnapshotCount, 0)
+        XCTAssertEqual(reconstruction.buildPointCloudCount, 0)
+        XCTAssertFalse(vc.debug_previewSnapshotStats().hasCache)
+    }
+
+    func testActiveScanningPreviewThrottlesSnapshotRequestsWhileSnapshotIsUnavailable() {
+        let reconstruction = ReconstructionManagerFake()
+        reconstruction.snapshotPointCloud = nil
+        let vc = makeController(
+            reconstruction: reconstruction,
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.loadViewIfNeeded()
+        vc.debug_setStateScanning()
+
+        vc.debug_refreshActivePreviewSnapshot(at: 10.0)
+        vc.debug_refreshActivePreviewSnapshot(at: 10.05)
+        vc.debug_refreshActivePreviewSnapshot(at: 10.10)
+        vc.debug_refreshActivePreviewSnapshot(at: 10.30)
+
+        XCTAssertEqual(reconstruction.buildPointCloudSnapshotCount, 2)
+        XCTAssertFalse(vc.debug_previewSnapshotStats().hasCache)
+    }
+
+    func testActiveScanningPreviewSnapshotThrottleCachesWithinWindow() throws {
+        let reconstruction = ReconstructionManagerFake()
+        let vc = makeController(
+            reconstruction: reconstruction,
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.loadViewIfNeeded()
+        vc.debug_setStateScanning()
+        vc.debug_refreshActivePreviewSnapshot(at: 10.0)
+
+        let first = try XCTUnwrap(vc.debug_buildActivePreviewPointCloud(at: 10.0))
+        let second = try XCTUnwrap(vc.debug_buildActivePreviewPointCloud(at: 10.05))
+        let third = try XCTUnwrap(vc.debug_buildActivePreviewPointCloud(at: 10.30))
+
+        XCTAssertTrue(first === second, "Expected cached snapshot reuse inside throttle window.")
+        XCTAssertTrue(second === third, "Expected camera callback to reuse cached snapshot outside the throttle window.")
+        XCTAssertEqual(reconstruction.buildPointCloudSnapshotCount, 1)
+        XCTAssertEqual(reconstruction.buildPointCloudCount, 0)
+    }
+
+    func testProcessedFrameRefreshesActivePreviewSnapshotAfterThrottleWindow() throws {
+        let reconstruction = ReconstructionManagerFake()
+        let vc = makeController(
+            reconstruction: reconstruction,
+            camera: CameraManagerFake(),
+            haptics: HapticsFake()
+        )
+        vc.loadViewIfNeeded()
+        vc.debug_setStateScanning()
+        vc.debug_refreshActivePreviewSnapshot(at: 10.0)
+
+        let first = try XCTUnwrap(vc.debug_buildActivePreviewPointCloud(at: 10.0))
+        vc.debug_refreshActivePreviewSnapshot(at: 10.05)
+        let second = try XCTUnwrap(vc.debug_buildActivePreviewPointCloud(at: 10.10))
+        vc.debug_refreshActivePreviewSnapshot(at: 10.30)
+        let third = try XCTUnwrap(vc.debug_buildActivePreviewPointCloud(at: 10.35))
+
+        XCTAssertTrue(first === second, "Expected processed-frame refresh to respect the throttle window.")
+        XCTAssertFalse(second === third, "Expected processed-frame refresh to update the cached snapshot after the throttle window.")
+        XCTAssertEqual(reconstruction.buildPointCloudSnapshotCount, 2)
+        XCTAssertEqual(reconstruction.buildPointCloudCount, 0)
     }
 
 
@@ -436,13 +596,15 @@ final class AppScanningViewControllerTests: XCTestCase {
         AppScanningViewController(
             reconstructionManagerFactory: { _, _, _ in reconstruction },
             cameraManager: camera,
-            hapticEngine: haptics
+            hapticEngine: haptics,
+            backgroundWorkRunner: { work in work() }
         )
     }
 
     private func advance(seconds: TimeInterval) {
         RunLoop.current.run(until: Date().addingTimeInterval(seconds))
     }
+
 }
 
 private enum TestError: Error {
@@ -474,12 +636,21 @@ private final class ScanningDelegateSpy: NSObject, AppScanningViewControllerDele
 private final class ReconstructionManagerFake: ReconstructionManaging {
     weak var delegate: SCReconstructionManagerDelegate?
     var includesColorBuffersInMetadata = false
-    var latestCameraCalibrationData: AVCameraCalibrationData!
+    var latestCameraCalibrationData: AVCameraCalibrationData?
     var latestCameraCalibrationFrameWidth = 1
     var latestCameraCalibrationFrameHeight = 1
+    var snapshotPointCloud: SCPointCloud?
+    var returnsFreshSnapshotPerBuild = true
 
     private(set) var resetCount = 0
     private(set) var finalizeCount = 0
+    private(set) var buildPointCloudCount = 0
+    private(set) var buildPointCloudSnapshotCount = 0
+    private(set) var reconstructSingleDepthBufferCount = 0
+
+    init() {
+        snapshotPointCloud = placeholderPointCloud()
+    }
 
     func reset() {
         resetCount += 1
@@ -491,7 +662,17 @@ private final class ReconstructionManagerFake: ReconstructionManaging {
     }
 
     func buildPointCloud() -> SCPointCloud {
-        placeholderPointCloud()
+        buildPointCloudCount += 1
+        return placeholderPointCloud()
+    }
+
+    func buildPointCloudSnapshot() -> SCPointCloud? {
+        buildPointCloudSnapshotCount += 1
+        guard snapshotPointCloud != nil else { return nil }
+        if returnsFreshSnapshotPerBuild {
+            return placeholderPointCloud()
+        }
+        return snapshotPointCloud
     }
 
     func reconstructSingleDepthBuffer(
@@ -500,14 +681,15 @@ private final class ReconstructionManagerFake: ReconstructionManaging {
         with calibrationData: AVCameraCalibrationData,
         smoothingPoints: Bool
     ) -> SCPointCloud {
-        placeholderPointCloud()
+        reconstructSingleDepthBufferCount += 1
+        return placeholderPointCloud()
     }
 
     func accumulate(depthBuffer: CVPixelBuffer, colorBuffer: CVPixelBuffer, calibrationData: AVCameraCalibrationData) {}
 
     func accumulateDeviceMotion(_ motion: CMDeviceMotion) {}
 
-    private func placeholderPointCloud() -> SCPointCloud {
+    func placeholderPointCloud() -> SCPointCloud {
         // Tests only assert callback flow and do not inspect point cloud contents.
         guard let placeholder = class_createInstance(SCPointCloud.self, 0) as? SCPointCloud else {
             fatalError("Failed to allocate SCPointCloud test placeholder")
@@ -517,8 +699,9 @@ private final class ReconstructionManagerFake: ReconstructionManaging {
 }
 
 private final class CameraManagerFake: CameraManaging {
-    weak var delegate: CameraManagerDelegate!
+    weak var delegate: CameraManagerDelegate?
     var isSessionRunning = true
+    var diagnosticsSnapshot = CameraDiagnosticsSnapshot()
     private(set) var stopSessionCount = 0
 
     func configureCaptureSession(maxResolution: Int) {}

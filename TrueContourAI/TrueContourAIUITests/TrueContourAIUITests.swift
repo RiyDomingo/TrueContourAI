@@ -139,11 +139,12 @@ final class TrueContourAIUITests: XCTestCase {
         let app = launchApp(seedScan: true)
 
         openFirstScan(in: app)
+        XCTAssertTrue(waitForPreviewRoot(in: app, timeout: Self.defaultTimeout + 6.0))
 
         let closeButton = app.buttons["previewCloseButton"]
         XCTAssertTrue(waitForElement(closeButton))
         revealElementIfNeeded(closeButton, in: app)
-        XCTAssertTrue(closeButton.isHittable || waitForCondition(timeout: 1.0, poll: 0.4) { closeButton.exists && closeButton.isHittable })
+        XCTAssertTrue(waitForHittable(closeButton, timeout: 2.0))
         closeButton.tap()
 
         XCTAssertTrue(waitForElement(app.buttons["startScanButton"], timeout: Self.defaultTimeout + 4.0))
@@ -177,10 +178,12 @@ final class TrueContourAIUITests: XCTestCase {
         let app = launchApp(seedScan: true)
 
         openFirstScan(in: app)
+        XCTAssertTrue(waitForPreviewRoot(in: app, timeout: Self.defaultTimeout + 6.0))
 
         let verifyButton = app.buttons["verifyEarButton"]
         XCTAssertTrue(waitForElement(verifyButton, timeout: Self.defaultTimeout + 4.0))
-        XCTAssertTrue(verifyButton.isHittable || waitForCondition(timeout: 2.0, poll: 0.4) { verifyButton.exists && verifyButton.isHittable })
+        revealElementIfNeeded(verifyButton, in: app)
+        XCTAssertTrue(waitForHittable(verifyButton, timeout: 2.0))
         verifyButton.tap()
 
         let completionAlert = firstExistingAlert(
@@ -256,26 +259,28 @@ final class TrueContourAIUITests: XCTestCase {
     }
 
     private func waitForElement(_ element: XCUIElement, timeout: TimeInterval = defaultTimeout) -> Bool {
-        waitForCondition(timeout: timeout, poll: 0.4) {
-            element.exists
-        }
+        element.waitForExistence(timeout: timeout)
     }
 
     private func waitForNotExists(_ element: XCUIElement, timeout: TimeInterval = defaultTimeout) -> Bool {
-        waitForCondition(timeout: timeout, poll: 0.4) {
-            !element.exists
-        }
+        waitForPredicate("exists == false", element: element, timeout: timeout)
     }
 
     private func openFirstScan(in app: XCUIApplication) {
         let table = app.tables.firstMatch
-        if table.exists {
+        if table.exists, !table.frame.isEmpty {
             table.scrollToTop()
         }
         let openButton = app.buttons["scanOpenButton"].firstMatch
         XCTAssertTrue(waitForElement(openButton, timeout: Self.defaultTimeout + 2))
-        scrollElementIntoView(openButton, in: table)
-        XCTAssertTrue(openButton.isHittable || waitForCondition(timeout: 1.0, poll: 0.4) { openButton.exists && openButton.isHittable })
+        if table.exists, !table.frame.isEmpty {
+            scrollElementIntoView(openButton, in: table)
+        }
+        revealElementIfNeeded(openButton, in: app)
+        XCTAssertTrue(
+            waitForCondition(timeout: 4.0) { openButton.exists && openButton.isHittable },
+            "Expected scan open button to become hittable"
+        )
         openButton.tap()
     }
 
@@ -284,15 +289,12 @@ final class TrueContourAIUITests: XCTestCase {
         identifiers: [String],
         timeout: TimeInterval
     ) -> XCUIElement? {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            for identifier in identifiers {
-                let alert = app.alerts[identifier]
-                if alert.exists {
-                    return alert
-                }
-            }
-            RunLoop.current.run(until: Date().addingTimeInterval(Self.pollInterval))
+        _ = waitForCondition(timeout: timeout) {
+            identifiers.contains { app.alerts[$0].exists }
+        }
+        for identifier in identifiers {
+            let alert = app.alerts[identifier]
+            if alert.exists { return alert }
         }
         return nil
     }
@@ -372,7 +374,7 @@ final class TrueContourAIUITests: XCTestCase {
     }
 
     private func scrollElementIntoView(_ element: XCUIElement, in table: XCUIElement, maxSwipes: Int = 8) {
-        guard table.exists else { return }
+        guard table.exists, !table.frame.isEmpty else { return }
         var remaining = maxSwipes
         while element.exists && !element.isHittable && remaining > 0 {
             table.swipeUp()
@@ -390,10 +392,13 @@ final class TrueContourAIUITests: XCTestCase {
         if app.state != .runningForeground {
             app.activate()
         }
+        for _ in 0..<4 where element.exists && !element.isHittable {
+            app.swipeUp()
+        }
     }
 
     private func waitUntil(timeout: TimeInterval, poll: TimeInterval = 0.1, condition: @escaping () -> Bool) -> Bool {
-        pollUntil(timeout: timeout, poll: max(poll, 0.25), condition: condition)
+        waitForCondition(timeout: timeout, poll: max(poll, 0.25), condition: condition)
     }
 
     private func waitForPredicate(_ format: String, element: XCUIElement, timeout: TimeInterval) -> Bool {
@@ -403,28 +408,34 @@ final class TrueContourAIUITests: XCTestCase {
         return result == .completed
     }
 
+    private func waitForHittable(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
+        waitForPredicate("exists == true && hittable == true", element: element, timeout: timeout)
+    }
+
     private func waitForCondition(timeout: TimeInterval, poll: TimeInterval = 0.4, condition: @escaping () -> Bool) -> Bool {
-        let end = Date().addingTimeInterval(timeout)
-        while Date() < end {
-            if condition() { return true }
-            Thread.sleep(forTimeInterval: poll)
-        }
-        return condition()
+        let predicate = NSPredicate { _, _ in condition() }
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: NSObject())
+        expectation.expectationDescription = "waitForCondition"
+        return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed || condition()
     }
 
     private func pollUntil(timeout: TimeInterval, poll: TimeInterval = 0.25, condition: @escaping () -> Bool) -> Bool {
-        let end = Date().addingTimeInterval(timeout)
-        while Date() < end {
-            if condition() { return true }
-            Thread.sleep(forTimeInterval: poll)
+        waitForCondition(timeout: timeout, poll: poll, condition: condition)
+    }
+
+    private func waitForPreviewRoot(in app: XCUIApplication, timeout: TimeInterval) -> Bool {
+        let closeButton = app.buttons["previewCloseButton"]
+        let shareButton = app.buttons["previewShareButton"]
+        let saveButton = app.buttons["previewSaveButton"]
+        return waitForCondition(timeout: timeout) {
+            closeButton.exists || shareButton.exists || saveButton.exists
         }
-        return condition()
     }
 }
 
 private extension XCUIElement {
     func scrollToTop(maxSwipes: Int = 5) {
-        guard exists else { return }
+        guard exists, !frame.isEmpty else { return }
         var remaining = maxSwipes
         while remaining > 0 {
             swipeDown()

@@ -4,6 +4,23 @@ import StandardCyborgFusion
 import SceneKit
 import simd
 
+enum PreviewQoSQueues {
+    static let export = DispatchQueue(
+        label: "com.truecontour.preview.export",
+        qos: .userInitiated
+    )
+
+    static let earVerification = DispatchQueue(
+        label: "com.truecontour.preview.earVerification",
+        qos: .userInitiated
+    )
+
+    static let existingScanLoad = DispatchQueue(
+        label: "com.truecontour.preview.existingScanLoad",
+        qos: .userInitiated
+    )
+}
+
 protocol PreviewScanReading: ScanSummaryReading, LastScanReading, ScanFolderSharing {
     var scansRootURL: URL { get }
     func sceneForScan(_ item: ScanItem) -> SCScene?
@@ -101,7 +118,7 @@ final class PreviewPresentationWorkflow {
         vc.rightButton.accessibilityIdentifier = "previewSaveButton"
         vc.rightButton.isEnabled = false
         DesignSystem.updateButtonEnabled(vc.rightButton, style: .primary)
-        saveExportViewState.configure(previewVC: vc)
+        saveExportViewState.configure(surface: vc)
         return vc
     }
 
@@ -311,6 +328,7 @@ final class PreviewPostScanPresentationWorkflow {
             meshTexturing: meshTexturing,
             actionTarget: actionTarget
         )
+        meshingWorkflow.beginMeshing(in: previewVC)
         meshingWorkflow.startTimeout(in: previewVC, sessionID: previewSessionID, isCurrentPreviewSession: isCurrentPreviewSession)
         meshingWorkflow.configureCallbacks(
             for: previewVC,
@@ -347,6 +365,12 @@ final class PreviewPostScanPresentationWorkflow {
 }
 
 final class PreviewExistingScanWorkflow {
+    struct PresentationData {
+        let summary: ScanSummary?
+        let scene: SCScene?
+        let preservedEarVerificationImage: UIImage?
+    }
+
     private let scanReader: PreviewScanReading
     private let previewViewModel: PreviewViewModel
     private let scanFlowState: ScanFlowState
@@ -373,16 +397,58 @@ final class PreviewExistingScanWorkflow {
         self.overlayWorkflow = overlayWorkflow
     }
 
+    func loadPresentationData(
+        item: ScanItem,
+        skipGLTF: Bool
+    ) -> PresentationData {
+        let loadStart = CFAbsoluteTimeGetCurrent()
+
+        let summaryLoadStart = CFAbsoluteTimeGetCurrent()
+        let summary = scanReader.resolveScanSummary(from: item.folderURL)
+        let summaryLoadMs = Int((CFAbsoluteTimeGetCurrent() - summaryLoadStart) * 1000)
+
+        var scene: SCScene?
+        var sceneLoadMs: Int?
+        if !skipGLTF {
+            let sceneLoadStart = CFAbsoluteTimeGetCurrent()
+            scene = scanReader.sceneForScan(item)
+            sceneLoadMs = Int((CFAbsoluteTimeGetCurrent() - sceneLoadStart) * 1000)
+        }
+
+        let earImageLoadStart = CFAbsoluteTimeGetCurrent()
+        let preservedEarVerificationImage = scanReader.resolveEarVerificationImage(from: item.folderURL)
+        let earImageLoadMs = Int((CFAbsoluteTimeGetCurrent() - earImageLoadStart) * 1000)
+
+#if DEBUG
+        ScanDiagnostics.recordExistingPreviewLoadTimings(
+            .init(
+                totalMs: Int((CFAbsoluteTimeGetCurrent() - loadStart) * 1000),
+                summaryLoadMs: summaryLoadMs,
+                sceneLoadMs: sceneLoadMs,
+                earImageLoadMs: earImageLoadMs,
+                skipsGLTF: skipGLTF
+            )
+        )
+#endif
+
+        return PresentationData(
+            summary: summary,
+            scene: scene,
+            preservedEarVerificationImage: preservedEarVerificationImage
+        )
+    }
+
     func makePresentation(
         item: ScanItem,
         presenter: UIViewController,
         skipGLTF: Bool,
+        presentationData: PresentationData,
         closeTarget: AnyObject,
         shareTarget: AnyObject,
         onClose: Selector,
         onShare: Selector
     ) -> (UIViewController, ScenePreviewViewController?, ScanSummary?)? {
-        let existingSummary = scanReader.resolveScanSummary(from: item.folderURL)
+        let existingSummary = presentationData.summary
         if skipGLTF {
             Log.ui.info("Presenting test preview for scan: \(item.displayName, privacy: .public)")
             scanFlowState.setPhase(.preview)
@@ -405,7 +471,7 @@ final class PreviewExistingScanWorkflow {
             return (vc, nil, existingSummary)
         }
 
-        guard let scene = scanReader.sceneForScan(item) else {
+        guard let scene = presentationData.scene else {
             Log.ui.error("Missing scene.gltf for scan: \(item.displayName, privacy: .public)")
             alertPresenter.presentAlert(
                 on: presenter,
@@ -433,7 +499,7 @@ final class PreviewExistingScanWorkflow {
     func finalizePresentation(
         summary: ScanSummary?,
         previewVC: ScenePreviewViewController,
-        configureFitModelUI: (ScenePreviewViewController) -> Void
+        configureSceneUI: (ScenePreviewViewController) -> Void
     ) {
         if let derived = summary?.derivedMeasurements {
             overlayWorkflow.renderDerivedMeasurements(
@@ -448,7 +514,7 @@ final class PreviewExistingScanWorkflow {
                 hostView: previewVC.view
             )
         }
-        configureFitModelUI(previewVC)
+        configureSceneUI(previewVC)
     }
 
     func resolveEarVerificationImage(for item: ScanItem) -> UIImage? {
@@ -738,7 +804,7 @@ final class PreviewSaveWorkflow {
             return
         }
 
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        PreviewQoSQueues.export.async { [weak self] in
             guard let self else { return }
             let exportStart = CFAbsoluteTimeGetCurrent()
             let exportResult = self.scanExporter.exportScanFolder(
@@ -1100,7 +1166,7 @@ final class PreviewEarVerificationWorkflow {
         let mlStart = CFAbsoluteTimeGetCurrent()
         beginVerificationUI()
 
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        PreviewQoSQueues.earVerification.async { [weak self] in
             guard let self else { return }
             defer {
                 DispatchQueue.main.async {
@@ -1270,10 +1336,9 @@ final class PreviewExportResultWorkflow {
             }
 #if DEBUG
             if self.environment.isDeviceSmokeMode {
-                let diag = ScanDiagnostics.snapshot()
-                self.onToast?(
-                    "diag:gltf=\(diag.hasSceneGLTF ? 1 : 0),obj=\(diag.hasHeadMeshOBJ ? 1 : 0),folder=\(diag.lastExportFolderName ?? "none")"
-                )
+                if let diagnosticsText = ScanDiagnostics.currentDiagnosticsText() {
+                    self.onToast?("diag:\(diagnosticsText)")
+                }
             }
 #endif
             self.onExportResult?(
@@ -1311,6 +1376,16 @@ final class PreviewMeshingWorkflow {
         self.previewOverlayUI = previewOverlayUI
         self.alertPresenter = alertPresenter
         self.meshingTimeoutSeconds = meshingTimeoutSeconds
+    }
+
+    func beginMeshing(in previewVC: ScenePreviewViewController) {
+        previewViewModel.setMeshingActive(true)
+        saveExportViewState.markSaveMeshing()
+        saveExportViewState.setMeshingStatusText(L("scan.preview.meshing"))
+        saveExportViewState.setMeshingSpinnerActive(true)
+        previewOverlayUI.setMeshingStatus(L("scan.preview.meshing"), percent: nil, spinning: true)
+        previewVC.rightButton.isEnabled = false
+        previewVC.rightButton.alpha = 0.6
     }
 
     func configureCallbacks(

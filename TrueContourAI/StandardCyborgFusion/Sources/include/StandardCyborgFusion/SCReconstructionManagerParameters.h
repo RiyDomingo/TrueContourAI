@@ -4,6 +4,14 @@
 //
 //
 
+typedef NS_ENUM(NSInteger, SCReconstructionManagerDepthRangeMode) {
+    /** Computes max depth once from the initial scan geometry and keeps it fixed unless manually overridden. */
+    SCReconstructionManagerDepthRangeModeFixedInitial = 0,
+
+    /** Conservatively widens max depth from later observations while still respecting manual overrides. */
+    SCReconstructionManagerDepthRangeModeAdaptive = 1,
+};
+
 @protocol SCReconstructionManagerParameters
 
 /** Default value is 2. Recommended value: # high-performance CPU cores on the current device. */
@@ -14,6 +22,9 @@
 
 /** The maximum depth, in meters, above which incoming depth buffer values are clipped before reconstruction. Default value is FLT_MAX. */
 @property (nonatomic) float maxDepth;
+
+/** Controls whether live reconstruction keeps the initial depth range or conservatively adapts it from later frames. Default value is SCReconstructionManagerDepthRangeModeFixedInitial. */
+@property (nonatomic) SCReconstructionManagerDepthRangeMode depthRangeMode;
 
 #pragma mark - Algorithm parameters, tune at your own risk
 
@@ -30,5 +41,11 @@
 
 /** The maximum number of iterations for aligning incoming depth buffers. Default value is 24. Recommended range: 16-50 */
 @property (nonatomic) int maxICPIterations;
+
+/** The ICP unused-iteration-fraction threshold below which a merged frame is classified as poor tracking. Default value is 0.1. */
+@property (nonatomic) float poorTrackingQualityThreshold;
+
+/** The number of consecutive lost-tracking frames tolerated before classification escalates to failed. Default value is 8. */
+@property (nonatomic) NSInteger maxConsecutiveLostTrackingCount;
 
 @end

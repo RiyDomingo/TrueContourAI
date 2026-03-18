@@ -99,6 +99,7 @@
 		13F1A0172F6A123400111111 /* LocalMeasurementGenerationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F1A0182F6A123400111111 /* LocalMeasurementGenerationServiceTests.swift */; };
 		13F1A0192F6A123400111111 /* SettingsViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F1A01A2F6A123400111111 /* SettingsViewControllerTests.swift */; };
 		13FA01012F7B000100ABCDEF /* StandardCyborgFusion in Frameworks */ = {isa = PBXBuildFile; productRef = 766314032CEB185300CC7AF3 /* StandardCyborgFusion */; };
+		13FA01022F7B000100ABCDEF /* StandardCyborgUI in Frameworks */ = {isa = PBXBuildFile; productRef = 766314062CEB186300CC7AF3 /* StandardCyborgUI */; };
 		14A100012F7C000100ABC001 /* Features/Fit/FitModelPackModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14A100112F7C000100ABC001 /* Features/Fit/FitModelPackModels.swift */; };
 		14A100022F7C000100ABC001 /* Features/Fit/FitModelPackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14A100122F7C000100ABC001 /* Features/Fit/FitModelPackService.swift */; };
 		14A100032F7C000100ABC001 /* FitModelPackServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14A100132F7C000100ABC001 /* FitModelPackServiceTests.swift */; };
@@ -260,6 +261,7 @@
 			files = (
 				13E2D4052F1D0100003DE022 /* XCTest.framework in Frameworks */,
 				13FA01012F7B000100ABCDEF /* StandardCyborgFusion in Frameworks */,
+				13FA01022F7B000100ABCDEF /* StandardCyborgUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -547,6 +549,7 @@
 			name = TrueContourAITests;
 			packageProductDependencies = (
 				766314032CEB185300CC7AF3 /* StandardCyborgFusion */,
+				766314062CEB186300CC7AF3 /* StandardCyborgUI */,
 			);
 			productName = TrueContourAITests;
 			productReference = 13E2D4032F1D0100003DE022 /* TrueContourAITests.xctest */;
