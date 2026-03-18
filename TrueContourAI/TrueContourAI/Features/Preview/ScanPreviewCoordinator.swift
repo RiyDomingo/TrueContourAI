@@ -22,6 +22,7 @@ protocol SaveExportUIStateAdapting {
         previewVC: ScenePreviewViewController
     )
     func setButtonsEnabled(_ isEnabled: Bool)
+    func markSaveMeshing()
     func markSaveReady()
     func markSaveInvoked()
     func markSaveBlocked()

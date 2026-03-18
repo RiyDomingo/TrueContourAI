@@ -311,6 +311,7 @@ final class PreviewPostScanPresentationWorkflow {
             meshTexturing: meshTexturing,
             actionTarget: actionTarget
         )
+        meshingWorkflow.beginMeshing(in: previewVC)
         meshingWorkflow.startTimeout(in: previewVC, sessionID: previewSessionID, isCurrentPreviewSession: isCurrentPreviewSession)
         meshingWorkflow.configureCallbacks(
             for: previewVC,
@@ -347,6 +348,12 @@ final class PreviewPostScanPresentationWorkflow {
 }
 
 final class PreviewExistingScanWorkflow {
+    struct PresentationData {
+        let summary: ScanSummary?
+        let scene: SCScene?
+        let preservedEarVerificationImage: UIImage?
+    }
+
     private let scanReader: PreviewScanReading
     private let previewViewModel: PreviewViewModel
     private let scanFlowState: ScanFlowState
@@ -373,16 +380,28 @@ final class PreviewExistingScanWorkflow {
         self.overlayWorkflow = overlayWorkflow
     }
 
+    func loadPresentationData(
+        item: ScanItem,
+        skipGLTF: Bool
+    ) -> PresentationData {
+        PresentationData(
+            summary: scanReader.resolveScanSummary(from: item.folderURL),
+            scene: skipGLTF ? nil : scanReader.sceneForScan(item),
+            preservedEarVerificationImage: scanReader.resolveEarVerificationImage(from: item.folderURL)
+        )
+    }
+
     func makePresentation(
         item: ScanItem,
         presenter: UIViewController,
         skipGLTF: Bool,
+        presentationData: PresentationData,
         closeTarget: AnyObject,
         shareTarget: AnyObject,
         onClose: Selector,
         onShare: Selector
     ) -> (UIViewController, ScenePreviewViewController?, ScanSummary?)? {
-        let existingSummary = scanReader.resolveScanSummary(from: item.folderURL)
+        let existingSummary = presentationData.summary
         if skipGLTF {
             Log.ui.info("Presenting test preview for scan: \(item.displayName, privacy: .public)")
             scanFlowState.setPhase(.preview)
@@ -405,7 +424,7 @@ final class PreviewExistingScanWorkflow {
             return (vc, nil, existingSummary)
         }
 
-        guard let scene = scanReader.sceneForScan(item) else {
+        guard let scene = presentationData.scene else {
             Log.ui.error("Missing scene.gltf for scan: \(item.displayName, privacy: .public)")
             alertPresenter.presentAlert(
                 on: presenter,
@@ -1311,6 +1330,16 @@ final class PreviewMeshingWorkflow {
         self.previewOverlayUI = previewOverlayUI
         self.alertPresenter = alertPresenter
         self.meshingTimeoutSeconds = meshingTimeoutSeconds
+    }
+
+    func beginMeshing(in previewVC: ScenePreviewViewController) {
+        previewViewModel.setMeshingActive(true)
+        saveExportViewState.markSaveMeshing()
+        saveExportViewState.setMeshingStatusText(L("scan.preview.meshing"))
+        saveExportViewState.setMeshingSpinnerActive(true)
+        previewOverlayUI.setMeshingStatus(L("scan.preview.meshing"), percent: nil, spinning: true)
+        previewVC.rightButton.isEnabled = false
+        previewVC.rightButton.alpha = 0.6
     }
 
     func configureCallbacks(

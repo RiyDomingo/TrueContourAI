@@ -26,6 +26,7 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
         self.previewVC = previewVC
         ensureMeshingStatusView(in: previewVC)
         ensureSaveStateAccessibilityView(in: previewVC)
+        setSaveButtonEnabled(false)
         updateSaveState(.idle)
     }
 
@@ -35,6 +36,11 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
         previewVC.rightButton.isEnabled = isEnabled
         DesignSystem.updateButtonEnabled(previewVC.leftButton, style: .secondary)
         DesignSystem.updateButtonEnabled(previewVC.rightButton, style: .primary)
+    }
+
+    func markSaveMeshing() {
+        setSaveButtonEnabled(false)
+        updateSaveState(.meshing)
     }
 
     func setMeshingStatusText(_ text: String) {
@@ -146,14 +152,17 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
     }
 
     func markSaveReady() {
+        setSaveButtonEnabled(true)
         updateSaveState(.ready)
     }
 
     func markSaveInvoked() {
+        setSaveButtonEnabled(false)
         updateSaveState(.invoked)
     }
 
     func markSaveBlocked() {
+        setSaveButtonEnabled(true)
         updateSaveState(.blocked)
     }
 
@@ -162,6 +171,7 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
     }
 
     func markSaveFailed() {
+        setSaveButtonEnabled(true)
         updateSaveState(.failed)
     }
 
@@ -244,6 +254,12 @@ final class SaveExportViewStateController: SaveExportUIStateAdapting {
         meshingStatusContainer = container
         meshingStatusLabel = label
         meshingSpinner = spinner
+    }
+
+    private func setSaveButtonEnabled(_ isEnabled: Bool) {
+        guard let previewVC else { return }
+        previewVC.rightButton.isEnabled = isEnabled
+        DesignSystem.updateButtonEnabled(previewVC.rightButton, style: .primary)
     }
 
     private func ensureSaveStateAccessibilityView(in previewVC: ScenePreviewViewController) {
