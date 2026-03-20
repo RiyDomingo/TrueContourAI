@@ -15,8 +15,8 @@ TrueContourAI scan runtime is built on StandardCyborg components and most closel
 - [TrueContourAI/Features/Scan/ScanCaptureService.swift](../TrueContourAI/Features/Scan/ScanCaptureService.swift)
 - [TrueContourAI/Features/Scan/ScanRuntimeEngine.swift](../TrueContourAI/Features/Scan/ScanRuntimeEngine.swift)
 - [TrueContourAI/Features/Scan/ScanSessionController.swift](../TrueContourAI/Features/Scan/ScanSessionController.swift)
-- [TrueContourAI/Features/Scan/ScanRuntimeController.swift](../TrueContourAI/Features/Scan/ScanRuntimeController.swift)
 - [TrueContourAI/Features/Scan/ScanCoordinator.swift](../TrueContourAI/Features/Scan/ScanCoordinator.swift)
+- [TrueContourAI/Features/Scan/ScanAssembler.swift](../TrueContourAI/Features/Scan/ScanAssembler.swift)
 - [TrueContourAI/Features/Preview/PreviewCoordinator.swift](../TrueContourAI/Features/Preview/PreviewCoordinator.swift)
 - [TrueContourAI/Features/Preview/PreviewViewController.swift](../TrueContourAI/Features/Preview/PreviewViewController.swift)
 - [TrueContourAI/Core/Services/ScanRepository.swift](../TrueContourAI/Core/Services/ScanRepository.swift)
@@ -42,9 +42,9 @@ TrueContourAI scan runtime is built on StandardCyborg components and most closel
 - Consumes frame payloads from `ScanCaptureService`.
 - Drives reconstruction, metrics, thermal warnings, and preview payload creation.
 
-5. `ScanSessionController` and `ScanRuntimeController`
+5. `ScanSessionController`
 - `ScanSessionController` owns countdown and auto-finish timer mechanics.
-- `ScanRuntimeController` owns runtime-side lifecycle concerns such as idle-timer handling.
+- Runtime activation/deactivation now routes through `ScanStore` + `ScanRuntimeEngine`; there is no separate runtime policy owner in the active scan flow.
 
 ## Hot Path Constraints
 - Allowed in camera / reconstruction callbacks:
@@ -124,6 +124,10 @@ Preview export flow does prechecks and state transitions before calling export:
 On success, it updates last scan folder and notifies observers.
 On failure, it restores preview UI state.
 Quality-gate blocking should be reviewed both for logic and for end-user recovery messaging.
+
+Policy coverage note:
+- runtime override matrices, GLTF/OBJ policy, and preview save prechecks are now primarily covered in unit tests
+- physical-device smoke should stay focused on true capture/preview/save/reopen workflows rather than diagnostics-only artifact assertions
 
 ## Why It Resembles TrueDepthFusion
 Compared to `StandardCyborgExample`, this app has richer orchestration around the same underlying scan primitives:

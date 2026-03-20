@@ -17,6 +17,8 @@ final class ScanStore {
     private let runtimeEngine: ScanRuntimeEngining
     private let sessionController: ScanSessionController
     private let dispatchOnMain: (@escaping () -> Void) -> Void
+    private let initialFailure: ScanFailureViewData?
+    private let initialFailureAlertIdentifier: String?
 
     private var autoFinishSeconds: Int
     private var requiresManualFinish: Bool
@@ -25,6 +27,7 @@ final class ScanStore {
     private var latestProgress: ScanProgressSnapshot?
     private var thermalWarningVisible = false
     private var hasCaptureSession = false
+    private var hasPresentedInitialFailureAlert = false
 
     init(
         captureService: ScanCaptureServicing,
@@ -32,6 +35,8 @@ final class ScanStore {
         autoFinishSeconds: Int,
         requiresManualFinish: Bool,
         developerModeEnabled: Bool,
+        initialFailure: ScanFailureViewData? = nil,
+        initialFailureAlertIdentifier: String? = nil,
         hapticEngine: ScanningHapticFeedbackProviding,
         dispatchOnMain: @escaping (@escaping () -> Void) -> Void = { work in
             if Thread.isMainThread {
@@ -46,6 +51,8 @@ final class ScanStore {
         self.autoFinishSeconds = autoFinishSeconds
         self.requiresManualFinish = requiresManualFinish
         self.developerModeEnabled = developerModeEnabled
+        self.initialFailure = initialFailure
+        self.initialFailureAlertIdentifier = initialFailureAlertIdentifier
         self.dispatchOnMain = dispatchOnMain
         self.sessionController = ScanSessionController(hapticEngine: hapticEngine)
         self.sessionController.autoFinishSeconds = autoFinishSeconds
@@ -64,12 +71,30 @@ final class ScanStore {
         sessionController.onAutoFinishTriggered = { [weak self] in
             self?.send(.finishTapped)
         }
+
+        if let initialFailure {
+            state = .failed(initialFailure)
+        }
     }
 
     func send(_ action: ScanAction) {
         switch action {
         case .viewDidAppear:
+            if let initialFailure {
+                guard !hasPresentedInitialFailureAlert else { return }
+                hasPresentedInitialFailureAlert = true
+                emitEffect(
+                    .alert(
+                        title: initialFailure.title,
+                        message: initialFailure.message,
+                        identifier: initialFailureAlertIdentifier ?? "scanUnavailable"
+                    )
+                )
+                return
+            }
             runtimeEngine.activate()
+        case .viewWillDisappear:
+            runtimeEngine.deactivate()
         case .startSession:
             handleStartOrShutterTapped()
         case .dismissTapped:

@@ -39,6 +39,7 @@
 		13DD59932F225F2D00A33CAF /* stb in Frameworks */ = {isa = PBXBuildFile; productRef = 13DD59922F225F2D00A33CAF /* stb */; };
 		13DD59962F225F3E00A33CAF /* tinygltf in Frameworks */ = {isa = PBXBuildFile; productRef = 13DD59952F225F3E00A33CAF /* tinygltf */; };
 		13DD599D2F22698F00A33CAF /* App/AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD599C2F22698F00A33CAF /* App/AppDependencies.swift */; };
+		13DD599E2F22698F00A33CAF /* App/AppRuntimeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD599F2F22698F00A33CAF /* App/AppRuntimeSettings.swift */; };
 		13DD59AB2F226E2A00A33CAF /* Features/Preview/PreviewStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59AA2F226E2A00A33CAF /* Features/Preview/PreviewStore.swift */; };
 		13DD59AD2F226E5800A33CAF /* Features/Preview/PreviewCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59AC2F226E5800A33CAF /* Features/Preview/PreviewCoordinator.swift */; };
 		13DD59B22F2271000A33CAF /* Features/Preview/MeshingTimeoutController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59B12F2271000A33CAF /* Features/Preview/MeshingTimeoutController.swift */; };
@@ -107,6 +108,7 @@
 		13F1A0172F6A123400111111 /* LocalMeasurementGenerationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F1A0182F6A123400111111 /* LocalMeasurementGenerationServiceTests.swift */; };
 		13F1A0192F6A123400111111 /* SettingsViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F1A01A2F6A123400111111 /* SettingsViewControllerTests.swift */; };
 		13F1A01B2F6A123400111111 /* SettingsStorageUseCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F1A01C2F6A123400111111 /* SettingsStorageUseCaseTests.swift */; };
+		13F1A01D2F6A123400111111 /* AppRuntimeSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F1A01E2F6A123400111111 /* AppRuntimeSettingsTests.swift */; };
 		14B2005C2F7D000100ABC01E /* ScanStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B2005D2F7D000100ABC01E /* ScanStoreTests.swift */; };
 		13FA01012F7B000100ABCDEF /* StandardCyborgFusion in Frameworks */ = {isa = PBXBuildFile; productRef = 766314032CEB185300CC7AF3 /* StandardCyborgFusion */; };
 		13FA01022F7B000100ABCDEF /* StandardCyborgUI in Frameworks */ = {isa = PBXBuildFile; productRef = 766314062CEB186300CC7AF3 /* StandardCyborgUI */; };
@@ -181,6 +183,7 @@
 		137465802F150CDA00C2772D /* Features/Scan/EarLandmarksService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Scan/EarLandmarksService.swift; sourceTree = "<group>"; };
 		13806CB42F20C4AD00A6440D /* TrueContourAIUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TrueContourAIUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		13DD599C2F22698F00A33CAF /* App/AppDependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppDependencies.swift; sourceTree = "<group>"; };
+		13DD599F2F22698F00A33CAF /* App/AppRuntimeSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppRuntimeSettings.swift; sourceTree = "<group>"; };
 		13DD59AA2F226E2A00A33CAF /* Features/Preview/PreviewStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewStore.swift; sourceTree = "<group>"; };
 		13DD59AC2F226E5800A33CAF /* Features/Preview/PreviewCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewCoordinator.swift; sourceTree = "<group>"; };
 		13DD59B12F2271000A33CAF /* Features/Preview/MeshingTimeoutController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/MeshingTimeoutController.swift; sourceTree = "<group>"; };
@@ -251,6 +254,7 @@
 		13F1A0182F6A123400111111 /* LocalMeasurementGenerationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalMeasurementGenerationServiceTests.swift; sourceTree = "<group>"; };
 		13F1A01A2F6A123400111111 /* SettingsViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewControllerTests.swift; sourceTree = "<group>"; };
 		13F1A01C2F6A123400111111 /* SettingsStorageUseCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStorageUseCaseTests.swift; sourceTree = "<group>"; };
+		13F1A01E2F6A123400111111 /* AppRuntimeSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRuntimeSettingsTests.swift; sourceTree = "<group>"; };
 		14B2005D2F7D000100ABC01E /* ScanStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanStoreTests.swift; sourceTree = "<group>"; };
 		14A100112F7C000100ABC001 /* Features/Fit/FitModelPackModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Fit/FitModelPackModels.swift; sourceTree = "<group>"; };
 		14A100122F7C000100ABC001 /* Features/Fit/FitModelPackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Fit/FitModelPackService.swift; sourceTree = "<group>"; };
@@ -330,6 +334,7 @@
 				13F1A0182F6A123400111111 /* LocalMeasurementGenerationServiceTests.swift */,
 				13F1A01A2F6A123400111111 /* SettingsViewControllerTests.swift */,
 				13F1A01C2F6A123400111111 /* SettingsStorageUseCaseTests.swift */,
+				13F1A01E2F6A123400111111 /* AppRuntimeSettingsTests.swift */,
 				13E2D4022F1D0100003DE022 /* Info.plist */,
 			);
 			path = TrueContourAITests;
@@ -340,6 +345,7 @@
 			children = (
 				7642B7FB21E679E800BC45C7 /* App/AppDelegate.swift */,
 				13DD599C2F22698F00A33CAF /* App/AppDependencies.swift */,
+				13DD599F2F22698F00A33CAF /* App/AppRuntimeSettings.swift */,
 				136674262F16AED100F7E18B /* App/SceneDelegate.swift */,
 			);
 			name = App;
@@ -717,6 +723,7 @@
 				13F1A0172F6A123400111111 /* LocalMeasurementGenerationServiceTests.swift in Sources */,
 				13F1A0192F6A123400111111 /* SettingsViewControllerTests.swift in Sources */,
 				13F1A01B2F6A123400111111 /* SettingsStorageUseCaseTests.swift in Sources */,
+				13F1A01D2F6A123400111111 /* AppRuntimeSettingsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -788,6 +795,7 @@
 				13F0A0032F6A123400111111 /* Features/Home/ScanDetailsViewController.swift in Sources */,
 				136674292F1794DF00F7E18B /* Features/Home/ScanCardCell.swift in Sources */,
 				13DD599D2F22698F00A33CAF /* App/AppDependencies.swift in Sources */,
+				13DD599E2F22698F00A33CAF /* App/AppRuntimeSettings.swift in Sources */,
 				14B200222F7D000100ABC004 /* Features/Settings/SettingsSupport.swift in Sources */,
 				14B200482F7D000100ABC014 /* Features/Settings/SettingsFeedbackController.swift in Sources */,
 				14C400032F8B000100ABC001 /* Features/Settings/SettingsAssembler.swift in Sources */,

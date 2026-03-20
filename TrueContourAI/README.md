@@ -97,6 +97,7 @@ Physical-device validation should confirm the artifact set matches the active ex
 
 ## Current Runtime Shape
 - App startup routes through `AppCoordinator` and `AppEnvironment`.
+- App-scoped runtime/test overrides are applied through `AppRuntimeSettings`; persisted preferences remain owned by `SettingsStore`.
 - Home flow is driven by `HomeViewModel` state/effects and assembled through `HomeAssembler`.
 - Scan flow centers on `ScanAssembler`, `ScanCoordinator`, `ScanStore`, `ScanCaptureService`, `ScanRuntimeEngine`, and `AppScanningViewController`.
 - Preview flow centers on `PreviewAssembler`, `PreviewCoordinator`, `PreviewViewController`, `PreviewStore`, `PreviewExportUseCase`, `PreviewFitUseCase`, `PreviewEarVerificationUseCase`, and `PreviewSceneAdapter`.
@@ -112,6 +113,10 @@ Physical-device validation should confirm the artifact set matches the active ex
   - `ScanRepository`
   - `ScanExporterService`
   - `ScanTestSeedService` for UI-test seeding
+
+## Current Intentional Exceptions
+- `HomeCoordinator` still owns narrow Home-side presentation helpers for scan details/library actions; it is not as strictly route-only as Scan/Preview.
+- Preview still keeps UI/session helper layers for hosting, overlays, meshing callbacks, and session bookkeeping, but `PreviewStore` remains the single preview feature owner.
 
 ## Key Dependencies
 - Local Swift packages:
@@ -135,4 +140,4 @@ Physical-device validation should confirm the artifact set matches the active ex
 ## Current Important Constraint
 - Real scan testing must be performed on physical hardware with TrueDepth.
 - Simulator is not accepted as scan-runtime validation for capture/finalize/export behavior.
-- The strongest current release evidence is the full `TrueContourAIUITests` run on `Riy's iPhone` plus repeated focused `save -> reopen` smoke validation on the same device.
+- The strongest current release evidence is physical-device UI/device-smoke coverage on `Riy's iPhone`, with export-policy and runtime-override matrices now primarily covered in unit tests instead of diagnostics-heavy smoke assertions.

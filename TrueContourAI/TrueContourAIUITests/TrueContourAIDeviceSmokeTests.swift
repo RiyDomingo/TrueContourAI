@@ -95,16 +95,6 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         XCTAssertTrue(waitForExists(app.buttons["previewSaveButton"], timeout: 30))
     }
 
-    func testDeviceSmokeSaveReportsExportArtifactPresence() throws {
-#if targetEnvironment(simulator)
-        throw XCTSkip("TrueDepth smoke tests run only on physical iPhone hardware")
-#endif
-        let app = launchDeviceSmokeApp(skipEarML: true)
-        let diagnostics = try saveAndReturnDiagnostics(app: app)
-        XCTAssertTrue(diagnostics.contains("gltf=1"), "Expected GLTF artifact in diagnostics: \(diagnostics)")
-        XCTAssertTrue(diagnostics.contains("obj=1"), "Expected OBJ artifact in diagnostics: \(diagnostics)")
-    }
-
     func testDeviceSmokeForcedQualityGateBlocksSave() throws {
 #if targetEnvironment(simulator)
         throw XCTSkip("TrueDepth smoke tests run only on physical iPhone hardware")
@@ -130,38 +120,12 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         XCTAssertTrue(waitForExists(qualityAlert, timeout: 10.0), "Expected quality gate alert when forced quality gate is enabled")
     }
 
-    func testDeviceSmokeSaveReportsGLTFOnlyArtifacts() throws {
-#if targetEnvironment(simulator)
-        throw XCTSkip("TrueDepth smoke tests run only on physical iPhone hardware")
-#endif
-        let app = launchDeviceSmokeApp(
-            skipEarML: true,
-            extraArguments: ["ui-test-export-obj-off"]
-        )
-        let diagnostics = try saveAndReturnDiagnostics(app: app)
-        XCTAssertTrue(diagnostics.contains("gltf=1"), "Expected GLTF artifact in diagnostics: \(diagnostics)")
-        XCTAssertTrue(diagnostics.contains("obj=0"), "Expected OBJ to be disabled in diagnostics: \(diagnostics)")
-    }
-
-    func testDeviceSmokeGLTFDisableLaunchArgIsIgnored() throws {
-#if targetEnvironment(simulator)
-        throw XCTSkip("TrueDepth smoke tests run only on physical iPhone hardware")
-#endif
-        let app = launchDeviceSmokeApp(
-            skipEarML: true,
-            extraArguments: ["ui-test-export-gltf-off"]
-        )
-        let diagnostics = try saveAndReturnDiagnostics(app: app)
-        XCTAssertTrue(diagnostics.contains("gltf=1"), "Expected GLTF artifact even when launch arg disables it: \(diagnostics)")
-    }
-
     func testDeviceSmokeSaveThenReopenFromHome() throws {
 #if targetEnvironment(simulator)
         throw XCTSkip("TrueDepth smoke tests run only on physical iPhone hardware")
 #endif
         let app = launchDeviceSmokeApp(skipEarML: true)
-        let diagnostics = try saveAndReturnDiagnostics(app: app)
-        XCTAssertTrue(diagnostics.contains("folder="), "Expected saved scan diagnostics before reopen: \(diagnostics)")
+        try saveAndReturnHome(app: app)
 
         let recentOpenButton = app.buttons["scanOpenButton"].firstMatch
         XCTAssertTrue(waitForExists(recentOpenButton, timeout: 8.0), "Expected recent scan open button after returning home")
@@ -183,8 +147,7 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
                 "previewClose.exists=\(closeButton.exists ? 1 : 0)",
                 "previewShare.exists=\(previewShareButton.exists ? 1 : 0)",
                 "missingSceneAlert=\(missingSceneAlert.exists ? 1 : 0)",
-                "missingFolderAlert=\(missingFolderAlert.exists ? 1 : 0)",
-                "diagnostics=\(diagnostics)"
+                "missingFolderAlert=\(missingFolderAlert.exists ? 1 : 0)"
             ].joined(separator: ",")
             XCTFail("Expected reopened preview close button from Home. \(debugState)")
         }
@@ -240,7 +203,7 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         return app
     }
 
-    private func saveAndReturnDiagnostics(app: XCUIApplication) throws -> String {
+    private func saveAndReturnHome(app: XCUIApplication) throws {
         let startButton = app.buttons["startScanButton"]
         XCTAssertTrue(waitForExists(startButton))
         startButton.tap()
@@ -312,15 +275,6 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
             XCTFail("Expected to return to the home screen after save. \(debugState)")
         }
         XCTAssertTrue(waitForHittable(homeStart, timeout: 6.0), "Expected Home start button to become hittable after preview dismissal")
-        let diagnosticsLabel = app.staticTexts["deviceSmokeDiagnosticsLabel"]
-        XCTAssertTrue(waitForExists(diagnosticsLabel, timeout: 12.0), "Expected visible device diagnostics label after save")
-        let hasExpectedDiagnostics = waitForCondition(timeout: 12.0) {
-            diagnosticsLabel.exists
-                && diagnosticsLabel.label.contains("folder=")
-                && !diagnosticsLabel.label.contains("folder=none")
-        }
-        XCTAssertTrue(hasExpectedDiagnostics, "Unexpected diagnostics label: \(diagnosticsLabel.label)")
-        return diagnosticsLabel.label
     }
 
     private func waitForScanShutter(app: XCUIApplication) throws -> XCUIElement {

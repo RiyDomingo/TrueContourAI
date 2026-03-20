@@ -86,6 +86,7 @@ enum GuidanceChipStyle: Equatable {
 
 enum ScanAction {
     case viewDidAppear
+    case viewWillDisappear
     case startSession
     case dismissTapped
     case finishTapped

@@ -2,7 +2,7 @@ import UIKit
 import StandardCyborgFusion
 
 final class HomeScanFlowController {
-    private let settingsStore: SettingsStore
+    private let runtimeSettings: any AppSettingsReading
     private let scanCoordinator: ScanCoordinator
     private let homeCoordinator: HomeCoordinator
     private let previewCoordinator: PreviewCoordinator
@@ -11,14 +11,14 @@ final class HomeScanFlowController {
     private var latestScanMetrics: ScanFlowState.ScanSessionMetrics?
 
     init(
-        settingsStore: SettingsStore,
+        runtimeSettings: any AppSettingsReading,
         scanCoordinator: ScanCoordinator,
         homeCoordinator: HomeCoordinator,
         previewCoordinator: PreviewCoordinator,
         scanFlowState: ScanFlowState,
         scanSessionController: HomeScanSessionController
     ) {
-        self.settingsStore = settingsStore
+        self.runtimeSettings = runtimeSettings
         self.scanCoordinator = scanCoordinator
         self.homeCoordinator = homeCoordinator
         self.previewCoordinator = previewCoordinator
@@ -27,7 +27,7 @@ final class HomeScanFlowController {
     }
 
     func startScan(from presenter: UIViewController, delegate: AppScanningViewControllerDelegate) {
-        if settingsStore.showPreScanChecklist {
+        if runtimeSettings.showPreScanChecklist {
             homeCoordinator.presentPreScanChecklist(from: presenter) { [weak self, weak presenter] in
                 guard let self, let presenter else { return }
                 self.startScanAfterChecklist(from: presenter, delegate: delegate)

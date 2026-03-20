@@ -306,14 +306,6 @@ final class AppScanningViewController: UIViewController {
     }()
 
     private let runtimeEngine: ScanRuntimeEngining
-    private lazy var metalInitializationFailure: ScanFailureViewData? = {
-        guard metalContext == nil else { return nil }
-        return ScanFailureViewData(
-            title: L("scan.start.unavailable.title"),
-            message: L("scan.start.cameraUnavailable.message"),
-            allowsRetry: false
-        )
-    }()
     private let store: ScanStore
     private let orientationSource: ScanInterfaceOrientationSource
 
@@ -435,25 +427,12 @@ final class AppScanningViewController: UIViewController {
         bindStore()
         configureUI()
         store.onStateChange?(store.state)
-        if let metalInitializationFailure {
-            apply(state: .failed(metalInitializationFailure))
-        }
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         refreshCurrentInterfaceOrientation()
         installVolumeShutterIfNeeded()
-        guard metalInitializationFailure == nil else {
-            handle(
-                effect: .alert(
-                    title: L("scan.start.unavailable.title"),
-                    message: L("scan.start.cameraUnavailable.message"),
-                    identifier: "metalUnavailable"
-                )
-            )
-            return
-        }
         store.send(.viewDidAppear)
         store.send(.startSession)
     }
@@ -464,7 +443,7 @@ final class AppScanningViewController: UIViewController {
         if !didRouteCancel && !didRouteCompletion {
             store.send(.dismissTapped)
         }
-        runtimeEngine.deactivate()
+        store.send(.viewWillDisappear)
     }
 
     override func viewDidLayoutSubviews() {

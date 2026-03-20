@@ -20,7 +20,7 @@ xcodebuild build -project TrueContourAI.xcodeproj -scheme TrueContourAI -destina
 ## Test Strategy
 ### Unit tests
 - Scheme: `TrueContourAITests`
-- Covers scan quality, coordinators, view models, settings behavior, export prechecks.
+- Covers scan quality, coordinators, stores/view models, settings behavior, runtime overrides, repository/export behavior, and preview export prechecks.
 
 ```bash
 xcodebuild build -project TrueContourAI.xcodeproj -scheme TrueContourAITests -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO
@@ -46,6 +46,11 @@ xcodebuild test -project TrueContourAI.xcodeproj -scheme TrueContourAIUITests -d
   - preview save/export
   - save -> return home -> reopen
   - quality-gate blocked export
+- Prefer unit tests for:
+  - runtime override matrices
+  - GLTF/OBJ export policy
+  - preview save precheck logic
+  - quality-gate decision matrices that do not require real camera/runtime hardware
 
 ### Hardware smoke tests
 - Run selected tests on connected iPhone when touching scan engine paths.
@@ -54,9 +59,12 @@ xcodebuild test -project TrueContourAI.xcodeproj -scheme TrueContourAIUITests -d
 - Preferred smoke coverage:
   - start scan -> finish -> preview
   - start scan -> cancel -> return home
-  - save/export produces expected artifacts
+  - save -> return home -> reopen
   - quality-gate block path
   - manual finish path
+  - seeded preview -> verify ear
+
+Do not push export-policy matrix coverage into diagnostics-only smoke assertions when the same behavior can be validated more directly in unit tests.
 
 ## Required Review Checks Before Merge
 - App scheme builds clean.
@@ -81,6 +89,7 @@ xcodebuild test -project TrueContourAI.xcodeproj -scheme TrueContourAIUITests -d
 - `PreviewCoordinator` should stay route-only; new preview behavior should land in `PreviewStore`, preview use cases, or narrow preview UI helpers first.
 - `SettingsViewController` should bind `SettingsState`, forward `SettingsAction`, and leave storage work to `SettingsStorageUseCase`.
 - New scan persistence/export work should target `ScanRepository` / `ScanExporterService`.
+- UI-test/device-smoke runtime shaping should go through `AppRuntimeSettings`, not persisted `SettingsStore` mutation.
 
 ## Logging and Diagnostics
 - Use existing structured `Log.*` channels.

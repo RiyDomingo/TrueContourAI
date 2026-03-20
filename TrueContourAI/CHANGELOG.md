@@ -64,6 +64,10 @@ This project follows a simple keep-a-changelog style:
 - Ear verification now prefers a preserved capture-faithful scan frame over preview snapshot fallback, while keeping the full-scene overlay for UI context and the crop overlay for QA.
 - Scan-time ear verification image selection now scores capture frames for side-profile strength and tracking quality, preferring the best candidate over the simple latest-frame policy and recording the winning frame metadata in debug output.
 - UI-test scan seeding now includes a deterministic `ear_view.png`, and autonomous preview/device-smoke tests can trigger `Verify Ear` without a fresh manual scan.
+- UI-test/device-smoke runtime shaping now goes through `AppRuntimeSettings` instead of mutating persisted `SettingsStore`.
+- Preview state ownership is further consolidated around `PreviewStore`; remaining preview workflows are now thin UI/session plumbing rather than alternate product-state owners.
+- PreviewStore internals are now grouped by session/render/fit/verification concern to reduce mutable sprawl without changing external ownership.
+- Test architecture now favors unit coverage for runtime overrides, export-policy matrices, and preview save prechecks; physical-device smoke remains focused on true UI/hardware workflows instead of diagnostics-label artifact assertions.
 
 ### Fixed
 - Removed remaining scan/preview runtime force-unwrap crash paths in `StandardCyborgUI` for Metal/session/SceneKit/resource setup, replacing them with guarded fallbacks.
@@ -85,3 +89,7 @@ This project follows a simple keep-a-changelog style:
 - Phase 4 Home/Settings assembly cleanup: connected-device build succeeded and focused `HomeViewModelTests`, `HomeCoordinatorTests`, `SettingsViewControllerTests`, `ScanTimingTests`, and `AccessibilitySmokeTests` passed on `Riy's iPhone` on 2026-03-19
 - Phase 5 debt removal: connected-device build succeeded and focused repository/export, preview coordinator/export, `ScanFlowStateTests`, `HomeViewModelTests`, `HomeCoordinatorTests`, `SettingsViewControllerTests`, `ScanTimingTests`, and `AccessibilitySmokeTests` passed on `Riy's iPhone` on 2026-03-19
 - Final refactor cleanup: connected-device build succeeded and focused `ScanRepositoryExporterTests`, `ScanStoreTests`, `PreviewStoreTests`, `PreviewCoordinatorTests`, `PreviewCoordinatorExportTests`, `SettingsStorageUseCaseTests`, and `SettingsViewControllerTests` passed on `Riy's iPhone` on 2026-03-20
+- Runtime override cleanup: connected-device build succeeded and focused `AppRuntimeSettingsTests`, `SettingsStorageUseCaseTests`, `SettingsViewControllerTests`, `ScanCoordinatorTests`, `ScanStoreTests`, `PreviewCoordinatorExportTests`, and `PreviewStoreTests` passed on `Riy's iPhone` on 2026-03-20
+- Preview ownership consolidation: connected-device build succeeded and focused `PreviewStoreTests`, `PreviewCoordinatorTests`, and `PreviewCoordinatorExportTests` passed on `Riy's iPhone` on 2026-03-20
+- PreviewStore internal refinement: connected-device build succeeded and focused `PreviewStoreTests`, `PreviewCoordinatorTests`, and `PreviewCoordinatorExportTests` passed on `Riy's iPhone` on 2026-03-20
+- Test-architecture cleanup: connected-device UI test target build succeeded, and focused `AppRuntimeSettingsTests`, `PreviewCoordinatorExportTests`, `ScanRepositoryExporterTests`, and `SettingsViewControllerTests` passed on `Riy's iPhone` on 2026-03-20; one representative save/reopen device-smoke rerun still failed and remains an active end-to-end stability check

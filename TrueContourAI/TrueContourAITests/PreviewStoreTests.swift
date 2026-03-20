@@ -1,5 +1,6 @@
 import XCTest
 import UIKit
+import StandardCyborgFusion
 @testable import TrueContourAI
 
 final class PreviewStoreTests: XCTestCase {
@@ -162,5 +163,67 @@ final class PreviewStoreTests: XCTestCase {
         } else {
             XCTFail("Expected ear verification failure alert")
         }
+    }
+
+    func testExistingScanLoadFailureEmitsMissingSceneAlertThenDismissRoute() {
+        let store = PreviewStore()
+        var effects: [PreviewEffect] = []
+        store.onEffect = { effects.append($0) }
+
+        store.send(.existingScanLoadFailed(.loadFailed(L("scan.preview.missingScene.message"))))
+
+        if case .alertThenRoute(let title, let message, let identifier, let route)? = effects.first {
+            XCTAssertEqual(title, L("scan.preview.missingScene.title"))
+            XCTAssertEqual(message, L("scan.preview.missingScene.message"))
+            XCTAssertEqual(identifier, "missingSceneAlert")
+            if case .dismiss = route {
+            } else {
+                XCTFail("Expected dismiss route")
+            }
+        } else {
+            XCTFail("Expected missing-scene alert-then-dismiss effect")
+        }
+    }
+
+    func testMeshingTimeoutEmitsMeshTimeoutAlertWhenMeshUnavailable() {
+        let store = PreviewStore()
+        var effects: [PreviewEffect] = []
+        store.onEffect = { effects.append($0) }
+
+        store.send(.postScanLoaded(makePreviewInput()))
+        store.send(.meshingTimedOut)
+
+        if case .alert(let title, _, let identifier)? = effects.last {
+            XCTAssertEqual(title, L("scan.preview.meshNotReady.title"))
+            XCTAssertEqual(identifier, "meshTimeoutAlert")
+        } else {
+            XCTFail("Expected mesh-timeout alert")
+        }
+    }
+
+    func testNoEarVerificationFailureUsesNoEarAlert() {
+        let store = PreviewStore()
+        var effects: [PreviewEffect] = []
+        store.onEffect = { effects.append($0) }
+
+        store.send(.earVerificationCompleted(.failure(.verificationFailed(L("scan.preview.noEar.message")))))
+
+        if case .alert(let title, let message, let identifier)? = effects.first {
+            XCTAssertEqual(title, L("scan.preview.noEar.title"))
+            XCTAssertEqual(message, L("scan.preview.noEar.message"))
+            XCTAssertEqual(identifier, "noEarAlert")
+        } else {
+            XCTFail("Expected no-ear alert")
+        }
+    }
+
+    private func makePreviewInput() -> ScanPreviewInput {
+        let pointCloud = class_createInstance(SCPointCloud.self, 0) as! SCPointCloud
+        return ScanPreviewInput(
+            pointCloud: pointCloud,
+            meshTexturing: SCMeshTexturing(),
+            earVerificationImage: nil,
+            earVerificationSelectionMetadata: nil
+        )
     }
 }

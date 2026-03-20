@@ -9,6 +9,9 @@ This document explains how TrueContourAI is organized and how scan data moves th
 - Service-oriented persistence/export layer with one production owner per responsibility.
 - Explicit feature state via `HomeViewModel`, `ScanStore`, `PreviewStore`, and `SettingsStore`.
 - Controllers bind/render/forward intents only; stores, coordinators, services, and use cases own the rest.
+- Two intentional exceptions remain documented here rather than hidden:
+  - `HomeCoordinator` still owns narrow Home-side presentation helpers beyond pure routing.
+  - Preview still uses narrow UI/session helper types for hosting, overlays, meshing callbacks, and session bookkeeping.
 
 ## Top-Level Modules
 - [TrueContourAI/App](./TrueContourAI/App): app lifecycle and dependency wiring.
@@ -58,6 +61,7 @@ This document explains how TrueContourAI is organized and how scan data moves th
   - `PreviewAlertPresenter`
   - `PreviewButtonConfigurator`
   - `MeshingTimeoutController`
+- These helpers are still active, but they are no longer alternate owners of preview product state. `PreviewStore` remains the feature owner.
 
 ### Settings
 - `SettingsAssembler`: stateless factory for Settings feature composition.
@@ -67,6 +71,7 @@ This document explains how TrueContourAI is organized and how scan data moves th
   - `Advanced` exposes only quality-gate controls that are actually honored by the app.
 - `SettingsStore`: persisted-preference owner and Settings state/effect owner with `state`, `onStateChange`, `onEffect`, and `send(_:)`.
 - `SettingsStorageUseCase`: async storage usage calculation and async delete-all scans.
+- `SettingsInteractionController`: narrow UI-orchestration helper between the controller, store, and storage use case.
 
 ### Core
 - `ScanRepository`: production owner of scan listing, validity filtering, asset resolution, last-scan resolution, and rename/delete/delete-all.
@@ -84,6 +89,11 @@ This document explains how TrueContourAI is organized and how scan data moves th
 7. `PreviewStore` owns preview state while `PreviewExportUseCase`, `PreviewFitUseCase`, and `PreviewEarVerificationUseCase` perform side effects/work.
 8. `ScanExporterService.exportScanFolder(...)` writes artifacts and metadata.
 9. `PreviewStore` emits a route effect and Home refreshes recent scans.
+
+## Runtime Overrides
+- Persisted settings still live in `SettingsStore`.
+- UI-test/device-smoke shaping is now applied ephemerally through `AppRuntimeSettings`, derived from `AppEnvironment`.
+- Effective scan/export/quality-gate behavior in test runs comes from persisted settings plus runtime overrides at composition/use time; test harnesses no longer rewrite persisted settings for smoke behavior.
 
 ## Scan State Model
 `ScanStore.state` is the source of truth for active scan UI, while `ScanFlowState.phase` tracks cross-feature scan session progress.
@@ -109,6 +119,7 @@ Failure transitions:
 ## Known Constraints
 - Some tests still rely on hardware/runtime-sensitive flows and remain slower or less deterministic than ideal.
 - Device smoke on physical TrueDepth hardware remains a release gate.
+- One representative save/reopen smoke path is still the most failure-prone end-to-end check, so unit coverage now carries more of the export-policy matrix that used to live in diagnostics-heavy smoke assertions.
 
 ## Closest Reference Implementation
 The scan engine architecture in TrueContourAI is closer to the old `TrueDepthFusion` pattern than `StandardCyborgExample`, because it uses:

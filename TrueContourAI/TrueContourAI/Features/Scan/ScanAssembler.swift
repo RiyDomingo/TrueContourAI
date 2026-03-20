@@ -28,7 +28,7 @@ struct ScanAssembler {
             DispatchQueue.global(qos: .userInitiated).async(execute: work)
         }
     ) -> AppScanningViewController {
-        let settingsStore = dependencies.settingsStore
+        let settingsStore = dependencies.runtimeSettings
         let processingConfig = settingsStore.processingConfig
         let captureTuning = suggestedCaptureTuning(for: processingConfig)
         let autoFinishSeconds = settingsStore.scanDurationSeconds
@@ -56,6 +56,7 @@ struct ScanAssembler {
 
         let metalContext = AppScanningViewController.makeMetalContextForAssembly()
         let runtimeEngine: ScanRuntimeEngining
+        let initialFailure: ScanFailureViewData?
         if let metalContext {
             runtimeEngine = ScanRuntimeEngine(
                 reconstructionManager: reconstructionManagerFactory(
@@ -68,8 +69,14 @@ struct ScanAssembler {
                 requiresManualFinish: requiresManualFinish,
                 backgroundWorkRunner: backgroundWorkRunner
             )
+            initialFailure = nil
         } else {
             runtimeEngine = AppScanningViewController.makeUnavailableRuntimeEngineForAssembly()
+            initialFailure = ScanFailureViewData(
+                title: L("scan.start.unavailable.title"),
+                message: L("scan.start.cameraUnavailable.message"),
+                allowsRetry: false
+            )
         }
 
         let store = ScanStore(
@@ -78,6 +85,8 @@ struct ScanAssembler {
             autoFinishSeconds: autoFinishSeconds,
             requiresManualFinish: requiresManualFinish,
             developerModeEnabled: developerModeEnabled,
+            initialFailure: initialFailure,
+            initialFailureAlertIdentifier: "metalUnavailable",
             hapticEngine: hapticEngine
         )
 

@@ -26,8 +26,15 @@ struct AppEnvironment {
 
     static let current = AppEnvironment(processInfo: .processInfo)
 
+    init(arguments: [String]) {
+        self.init(processInfoArguments: Set(arguments))
+    }
+
     init(processInfo: ProcessInfo) {
-        let arguments = Set(processInfo.arguments)
+        self.init(processInfoArguments: Set(processInfo.arguments))
+    }
+
+    private init(processInfoArguments arguments: Set<String>) {
         guard arguments.contains("-UITests") || arguments.contains("ui-test-scans-root") else {
             runtimeMode = .production
             return
@@ -82,6 +89,7 @@ struct AppDependencies {
     let scanRepository: ScanRepository
     let scanExporter: ScanExporterService
     let settingsStore: SettingsStore
+    let runtimeSettings: AppRuntimeSettings
     let earServiceFactory: () -> EarLandmarksService?
 
     init(
@@ -102,38 +110,8 @@ struct AppDependencies {
             environment: environment
         )
         self.settingsStore = settingsStore
+        self.runtimeSettings = AppRuntimeSettings(settingsStore: settingsStore, environment: environment)
         self.earServiceFactory = earServiceFactory ?? AppDependencies.makeEarServiceFactory(environment: environment)
-        applyRuntimeOverrides()
-    }
-
-    private func applyRuntimeOverrides() {
-        guard environment.isDeviceSmokeMode else { return }
-
-        settingsStore.showPreScanChecklist = false
-        if settingsStore.scanDurationSeconds < 30 {
-            // Keep device-smoke scans long enough for the UI test harness to observe progress
-            // and use the manual finish path before the runtime auto-finishes into preview,
-            // even if a shorter value was persisted by a prior run.
-            settingsStore.scanDurationSeconds = 30
-        }
-
-        settingsStore.exportGLTF = true
-        settingsStore.exportOBJ = !environment.disablesOBJExport
-        if environment.requestsDisabledGLTFExport {
-            settingsStore.exportGLTF = true
-        }
-
-        if environment.forcesQualityGateBlock {
-            var quality = settingsStore.scanQualityConfig
-            quality.gateEnabled = true
-            quality.minValidPoints = max(quality.minValidPoints, 9_999_999)
-            settingsStore.scanQualityConfig = quality
-        } else if environment.disablesQualityGate {
-            var quality = settingsStore.scanQualityConfig
-            quality.gateEnabled = false
-            settingsStore.scanQualityConfig = quality
-        }
-
 #if DEBUG
         ScanDiagnostics.reset()
 #endif

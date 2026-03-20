@@ -90,6 +90,33 @@ final class AppScanningViewControllerTests: XCTestCase {
         XCTAssertEqual(delegate.cancelCount, 1)
     }
 
+    func testViewWillDisappearDeactivatesRuntimeThroughStore() {
+        let camera = CameraManagerFake()
+        let runtime = ScanRuntimeEngineFake()
+        let store = ScanStore(
+            captureService: ScanCaptureService(
+                cameraManager: camera,
+                configuration: .init(maxDepthResolution: 320, textureSaveInterval: 8, developerModeEnabled: false),
+                orientationProvider: { .portrait }
+            ),
+            runtimeEngine: runtime,
+            autoFinishSeconds: 0,
+            requiresManualFinish: false,
+            developerModeEnabled: false,
+            hapticEngine: HapticsFake()
+        )
+        let vc = makeController(store: store, runtimeEngine: runtime)
+        vc.loadViewIfNeeded()
+
+        vc.beginAppearanceTransition(true, animated: false)
+        vc.endAppearanceTransition()
+        vc.beginAppearanceTransition(false, animated: false)
+        vc.endAppearanceTransition()
+
+        XCTAssertEqual(runtime.activateCount, 1)
+        XCTAssertEqual(runtime.deactivateCount, 1)
+    }
+
     private func makeController(
         camera: CameraManaging,
         reconstruction: ReconstructionManaging,
@@ -103,6 +130,25 @@ final class AppScanningViewControllerTests: XCTestCase {
             autoFinishSeconds: autoFinishSeconds,
             requiresManualFinish: requiresManualFinish,
             backgroundWorkRunner: { work in work() }
+        )
+    }
+
+    private func makeController(
+        store: ScanStore,
+        runtimeEngine: ScanRuntimeEngining
+    ) -> AppScanningViewController {
+        AppScanningViewController(
+            store: store,
+            runtimeEngine: runtimeEngine,
+            autoFinishSeconds: 0,
+            requiresManualFinish: false,
+            developerModeEnabled: false,
+            maxDepthResolution: 320,
+            generatesTexturedMeshes: true,
+            texturedMeshColorBufferSaveInterval: 8,
+            processingConfig: SettingsStore.ProcessingConfig.default,
+            orientationSource: ScanInterfaceOrientationSource(),
+            metalContext: nil
         )
     }
 }
@@ -188,4 +234,19 @@ private final class HapticsFake: ScanningHapticFeedbackProviding {
     func scanningBegan() {}
     func scanningFinished() {}
     func scanningCanceled() {}
+}
+
+private final class ScanRuntimeEngineFake: ScanRuntimeEngining {
+    var onEvent: ((ScanRuntimeEvent) -> Void)?
+    var onRenderFrame: ((ScanRenderFrame) -> Void)?
+    var diagnosticsSnapshot = ScanRuntimeDiagnosticsSnapshot(succeededCount: 0, lostTrackingCount: 0, droppedFrameCount: 0)
+    private(set) var activateCount = 0
+    private(set) var deactivateCount = 0
+
+    func activate() { activateCount += 1 }
+    func deactivate() { deactivateCount += 1 }
+    func beginCapture(autoFinishSeconds: Int) {}
+    func processFrame(_ frame: ScanFramePayload, isScanning: Bool) {}
+    func finishCapture() {}
+    func cancelCapture() {}
 }

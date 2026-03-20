@@ -26,7 +26,77 @@ final class PreviewStore {
         case pickRight
     }
 
-    private let settingsStore: SettingsStore
+    private struct SessionContext {
+        var id = UUID()
+        var metrics: ScanFlowState.ScanSessionMetrics?
+        var loadedScan: PreviewLoadedScan?
+    }
+
+    private struct VerificationState {
+        var verifiedEarImage: UIImage?
+        var verifiedEarResult: EarLandmarksResult?
+        var verifiedEarOverlay: UIImage?
+        var verifiedEarCropOverlay: UIImage?
+        var preservedImage: UIImage?
+        var preservedSelectionMetadata: EarVerificationSelectionMetadata?
+        var imageSource: EarVerificationImageSource?
+
+        var hasVerifiedEar: Bool {
+            verifiedEarImage != nil && verifiedEarResult != nil && verifiedEarOverlay != nil
+        }
+
+        mutating func clearVerified() {
+            verifiedEarImage = nil
+            verifiedEarResult = nil
+            verifiedEarOverlay = nil
+            verifiedEarCropOverlay = nil
+            imageSource = nil
+        }
+    }
+
+    private struct FitState {
+        var latestCheckResult: FitModelCheckResult?
+        var latestMeshData: FitModelPackService.MeshData?
+        var latestSummaryText: String?
+        var manualLeftEarMeters: SIMD3<Float>?
+        var manualRightEarMeters: SIMD3<Float>?
+        var browPlaneDropFromTopFraction: Float = 0.25
+        var showsAdvancedBrowControls = false
+        var showsPanel = false
+        var earPickState: FitEarPickState = .none
+
+        mutating func reset() {
+            latestCheckResult = nil
+            latestMeshData = nil
+            latestSummaryText = nil
+            manualLeftEarMeters = nil
+            manualRightEarMeters = nil
+            browPlaneDropFromTopFraction = 0.25
+            showsAdvancedBrowControls = false
+            showsPanel = false
+            earPickState = .none
+        }
+    }
+
+    private struct RenderState {
+        var qualityReport: ScanQualityReport?
+        var measurementSummary: LocalMeasurementGenerationService.ResultSummary?
+        var meshForExport: SCMesh?
+        var scanQuality: ScanQuality?
+        var isMeshingActive = false
+        var meshingProgressFraction: Float?
+
+        mutating func reset() {
+            qualityReport = nil
+            measurementSummary = nil
+            meshForExport = nil
+            scanQuality = nil
+            isMeshingActive = false
+            meshingProgressFraction = nil
+        }
+    }
+
+    private let settingsStore: any AppSettingsReading
     private(set) var phase: Phase = .preview
 
     private(set) var state: PreviewState = .loading {
@@ -36,39 +106,45 @@ final class PreviewStore {
     var onStateChange: ((PreviewState) -> Void)?
     var onEffect: ((PreviewEffect) -> Void)?
 
-    private(set) var sessionID = UUID()
-    private(set) var sessionMetrics: ScanFlowState.ScanSessionMetrics?
-    private(set) var qualityReport: ScanQualityReport?
-    private(set) var measurementSummary: LocalMeasurementGenerationService.ResultSummary?
-    private(set) var meshForExport: SCMesh?
-    private(set) var scanQuality: ScanQuality?
-    private(set) var verifiedEarImage: UIImage?
-    private(set) var verifiedEarResult: EarLandmarksResult?
-    private(set) var verifiedEarOverlay: UIImage?
-    private(set) var verifiedEarCropOverlay: UIImage?
-    private(set) var preservedEarVerificationImage: UIImage?
-    private(set) var preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata?
-    private(set) var earVerificationImageSource: EarVerificationImageSource?
-    private(set) var latestFitCheckResult: FitModelCheckResult?
-    private(set) var latestFitMeshData: FitModelPackService.MeshData?
-    private(set) var latestFitSummaryText: String?
-    private(set) var manualEarLeftMeters: SIMD3<Float>?
-    private(set) var manualEarRightMeters: SIMD3<Float>?
-    private(set) var browPlaneDropFromTopFraction: Float = 0.25
-    private(set) var showsAdvancedBrowControls = false
-    private(set) var showsFitPanel = false
-    private(set) var isMeshingActive = false
-    private(set) var fitEarPickState: FitEarPickState = .none
-    private(set) var currentLoadedScan: PreviewLoadedScan?
+    private var session = SessionContext()
+    private var verification = VerificationState()
+    private var fit = FitState()
+    private var render = RenderState()
 
-    init(settingsStore: SettingsStore = SettingsStore()) {
+    init(settingsStore: any AppSettingsReading = SettingsStore()) {
         self.settingsStore = settingsStore
         state = .loading
     }
 
     var hasVerifiedEar: Bool {
-        verifiedEarImage != nil && verifiedEarResult != nil && verifiedEarOverlay != nil
+        verification.hasVerifiedEar
     }
+
+    var sessionID: UUID { session.id }
+    var sessionMetrics: ScanFlowState.ScanSessionMetrics? { session.metrics }
+    var qualityReport: ScanQualityReport? { render.qualityReport }
+    var measurementSummary: LocalMeasurementGenerationService.ResultSummary? { render.measurementSummary }
+    var meshForExport: SCMesh? { render.meshForExport }
+    var scanQuality: ScanQuality? { render.scanQuality }
+    var verifiedEarImage: UIImage? { verification.verifiedEarImage }
+    var verifiedEarResult: EarLandmarksResult? { verification.verifiedEarResult }
+    var verifiedEarOverlay: UIImage? { verification.verifiedEarOverlay }
+    var verifiedEarCropOverlay: UIImage? { verification.verifiedEarCropOverlay }
+    var preservedEarVerificationImage: UIImage? { verification.preservedImage }
+    var preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata? { verification.preservedSelectionMetadata }
+    var earVerificationImageSource: EarVerificationImageSource? { verification.imageSource }
+    var latestFitCheckResult: FitModelCheckResult? { fit.latestCheckResult }
+    var latestFitMeshData: FitModelPackService.MeshData? { fit.latestMeshData }
+    var latestFitSummaryText: String? { fit.latestSummaryText }
+    var manualEarLeftMeters: SIMD3<Float>? { fit.manualLeftEarMeters }
+    var manualEarRightMeters: SIMD3<Float>? { fit.manualRightEarMeters }
+    var browPlaneDropFromTopFraction: Float { fit.browPlaneDropFromTopFraction }
+    var showsAdvancedBrowControls: Bool { fit.showsAdvancedBrowControls }
+    var showsFitPanel: Bool { fit.showsPanel }
+    var isMeshingActive: Bool { render.isMeshingActive }
+    var fitEarPickState: FitEarPickState { fit.earPickState }
+    var currentLoadedScan: PreviewLoadedScan? { session.loadedScan }
+    var meshingProgressFraction: Float? { render.meshingProgressFraction }
 
     func send(_ action: PreviewAction) {
         switch action {
@@ -76,10 +152,15 @@ final class PreviewStore {
             phase = .preview
             state = .loading
         case .existingScanLoaded(let loaded):
-            currentLoadedScan = loaded
+            session.loadedScan = loaded
             phase = .preview
             state = .ready(makeViewData())
+        case .existingScanLoadFailed(let failure):
+            handleLoadFailure(failure)
         case .postScanLoaded:
+            render.meshingProgressFraction = nil
+            evaluatePostScanQuality(from: action)
+            render.isMeshingActive = true
             phase = .preview
             state = .meshing(makeViewData())
         case .saveTapped:
@@ -95,6 +176,11 @@ final class PreviewStore {
             emitEffect(.hapticPrimary)
         case .fitEarPointSelected(let point):
             handleFitEarPointSelection(point)
+        case .meshingProgressUpdated(let progress):
+            render.meshingProgressFraction = max(0, min(1, progress))
+            refreshState()
+        case .meshingTimedOut:
+            handleMeshingTimeout()
         case .exportCompleted(let result):
             handleExportCompleted(result)
         case .earVerificationCompleted(let result):
@@ -110,11 +196,11 @@ final class PreviewStore {
         preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata? = nil
     ) -> UUID {
         let sessionID = UUID()
-        self.sessionID = sessionID
-        self.preservedEarVerificationImage = preservedEarVerificationImage
-        self.preservedEarVerificationSelectionMetadata = preservedEarVerificationSelectionMetadata
-        sessionMetrics = nil
-        currentLoadedScan = nil
+        session.id = sessionID
+        verification.preservedImage = preservedEarVerificationImage
+        verification.preservedSelectionMetadata = preservedEarVerificationSelectionMetadata
+        session.metrics = nil
+        session.loadedScan = nil
         resetSessionArtifacts()
         phase = .preview
         state = .loading
@@ -128,11 +214,11 @@ final class PreviewStore {
         preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata? = nil
     ) -> UUID {
         let sessionID = UUID()
-        self.sessionID = sessionID
-        self.sessionMetrics = sessionMetrics
-        self.preservedEarVerificationImage = preservedEarVerificationImage
-        self.preservedEarVerificationSelectionMetadata = preservedEarVerificationSelectionMetadata
-        currentLoadedScan = nil
+        session.id = sessionID
+        session.metrics = sessionMetrics
+        verification.preservedImage = preservedEarVerificationImage
+        verification.preservedSelectionMetadata = preservedEarVerificationSelectionMetadata
+        session.loadedScan = nil
         resetSessionArtifacts()
         phase = .preview
         state = .loading
@@ -140,19 +226,19 @@ final class PreviewStore {
     }
 
     func invalidateSession() {
-        sessionID = UUID()
+        session.id = UUID()
     }
 
     func isCurrentSession(_ sessionID: UUID) -> Bool {
-        self.sessionID == sessionID
+        session.id == sessionID
     }
 
     func clearPreviewArtifacts() {
         invalidateSession()
-        sessionMetrics = nil
-        currentLoadedScan = nil
-        preservedEarVerificationImage = nil
-        preservedEarVerificationSelectionMetadata = nil
+        session.metrics = nil
+        session.loadedScan = nil
+        verification.preservedImage = nil
+        verification.preservedSelectionMetadata = nil
         resetSessionArtifacts()
         phase = .idle
         state = .loading
@@ -171,91 +257,94 @@ final class PreviewStore {
     }
 
     func setQualityReport(_ report: ScanQualityReport) {
-        qualityReport = report
-        scanQuality = evaluateScanQuality(report: report)
+        render.qualityReport = report
+        render.scanQuality = evaluateScanQuality(report: report)
         refreshState()
     }
 
     func setMeasurementSummary(_ summary: LocalMeasurementGenerationService.ResultSummary?) {
-        measurementSummary = summary
+        render.measurementSummary = summary
         refreshState()
     }
 
     func setMeshForExport(_ mesh: SCMesh?) {
-        meshForExport = mesh
+        render.meshForExport = mesh
         refreshState()
     }
 
     func setMeshingActive(_ isActive: Bool) {
-        isMeshingActive = isActive
+        render.isMeshingActive = isActive
+        if !isActive {
+            render.meshingProgressFraction = nil
+        }
         refreshState()
     }
 
     func setFitPanelExpanded(_ isExpanded: Bool) {
-        showsFitPanel = isExpanded
+        fit.showsPanel = isExpanded
         refreshState()
     }
 
     func toggleFitPanelExpanded() {
-        showsFitPanel.toggle()
+        fit.showsPanel.toggle()
         refreshState()
     }
 
     func setAdvancedBrowControlsVisible(_ isVisible: Bool) {
-        showsAdvancedBrowControls = isVisible
+        fit.showsAdvancedBrowControls = isVisible
     }
 
     func toggleAdvancedBrowControlsVisible() {
-        showsAdvancedBrowControls.toggle()
+        fit.showsAdvancedBrowControls.toggle()
     }
 
     func setBrowPlaneDropFromTopFraction(_ value: Float) {
-        browPlaneDropFromTopFraction = min(0.30, max(0.20, value))
+        fit.browPlaneDropFromTopFraction = min(0.30, max(0.20, value))
     }
 
     func setFitResult(_ result: PreviewFitResult) {
-        latestFitSummaryText = result.summaryText
-        latestFitCheckResult = result.fitCheckResult
+        fit.latestSummaryText = result.summaryText
+        fit.latestCheckResult = result.fitCheckResult
         refreshState()
     }
 
     func setFitMeshData(_ meshData: FitModelPackService.MeshData?) {
-        latestFitMeshData = meshData
+        fit.latestMeshData = meshData
     }
 
     func beginFitEarPicking() {
-        fitEarPickState = .pickLeft
+        fit.earPickState = .pickLeft
     }
 
     func setNextFitEarPickState(_ state: FitEarPickState) {
-        fitEarPickState = state
+        fit.earPickState = state
     }
 
     func setManualLeftEar(_ point: SIMD3<Float>?) {
-        manualEarLeftMeters = point
+        fit.manualLeftEarMeters = point
     }
 
     func setManualRightEar(_ point: SIMD3<Float>?) {
-        manualEarRightMeters = point
+        fit.manualRightEarMeters = point
     }
 
     func setVerifiedEar(image: UIImage, result: EarLandmarksResult, overlay: UIImage, cropOverlay: UIImage) {
-        verifiedEarImage = image
-        verifiedEarResult = result
-        verifiedEarOverlay = overlay
-        verifiedEarCropOverlay = cropOverlay
+        verification.verifiedEarImage = image
+        verification.verifiedEarResult = result
+        verification.verifiedEarOverlay = overlay
+        verification.verifiedEarCropOverlay = cropOverlay
         refreshState()
     }
 
     func setEarVerificationImageSource(_ source: EarVerificationImageSource) {
-        earVerificationImageSource = source
+        verification.imageSource = source
     }
 
     func makeEarArtifacts() -> ScanEarArtifacts? {
-        guard let earImage = verifiedEarImage,
-              let earResult = verifiedEarResult,
-              let earOverlay = verifiedEarOverlay,
-              let earCropOverlay = verifiedEarCropOverlay else {
+        guard let earImage = verification.verifiedEarImage,
+              let earResult = verification.verifiedEarResult,
+              let earOverlay = verification.verifiedEarOverlay,
+              let earCropOverlay = verification.verifiedEarCropOverlay else {
             return nil
         }
         return .init(
@@ -276,6 +365,22 @@ final class PreviewStore {
 
     func presentShare(items: [Any], sourceRect: CGRect?) {
         emitEffect(.route(.presentShare(items: items, sourceRect: sourceRect)))
+    }
+
+    func presentMissingShareFolderAlert() {
+        emitEffect(.alert(
+            title: L("scan.preview.missingFolder.title"),
+            message: L("scan.preview.missingFolder.message"),
+            identifier: "missingFolderAlert"
+        ))
+    }
+
+    func presentEarServiceUnavailable() {
+        emitEffect(.alert(
+            title: L("scan.preview.earUnavailable.title"),
+            message: L("scan.preview.earUnavailable.message"),
+            identifier: "earUnavailableAlert"
+        ))
     }
 
     func evaluateScanQuality(report: ScanQualityReport) -> ScanQuality {
@@ -316,33 +421,13 @@ final class PreviewStore {
     }
 
     private func resetSessionArtifacts() {
-        qualityReport = nil
-        measurementSummary = nil
-        meshForExport = nil
-        scanQuality = nil
+        render.reset()
         clearVerification()
-        resetFitState()
-    }
-
-    private func resetFitState() {
-        latestFitCheckResult = nil
-        latestFitMeshData = nil
-        latestFitSummaryText = nil
-        manualEarLeftMeters = nil
-        manualEarRightMeters = nil
-        fitEarPickState = .none
-        browPlaneDropFromTopFraction = 0.25
-        showsAdvancedBrowControls = false
-        showsFitPanel = false
-        isMeshingActive = false
+        fit.reset()
     }
 
     func clearVerification() {
-        verifiedEarImage = nil
-        verifiedEarResult = nil
-        verifiedEarOverlay = nil
-        verifiedEarCropOverlay = nil
-        earVerificationImageSource = nil
+        verification.clearVerified()
     }
 
     private func handleExportCompleted(_ result: Result<SavedScanResult, PreviewFailure>) {
@@ -366,6 +451,26 @@ final class PreviewStore {
         }
     }
 
+    private func handleLoadFailure(_ failure: PreviewFailure) {
+        phase = .preview
+        state = .failed(failure, makeViewData())
+        switch failure {
+        case .loadFailed(let message):
+            emitEffect(.alertThenRoute(
+                title: L("scan.preview.missingScene.title"),
+                message: message,
+                identifier: "missingSceneAlert",
+                route: .dismiss
+            ))
+        case .exportFailed(let message), .verificationFailed(let message), .fitFailed(let message):
+            emitEffect(.alert(
+                title: L("scan.preview.exportFailed.title"),
+                message: message,
+                identifier: "previewLoadFailedAlert"
+            ))
+        }
+    }
+
     private func handleEarVerificationCompleted(_ result: Result<PreviewEarVerificationResult, PreviewFailure>) {
         switch result {
         case .success(let verification):
@@ -382,10 +487,11 @@ final class PreviewStore {
             ))
         case .failure(let failure):
             if case .verificationFailed(let message) = failure {
+                let isNoEarFailure = message == L("scan.preview.noEar.message")
                 emitEffect(.alert(
-                    title: L("scan.preview.verifyFailed.title"),
+                    title: isNoEarFailure ? L("scan.preview.noEar.title") : L("scan.preview.verifyFailed.title"),
                     message: message,
-                    identifier: "earVerifyFailedAlert"
+                    identifier: isNoEarFailure ? "noEarAlert" : "earVerifyFailedAlert"
                 ))
             }
             refreshState()
@@ -413,20 +519,55 @@ final class PreviewStore {
     private func handleFitEarPointSelection(_ point: SIMD3<Float>) {
         switch fitEarPickState {
         case .pickLeft:
-            manualEarLeftMeters = point
-            fitEarPickState = .pickRight
+            fit.manualLeftEarMeters = point
+            fit.earPickState = .pickRight
             emitEffect(.toast(L("scan.preview.fit.pick.right")))
         case .pickRight:
-            manualEarRightMeters = point
-            fitEarPickState = .none
+            fit.manualRightEarMeters = point
+            fit.earPickState = .none
         case .none:
             break
         }
     }
 
+    private func handleMeshingTimeout() {
+        guard phase == .preview, render.meshForExport == nil else { return }
+        emitEffect(.alert(
+            title: L("scan.preview.meshNotReady.title"),
+            message: L("scan.preview.meshNotReady.message"),
+            identifier: "meshTimeoutAlert"
+        ))
+    }
+
+    private func evaluatePostScanQuality(from action: PreviewAction) {
+        guard case .postScanLoaded(let payload) = action else { return }
+        let qualityConfig = settingsStore.scanQualityConfig
+        let qualityReport = ScanQualityValidator.evaluate(
+            pointCloud: payload.pointCloud,
+            config: .init(
+                gateEnabled: qualityConfig.gateEnabled,
+                minValidPoints: qualityConfig.minValidPoints,
+                minValidRatio: qualityConfig.minValidRatio,
+                minQualityScore: qualityConfig.minQualityScore,
+                minHeadDimensionMeters: qualityConfig.minHeadDimensionMeters,
+                maxHeadDimensionMeters: qualityConfig.maxHeadDimensionMeters
+            )
+        )
+        setQualityReport(qualityReport)
+        Log.scanning.info(
+            """
+            Scan quality report: raw=\(qualityReport.pointCount, privacy: .public) \
+            valid=\(qualityReport.validPointCount, privacy: .public) \
+            bounds=\(qualityReport.widthMeters, privacy: .public)x\(qualityReport.heightMeters, privacy: .public)x\(qualityReport.depthMeters, privacy: .public) \
+            score=\(qualityReport.qualityScore, privacy: .public) \
+            exportable=\(qualityReport.isExportRecommended, privacy: .public)
+            """
+        )
+    }
+
     private func refreshState() {
         phase = .preview
-        state = isMeshingActive ? .meshing(makeViewData()) : .ready(makeViewData())
+        state = render.isMeshingActive ? .meshing(makeViewData()) : .ready(makeViewData())
     }
 
     private func makeViewData(
@@ -436,7 +577,7 @@ final class PreviewStore {
         shareEnabled: Bool? = nil,
         verifyEnabled: Bool? = nil
     ) -> PreviewViewData {
-        let measurementText = measurementSummary.map {
+        let measurementText = render.measurementSummary.map {
             String(
                 format: L("scan.preview.fit.results.format"),
                 Int($0.circumferenceMm.rounded()),
@@ -447,7 +588,7 @@ final class PreviewStore {
             )
         }
         let qualityToken: PreviewColorToken?
-        switch scanQuality?.title {
+        switch render.scanQuality?.title {
         case L("scan.preview.quality.great"):
             qualityToken = .good
         case L("scan.preview.quality.ok"):
@@ -459,19 +600,32 @@ final class PreviewStore {
         }
 
         let formatSummary = exportFormatSummary()
-        let canSave = meshForExport != nil && settingsStore.exportGLTF && !isMeshingActive
+        let meshingStatusText: String
+        if let statusText {
+            meshingStatusText = statusText
+        } else if render.isMeshingActive, let meshingProgressFraction = render.meshingProgressFraction {
+            meshingStatusText = String(
+                format: L("scan.preview.meshing.progressFormat"),
+                meshingProgressFraction * 100
+            )
+        } else if render.isMeshingActive {
+            meshingStatusText = L("scan.preview.meshing")
+        } else {
+            meshingStatusText = L("scan.preview.readyToSave")
+        }
+        let canSave = render.meshForExport != nil && settingsStore.exportGLTF && !render.isMeshingActive
         return PreviewViewData(
-            qualityTitle: scanQuality?.title,
+            qualityTitle: render.scanQuality?.title,
             qualityColorToken: qualityToken,
-            qualityTipText: scanQuality?.tip,
-            measurementSummaryText: measurementText ?? latestFitSummaryText,
-            meshingStatusText: statusText ?? (isMeshingActive ? L("scan.preview.meshing") : L("scan.preview.readyToSave")),
-            meshingSpinnerVisible: spinner ?? isMeshingActive,
+            qualityTipText: render.scanQuality?.tip,
+            measurementSummaryText: measurementText ?? fit.latestSummaryText,
+            meshingStatusText: meshingStatusText,
+            meshingSpinnerVisible: spinner ?? render.isMeshingActive,
             saveButtonEnabled: saveEnabled ?? canSave,
             shareButtonEnabled: shareEnabled ?? true,
             verifyEarButtonEnabled: verifyEnabled ?? true,
             fitPanelVisible: settingsStore.developerModeEnabled,
-            fitPanelExpanded: showsFitPanel,
+            fitPanelExpanded: fit.showsPanel,
             exportFormatSummary: formatSummary,
             earVerified: hasVerifiedEar
         )

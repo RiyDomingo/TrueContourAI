@@ -3,11 +3,11 @@ import UIKit
 import StandardCyborgFusion
 
 final class PreviewExportUseCase {
-    private let settingsStore: SettingsStore
+    private let settingsStore: any AppSettingsReading
     private let scanExporter: ScanExporting
 
     init(
-        settingsStore: SettingsStore,
+        settingsStore: any AppSettingsReading,
         scanExporter: ScanExporting
     ) {
         self.settingsStore = settingsStore

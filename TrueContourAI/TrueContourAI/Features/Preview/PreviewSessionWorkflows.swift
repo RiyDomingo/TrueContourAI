@@ -30,51 +30,6 @@ protocol PreviewScanReading: ScanSummaryReading, LastScanReading, ScanFolderShar
 
 extension ScanRepository: PreviewScanReading {}
 
-final class PreviewPostScanWorkflow {
-    private let settingsStore: SettingsStore
-    private let previewViewModel: PreviewStore
-    private let scanFlowState: ScanFlowState
-
-    init(
-        settingsStore: SettingsStore,
-        previewViewModel: PreviewStore,
-        scanFlowState: ScanFlowState
-    ) {
-        self.settingsStore = settingsStore
-        self.previewViewModel = previewViewModel
-        self.scanFlowState = scanFlowState
-    }
-
-    func preparePreviewState(pointCloud: SCPointCloud) {
-        let qualityConfig = settingsStore.scanQualityConfig
-        let qualityReport = ScanQualityValidator.evaluate(
-            pointCloud: pointCloud,
-            config: .init(
-                gateEnabled: qualityConfig.gateEnabled,
-                minValidPoints: qualityConfig.minValidPoints,
-                minValidRatio: qualityConfig.minValidRatio,
-                minQualityScore: qualityConfig.minQualityScore,
-                minHeadDimensionMeters: qualityConfig.minHeadDimensionMeters,
-                maxHeadDimensionMeters: qualityConfig.maxHeadDimensionMeters
-            )
-        )
-        previewViewModel.setQualityReport(qualityReport)
-        Log.scanning.info(
-            """
-            Scan quality report: raw=\(qualityReport.pointCount, privacy: .public) \
-            valid=\(qualityReport.validPointCount, privacy: .public) \
-            bounds=\(qualityReport.widthMeters, privacy: .public)x\(qualityReport.heightMeters, privacy: .public)x\(qualityReport.depthMeters, privacy: .public) \
-            score=\(qualityReport.qualityScore, privacy: .public) \
-            exportable=\(qualityReport.isExportRecommended, privacy: .public)
-            """
-        )
-        previewViewModel.setMeshingActive(true)
-        scanFlowState.setPhase(.preview)
-        previewViewModel.setPhase(.preview)
-    }
-
-}
-
 struct PreviewPostScanPresentationContext {
     let previewVC: ScenePreviewViewController
     let container: PreviewViewController
@@ -112,28 +67,13 @@ final class PreviewExistingScanWorkflow {
     }
 
     private let scanReader: PreviewScanReading
-    private let previewViewModel: PreviewStore
-    private let scanFlowState: ScanFlowState
-    private let previewSessionController: PreviewSessionController
-    private let presentationWorkflow: PreviewPresentationWorkflow
-    private let alertPresenter: PreviewAlertPresenter
     private let overlayWorkflow: PreviewOverlayWorkflow
 
     init(
         scanReader: PreviewScanReading,
-        previewViewModel: PreviewStore,
-        scanFlowState: ScanFlowState,
-        previewSessionController: PreviewSessionController,
-        presentationWorkflow: PreviewPresentationWorkflow,
-        alertPresenter: PreviewAlertPresenter,
         overlayWorkflow: PreviewOverlayWorkflow
     ) {
         self.scanReader = scanReader
-        self.previewViewModel = previewViewModel
-        self.scanFlowState = scanFlowState
-        self.previewSessionController = previewSessionController
-        self.presentationWorkflow = presentationWorkflow
-        self.alertPresenter = alertPresenter
         self.overlayWorkflow = overlayWorkflow
     }
 
@@ -178,64 +118,6 @@ final class PreviewExistingScanWorkflow {
         )
     }
 
-    func makePresentation(
-        item: ScanItem,
-        presenter: UIViewController,
-        skipGLTF: Bool,
-        presentationData: PresentationData,
-        closeTarget: AnyObject,
-        shareTarget: AnyObject,
-        onClose: Selector,
-        onShare: Selector
-    ) -> (UIViewController, ScenePreviewViewController?, ScanSummary?)? {
-        let existingSummary = presentationData.summary
-        if skipGLTF {
-            Log.ui.info("Presenting test preview for scan: \(item.displayName, privacy: .public)")
-            scanFlowState.setPhase(.preview)
-            previewViewModel.setPhase(.preview)
-            previewSessionController.currentPreviewedFolderURL = item.folderURL
-            let vc = presentationWorkflow.makeTestPreview(
-                target: closeTarget,
-                onClose: onClose,
-                onShare: onShare
-            )
-            if closeTarget !== shareTarget {
-                let stacks = vc.view.subviews.compactMap { $0 as? UIStackView }
-                let arrangedSubviews = stacks.flatMap(\.arrangedSubviews)
-                let buttons = arrangedSubviews.compactMap { $0 as? UIButton }
-                let shareButton = buttons.first {
-                    $0.accessibilityIdentifier == "previewShareButton"
-                }
-                shareButton?.addTarget(shareTarget, action: onShare, for: .touchUpInside)
-            }
-            return (vc, nil, existingSummary)
-        }
-
-        guard let scene = presentationData.scene else {
-            Log.ui.error("Missing scene.gltf for scan: \(item.displayName, privacy: .public)")
-            alertPresenter.presentAlert(
-                on: presenter,
-                title: L("scan.preview.missingScene.title"),
-                message: L("scan.preview.missingScene.message"),
-                identifier: "missingSceneAlert"
-            )
-            return nil
-        }
-
-        scanFlowState.setPhase(.preview)
-        previewViewModel.setPhase(.preview)
-        previewSessionController.currentPreviewedFolderURL = item.folderURL
-
-        let vc = presentationWorkflow.makeExistingScanPreview(
-            scene: scene,
-            closeTarget: closeTarget,
-            shareTarget: shareTarget,
-            onClose: onClose,
-            onShare: onShare
-        )
-        return (vc, vc, existingSummary)
-    }
-
     func finalizePresentation(
         summary: ScanSummary?,
         previewVC: ScenePreviewViewController,
@@ -259,52 +141,6 @@ final class PreviewExistingScanWorkflow {
 
     func resolveEarVerificationImage(for item: ScanItem) -> UIImage? {
         scanReader.resolveEarVerificationImage(from: item.folderURL)
-    }
-}
-
-final class PreviewSharingWorkflow {
-    private let scanReader: PreviewScanReading
-    private let previewSessionController: PreviewSessionController
-    private let environment: AppEnvironment
-    private let alertPresenter: PreviewAlertPresenter
-
-    init(
-        scanReader: PreviewScanReading,
-        previewSessionController: PreviewSessionController,
-        environment: AppEnvironment,
-        alertPresenter: PreviewAlertPresenter
-    ) {
-        self.scanReader = scanReader
-        self.previewSessionController = previewSessionController
-        self.environment = environment
-        self.alertPresenter = alertPresenter
-    }
-
-    func presentShareSheet(
-        from presentingVC: UIViewController,
-        sourceView: UIView?
-    ) {
-        let forceMissing = environment.forcesMissingFolder
-        guard let folder = forceMissing ? nil : (previewSessionController.currentPreviewedFolderURL ?? scanReader.resolveLastScanFolderURL()) else {
-            alertPresenter.presentAlert(
-                on: presentingVC,
-                title: L("scan.preview.missingFolder.title"),
-                message: L("scan.preview.missingFolder.message"),
-                identifier: "missingFolderAlert"
-            )
-            return
-        }
-
-        let activityVC = UIActivityViewController(
-            activityItems: scanReader.shareItems(for: folder),
-            applicationActivities: nil
-        )
-        if let popover = activityVC.popoverPresentationController {
-            let anchorView = sourceView ?? presentingVC.view
-            popover.sourceView = anchorView
-            popover.sourceRect = anchorView?.bounds ?? .zero
-        }
-        presentingVC.present(activityVC, animated: true)
     }
 }
 
@@ -451,14 +287,6 @@ final class PreviewFitWorkflow {
             }
         case .failure(let failure):
             previewViewModel.send(.fitCompleted(.failure(failure)))
-            previewVC.present(
-                alertPresenter.makeAlert(
-                    title: L("scan.preview.fit.unavailable.title"),
-                    message: failureMessage(from: failure),
-                    identifier: "fitUnavailableAlert"
-                ),
-                animated: true
-            )
         }
     }
 
@@ -521,15 +349,6 @@ final class PreviewFitWorkflow {
             fitEarPickTapGesture = tap
         }
     }
-
-    private func failureMessage(from failure: PreviewFailure) -> String {
-        switch failure {
-        case .fitFailed(let message):
-            return message
-        case .exportFailed(let message), .loadFailed(let message), .verificationFailed(let message):
-            return message
-        }
-    }
 }
 
 final class PreviewEarVerificationWorkflow {
@@ -572,14 +391,8 @@ final class PreviewEarVerificationWorkflow {
     }
 
     func presentEarUnavailable(on previewVC: UIViewController) {
-        previewVC.present(
-            alertPresenter.makeAlert(
-                title: L("scan.preview.earUnavailable.title"),
-                message: L("scan.preview.earUnavailable.message"),
-                identifier: "earUnavailableAlert"
-            ),
-            animated: true
-        )
+        _ = previewVC
+        previewViewModel.presentEarServiceUnavailable()
     }
 
     func performVerification(
@@ -627,20 +440,8 @@ final class PreviewEarVerificationWorkflow {
                 let mlElapsed = CFAbsoluteTimeGetCurrent() - mlStart
                 Log.ml.info("Ear verification failed in \(mlElapsed, privacy: .public)")
                 self.finishVerificationUI(title: L("scan.preview.verify"))
-                if case .verificationFailed(let message) = failure,
-                   message == L("scan.preview.noEar.message") {
-                    previewVC.present(
-                        self.alertPresenter.makeAlert(
-                            title: L("scan.preview.noEar.title"),
-                            message: L("scan.preview.noEar.message"),
-                            identifier: "noEarAlert"
-                        ),
-                        animated: true
-                    )
-                } else {
-                    self.previewViewModel.send(.earVerificationCompleted(.failure(failure)))
-                    Log.ml.error("Ear verification failed: \(String(describing: failure), privacy: .public)")
-                }
+                self.previewViewModel.send(.earVerificationCompleted(.failure(failure)))
+                Log.ml.error("Ear verification failed: \(String(describing: failure), privacy: .public)")
             }
         }
     }
@@ -648,35 +449,21 @@ final class PreviewEarVerificationWorkflow {
 
 final class PreviewMeshingWorkflow {
     private let previewViewModel: PreviewStore
-    private let saveExportViewState: SaveExportUIStateAdapting
-    private let previewOverlayUI: PreviewOverlayUIController
-    private let alertPresenter: PreviewAlertPresenter
     private let meshingTimeoutController = MeshingTimeoutController()
     private let meshingTimeoutSeconds: TimeInterval
     private var didShowMeshingTimeoutAlert = false
 
     init(
         previewViewModel: PreviewStore,
-        saveExportViewState: SaveExportUIStateAdapting,
-        previewOverlayUI: PreviewOverlayUIController,
-        alertPresenter: PreviewAlertPresenter,
         meshingTimeoutSeconds: TimeInterval
     ) {
         self.previewViewModel = previewViewModel
-        self.saveExportViewState = saveExportViewState
-        self.previewOverlayUI = previewOverlayUI
-        self.alertPresenter = alertPresenter
         self.meshingTimeoutSeconds = meshingTimeoutSeconds
     }
 
     func beginMeshing(in previewVC: ScenePreviewViewController) {
         previewViewModel.setMeshingActive(true)
-        saveExportViewState.markSaveMeshing()
-        saveExportViewState.setMeshingStatusText(L("scan.preview.meshing"))
-        saveExportViewState.setMeshingSpinnerActive(true)
-        previewOverlayUI.setMeshingStatus(L("scan.preview.meshing"), percent: nil, spinning: true)
-        previewVC.rightButton.isEnabled = false
-        previewVC.rightButton.alpha = 0.6
+        _ = previewVC
     }
 
     func configureCallbacks(
@@ -689,32 +476,15 @@ final class PreviewMeshingWorkflow {
             DispatchQueue.main.async {
                 guard let self, isCurrentPreviewSession(previewSessionID) else { return }
                 let clamped = max(0, min(1, progress))
-                let percent = Int((clamped * 100).rounded())
-                let statusText = String(format: L("scan.preview.meshing.progressFormat"), clamped * 100)
-                self.saveExportViewState.setMeshingStatusText(statusText)
-                self.previewOverlayUI.setMeshingStatus(statusText, percent: percent, spinning: true)
+                self.previewViewModel.send(.meshingProgressUpdated(clamped))
             }
         }
 
-        previewVC.onTexturedMeshGenerated = { [weak self, weak previewVC] mesh in
+        previewVC.onTexturedMeshGenerated = { [weak self] mesh in
             DispatchQueue.main.async {
                 guard let self, isCurrentPreviewSession(previewSessionID) else { return }
                 self.previewViewModel.setMeshingActive(false)
                 onMeshReady(mesh)
-                let canExportNow = previewVC?.scScene != nil && self.previewViewModel.meshForExport != nil
-                previewVC?.rightButton.isEnabled = canExportNow
-                previewVC?.rightButton.alpha = canExportNow ? 1.0 : 0.6
-                if canExportNow {
-                    self.saveExportViewState.markSaveReady()
-                    self.saveExportViewState.setMeshingStatusText(L("scan.preview.readyToSave"))
-                    self.previewOverlayUI.setMeshingStatus(L("scan.preview.readyToSave"), percent: nil, spinning: false)
-                } else {
-                    self.saveExportViewState.markSaveFailed()
-                    self.saveExportViewState.setMeshingStatusText(L("scan.preview.exportUnavailable.inline"))
-                    self.previewOverlayUI.setMeshingStatus(L("scan.preview.exportUnavailable.inline"), percent: nil, spinning: false)
-                }
-                self.saveExportViewState.setMeshingSpinnerActive(false)
-                self.previewOverlayUI.setFitToolsAvailable(true)
                 self.cancelTimeout()
                 Log.scan.info("Mesh ready for export")
             }
@@ -735,14 +505,8 @@ final class PreviewMeshingWorkflow {
             guard self.previewViewModel.meshForExport == nil else { return }
             guard !self.didShowMeshingTimeoutAlert else { return }
             self.didShowMeshingTimeoutAlert = true
-            previewVC.present(
-                self.alertPresenter.makeAlert(
-                    title: L("scan.preview.meshNotReady.title"),
-                    message: L("scan.preview.meshNotReady.message"),
-                    identifier: "meshTimeoutAlert"
-                ),
-                animated: true
-            )
+            _ = previewVC
+            self.previewViewModel.send(.meshingTimedOut)
         }
     }
 

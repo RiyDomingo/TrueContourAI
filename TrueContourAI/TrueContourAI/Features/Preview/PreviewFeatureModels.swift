@@ -16,6 +16,7 @@ enum PreviewState: Equatable {
 enum PreviewAction {
     case viewDidLoad
     case existingScanLoaded(PreviewLoadedScan)
+    case existingScanLoadFailed(PreviewFailure)
     case postScanLoaded(ScanPreviewInput)
     case saveTapped
     case shareTapped
@@ -23,6 +24,8 @@ enum PreviewAction {
     case verifyEarTapped
     case fitTapped
     case fitEarPointSelected(SIMD3<Float>)
+    case meshingProgressUpdated(Float)
+    case meshingTimedOut
     case exportCompleted(Result<SavedScanResult, PreviewFailure>)
     case earVerificationCompleted(Result<PreviewEarVerificationResult, PreviewFailure>)
     case fitCompleted(Result<PreviewFitResult, PreviewFailure>)
@@ -30,6 +33,7 @@ enum PreviewAction {
 
 enum PreviewEffect {
     case alert(title: String, message: String, identifier: String)
+    case alertThenRoute(title: String, message: String, identifier: String, route: PreviewRoute)
     case toast(String)
     case route(PreviewRoute)
     case hapticPrimary

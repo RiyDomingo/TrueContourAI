@@ -1,6 +1,6 @@
 # TrueContourAI Architecture Refactor Checklist
 
-This checklist now records the completed architecture refactor and the steady-state acceptance criteria that were met.
+This checklist records the current architecture convergence state after the refactor. It is not a promise of stricter purity than the checked-in code actually provides.
 
 ## Final Outcome
 
@@ -17,6 +17,7 @@ This checklist now records the completed architecture refactor and the steady-st
 - [x] GLTF remains required for reopenable scans
 - [x] Persistent UI lives in `State`
 - [x] One-shot UI lives in `Effect`
+- [x] UI-test/device-smoke runtime shaping is applied ephemerally through `AppRuntimeSettings`, not by mutating persisted `SettingsStore`
 
 ## Phase Completion Record
 
@@ -75,6 +76,7 @@ Validation:
 - [x] Preview support file ownership narrowed; UI-only presentation/overlay helpers extracted
 - [x] Test names aligned to repository/exporter and preview coordinator ownership
 - [x] Architecture/development/readme docs updated to the steady-state model
+- [x] Active docs/checklists updated again to match the current helper-layer reality and test-architecture split
 
 Validation:
 - [x] One production owner exists per responsibility
@@ -87,7 +89,14 @@ Validation:
 - [x] Focused renamed unit/device-backed suites pass
 - [x] Architecture docs match implemented structure, including the remaining UI/session helper layers
 - [x] No active production/doc/test references remain to retired preview or repository/exporter naming
+- [x] Export-policy/runtime-override coverage is primarily unit-tested; physical-device smoke remains reserved for true hardware/UI risk
 
 ## Ongoing Release Rule
 
 - [x] Physical TrueDepth device smoke remains a permanent release gate for scan/runtime/export changes
+
+## Intentional Exceptions And Remaining Acceptable Debt
+
+- [x] `HomeCoordinator` still owns narrow Home-side presentation helpers for details/library actions; Home is not as strictly route-only as Scan/Preview.
+- [x] Preview still keeps narrow UI/session helpers (`PreviewPresentationController`, `PreviewPresentationWorkflow`, `PreviewOverlayWorkflow`, `PreviewOverlayUIController`, `PreviewSessionController`, `PreviewSessionWorkflows`) but `PreviewStore` remains the single preview feature owner.
+- [x] One representative save/reopen device-smoke path is still the most failure-prone end-to-end check and remains a release-facing validation point rather than something hidden by docs.

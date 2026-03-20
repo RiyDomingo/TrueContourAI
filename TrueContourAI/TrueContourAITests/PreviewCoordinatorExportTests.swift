@@ -163,6 +163,82 @@ final class PreviewCoordinatorExportTests: XCTestCase {
         }
     }
 
+    func testPreviewExportFormatSummaryUsesRuntimeOverrideMatrixWithoutMutatingPersistedSettings() {
+        let persisted = SettingsStore(defaults: defaults)
+        persisted.exportGLTF = true
+        persisted.exportOBJ = true
+
+        let runtime = AppRuntimeSettings(
+            settingsStore: persisted,
+            environment: AppEnvironment(arguments: [
+                "TrueContourAI",
+                "-UITests",
+                "ui-test-device-smoke",
+                "ui-test-export-obj-off"
+            ])
+        )
+
+        let useCase = PreviewExportUseCase(settingsStore: runtime, scanExporter: ScanExporterFake())
+
+        XCTAssertEqual(useCase.exportFormatSummary(), "GLTF")
+        XCTAssertTrue(persisted.exportOBJ)
+    }
+
+    func testPreviewSavePrecheckUsesRuntimeOverrideToKeepGLTFRequired() {
+        let persisted = SettingsStore(defaults: defaults)
+        persisted.exportGLTF = true
+        persisted.exportOBJ = true
+
+        let runtime = AppRuntimeSettings(
+            settingsStore: persisted,
+            environment: AppEnvironment(arguments: [
+                "TrueContourAI",
+                "-UITests",
+                "ui-test-device-smoke",
+                "ui-test-export-gltf-off"
+            ])
+        )
+
+        let useCase = PreviewExportUseCase(settingsStore: runtime, scanExporter: ScanExporterFake())
+
+        XCTAssertNil(useCase.precheck(useCase.makeEligibilityInput(meshAvailable: true, qualityReport: nil)))
+        XCTAssertTrue(persisted.exportGLTF)
+    }
+
+    func testPreviewSavePrecheckUsesForcedQualityGateOverride() {
+        let persisted = SettingsStore(defaults: defaults)
+        var config = persisted.scanQualityConfig
+        config.gateEnabled = false
+        persisted.scanQualityConfig = config
+
+        let runtime = AppRuntimeSettings(
+            settingsStore: persisted,
+            environment: AppEnvironment(arguments: [
+                "TrueContourAI",
+                "-UITests",
+                "ui-test-force-quality-gate-block"
+            ])
+        )
+        let useCase = PreviewExportUseCase(settingsStore: runtime, scanExporter: ScanExporterFake())
+        let report = ScanQualityReport(
+            pointCount: 120_000,
+            validPointCount: 60_000,
+            widthMeters: 0.2,
+            heightMeters: 0.2,
+            depthMeters: 0.2,
+            qualityScore: 0.4,
+            isExportRecommended: false,
+            advice: .rescanSlowly,
+            reason: "forced block"
+        )
+
+        XCTAssertEqual(
+            useCase.precheck(useCase.makeEligibilityInput(meshAvailable: true, qualityReport: report)),
+            .qualityGateBlocked(reason: "forced block", advice: report.advice.message)
+        )
+        XCTAssertFalse(persisted.scanQualityConfig.gateEnabled)
+    }
+
     func testPreviewStoreSaveSuccessEmitsReturnHomeRoute() {
         let store = PreviewStore(settingsStore: SettingsStore(defaults: defaults))
         var effects: [PreviewEffect] = []

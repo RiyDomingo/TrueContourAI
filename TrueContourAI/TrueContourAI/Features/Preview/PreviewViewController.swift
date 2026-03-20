@@ -18,6 +18,7 @@ final class PreviewViewController: UIViewController {
     private let input: Input
     private let scanReader: PreviewScanReading
     private let settingsStore: SettingsStore
+    private let runtimeSettings: any AppSettingsReading
     private let scanFlowState: ScanFlowState
     private let previewSessionController: PreviewSessionController
     private let environment: AppEnvironment
@@ -36,7 +37,7 @@ final class PreviewViewController: UIViewController {
 
     private let previewStore: PreviewStore
     private lazy var exportUseCase = PreviewExportUseCase(
-        settingsStore: settingsStore,
+        settingsStore: runtimeSettings,
         scanExporter: scanExporter
     )
     private lazy var fitUseCase = PreviewFitUseCase(scanReader: scanReader)
@@ -74,11 +75,6 @@ final class PreviewViewController: UIViewController {
 
     private lazy var existingScanWorkflow = PreviewExistingScanWorkflow(
         scanReader: scanReader,
-        previewViewModel: previewStore,
-        scanFlowState: scanFlowState,
-        previewSessionController: previewSessionController,
-        presentationWorkflow: presentationWorkflow,
-        alertPresenter: alertPresenter,
         overlayWorkflow: overlayWorkflow
     )
 
@@ -90,17 +86,8 @@ final class PreviewViewController: UIViewController {
         useCase: earVerificationUseCase
     )
 
-    private lazy var postScanWorkflow = PreviewPostScanWorkflow(
-        settingsStore: settingsStore,
-        previewViewModel: previewStore,
-        scanFlowState: scanFlowState
-    )
-
     private lazy var meshingWorkflow = PreviewMeshingWorkflow(
         previewViewModel: previewStore,
-        saveExportViewState: saveExportViewState,
-        previewOverlayUI: previewOverlayUI,
-        alertPresenter: alertPresenter,
         meshingTimeoutSeconds: meshingTimeoutSeconds
     )
 
@@ -112,13 +99,6 @@ final class PreviewViewController: UIViewController {
         }
     )
 
-    private lazy var sharingWorkflow = PreviewSharingWorkflow(
-        scanReader: scanReader,
-        previewSessionController: previewSessionController,
-        environment: environment,
-        alertPresenter: alertPresenter
-    )
-
     let overlayView = PassthroughView()
     var contentViewController: UIViewController?
     private var isVerifyingEar = false
@@ -127,6 +107,7 @@ final class PreviewViewController: UIViewController {
         input: Input,
         scanReader: PreviewScanReading,
         settingsStore: SettingsStore,
+        runtimeSettings: any AppSettingsReading,
         scanFlowState: ScanFlowState,
         previewSessionState: PreviewSessionState,
         environment: AppEnvironment = .current,
@@ -139,10 +120,11 @@ final class PreviewViewController: UIViewController {
         onToast: ((String) -> Void)? = nil,
         onExportResult: ((PreviewExportResultEvent) -> Void)? = nil
     ) {
-        let store = PreviewStore(settingsStore: settingsStore)
+        let store = PreviewStore(settingsStore: runtimeSettings)
         self.input = input
         self.scanReader = scanReader
         self.settingsStore = settingsStore
+        self.runtimeSettings = runtimeSettings
         self.scanFlowState = scanFlowState
         self.previewSessionController = PreviewSessionController(
             store: store,
@@ -258,7 +240,9 @@ final class PreviewViewController: UIViewController {
                 }
 
                 guard let scene = presentationData.scene else {
-                    self.presentMissingSceneAlertAndDismiss()
+                    self.previewStore.send(.existingScanLoadFailed(
+                        .loadFailed(L("scan.preview.missingScene.message"))
+                    ))
                     return
                 }
 
@@ -300,7 +284,7 @@ final class PreviewViewController: UIViewController {
             preservedEarVerificationImage: payload.earVerificationImage,
             preservedEarVerificationSelectionMetadata: payload.earVerificationSelectionMetadata
         )
-        postScanWorkflow.preparePreviewState(pointCloud: payload.pointCloud)
+        scanFlowState.setPhase(.preview)
 
         let actionTarget = PreviewButtonActionTarget(
             onLeftTap: { [weak self] in self?.closeTapped() },
@@ -435,13 +419,11 @@ final class PreviewViewController: UIViewController {
     @objc
     private func shareTapped() {
         previewStore.send(.shareTapped)
-        guard let folder = previewSessionController.currentPreviewedFolderURL ?? scanReader.resolveLastScanFolderURL() else {
-            alertPresenter.presentAlert(
-                on: self,
-                title: L("scan.preview.missingFolder.title"),
-                message: L("scan.preview.missingFolder.message"),
-                identifier: "missingFolderAlert"
-            )
+        let folder = environment.forcesMissingFolder
+            ? nil
+            : (previewSessionController.currentPreviewedFolderURL ?? scanReader.resolveLastScanFolderURL())
+        guard let folder else {
+            previewStore.presentMissingShareFolderAlert()
             return
         }
         previewStore.presentShare(
@@ -581,6 +563,14 @@ final class PreviewViewController: UIViewController {
                 alertPresenter.makeAlert(title: title, message: message, identifier: identifier),
                 animated: true
             )
+        case .alertThenRoute(let title, let message, let identifier, let route):
+            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            alert.view.accessibilityIdentifier = identifier
+            alert.addAction(UIAlertAction(title: L("common.ok"), style: .default) { [weak self] _ in
+                guard let self else { return }
+                self.delegate?.previewViewController(self, handle: route)
+            })
+            present(alert, animated: true)
         case .toast(let message):
             onToast?(message)
         case .route(let route):
@@ -596,13 +586,29 @@ final class PreviewViewController: UIViewController {
 
     private func apply(state: PreviewState) {
         let viewData: PreviewViewData?
+        let saveStateMode: String?
         switch state {
         case .loading:
             viewData = nil
-        case .ready(let data), .meshing(let data), .saving(let data), .blocked(_, let data), .failed(_, let data):
+            saveStateMode = nil
+        case .ready(let data):
             viewData = data
+            saveStateMode = previewStore.meshForExport == nil ? "idle" : "ready"
+        case .meshing(let data):
+            viewData = data
+            saveStateMode = "meshing"
+        case .saving(let data):
+            viewData = data
+            saveStateMode = "saving"
+        case .blocked(_, let data):
+            viewData = data
+            saveStateMode = "blocked"
+        case .failed(_, let data):
+            viewData = data
+            saveStateMode = "failed"
         case .saved:
             viewData = nil
+            saveStateMode = nil
         }
 
         guard let viewData else { return }
@@ -616,6 +622,25 @@ final class PreviewViewController: UIViewController {
             }
         }
 
+        switch saveStateMode {
+        case "meshing":
+            saveExportViewState.markSaveMeshing()
+            saveExportViewState.setButtonsEnabled(false)
+        case "ready":
+            saveExportViewState.markSaveReady()
+            saveExportViewState.setButtonsEnabled(true)
+        case "saving":
+            saveExportViewState.markSaveInvoked()
+            saveExportViewState.setButtonsEnabled(false)
+        case "blocked":
+            saveExportViewState.markSaveBlocked()
+            saveExportViewState.setButtonsEnabled(true)
+        case "failed":
+            saveExportViewState.markSaveFailed()
+            saveExportViewState.setButtonsEnabled(true)
+        default:
+            break
+        }
         saveExportViewState.setMeshingStatusText(viewData.meshingStatusText)
         saveExportViewState.setMeshingSpinnerActive(viewData.meshingSpinnerVisible)
         previewOverlayUI.setFitPanelExpanded(viewData.fitPanelExpanded)
@@ -634,7 +659,6 @@ final class PreviewViewController: UIViewController {
     private func presentBlockedSave(_ blocked: PreviewBlockReason, on previewVC: UIViewController) {
         previewStore.blockSave(reason: blocked)
         scanFlowState.setPhase(.preview)
-        saveExportViewState.markSaveBlocked()
 
         let alert: UIAlertController
         switch blocked {
@@ -668,7 +692,6 @@ final class PreviewViewController: UIViewController {
     }
 
     private func handleExportInvocationFailure(reason: String) {
-        saveExportViewState.markSaveFailed()
         present(
             alertPresenter.makeAlert(
                 title: L("scan.preview.exportFailed.title"),
@@ -685,24 +708,7 @@ final class PreviewViewController: UIViewController {
 
     private func restoreReadyState() {
         previewStore.restoreReadyState()
-        saveExportViewState.setButtonsEnabled(true)
-        saveExportViewState.setMeshingStatusText(L("scan.preview.readyToSave"))
-        saveExportViewState.setMeshingSpinnerActive(false)
         saveExportViewState.hideSavingToast()
-    }
-
-    private func presentMissingSceneAlertAndDismiss() {
-        let alert = UIAlertController(
-            title: L("scan.preview.missingScene.title"),
-            message: L("scan.preview.missingScene.message"),
-            preferredStyle: .alert
-        )
-        alert.view.accessibilityIdentifier = "missingSceneAlert"
-        alert.addAction(UIAlertAction(title: L("common.ok"), style: .default) { [weak self] _ in
-            guard let self else { return }
-            self.delegate?.previewViewController(self, handle: .dismiss)
-        })
-        present(alert, animated: true)
     }
 
     #if DEBUG

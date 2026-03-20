@@ -2,7 +2,7 @@ import Foundation
 
 enum ScanSummaryBuilder {
     static func build(
-        settingsStore: SettingsStore,
+        settingsStore: any AppSettingsReading,
         metrics: ScanFlowState.ScanSessionMetrics?,
         qualityReport: ScanQualityReport?,
         measurementSummary: LocalMeasurementGenerationService.ResultSummary?,

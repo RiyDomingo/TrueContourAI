@@ -77,7 +77,7 @@ struct HomeAssembler {
             previewCoordinator?.presentExistingScan(item)
         }
         let scanFlowController = HomeScanFlowController(
-            settingsStore: dependencies.settingsStore,
+            runtimeSettings: dependencies.runtimeSettings,
             scanCoordinator: scanCoordinator,
             homeCoordinator: homeCoordinator,
             previewCoordinator: previewCoordinator,

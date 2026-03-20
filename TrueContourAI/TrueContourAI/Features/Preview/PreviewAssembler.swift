@@ -24,6 +24,7 @@ struct PreviewAssembler {
                     input: input,
                     scanReader: dependencies.scanRepository,
                     settingsStore: dependencies.settingsStore,
+                    runtimeSettings: dependencies.runtimeSettings,
                     scanFlowState: scanFlowState,
                     previewSessionState: previewSessionState,
                     environment: dependencies.environment,
