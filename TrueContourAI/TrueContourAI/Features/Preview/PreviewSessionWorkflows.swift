@@ -67,14 +67,9 @@ final class PreviewExistingScanWorkflow {
     }
 
     private let scanReader: PreviewScanReading
-    private let overlayWorkflow: PreviewOverlayWorkflow
 
-    init(
-        scanReader: PreviewScanReading,
-        overlayWorkflow: PreviewOverlayWorkflow
-    ) {
+    init(scanReader: PreviewScanReading) {
         self.scanReader = scanReader
-        self.overlayWorkflow = overlayWorkflow
     }
 
     func loadPresentationData(
@@ -118,36 +113,11 @@ final class PreviewExistingScanWorkflow {
         )
     }
 
-    func finalizePresentation(
-        summary: ScanSummary?,
-        previewVC: ScenePreviewViewController,
-        configureSceneUI: (ScenePreviewViewController) -> Void
-    ) {
-        if let derived = summary?.derivedMeasurements {
-            overlayWorkflow.renderDerivedMeasurements(
-                summary: .init(
-                    sliceHeightNormalized: derived.sliceHeightNormalized,
-                    circumferenceMm: derived.circumferenceMm,
-                    widthMm: derived.widthMm,
-                    depthMm: derived.depthMm,
-                    confidence: derived.confidence,
-                    status: derived.status
-                ),
-                hostView: previewVC.view
-            )
-        }
-        configureSceneUI(previewVC)
-    }
-
-    func resolveEarVerificationImage(for item: ScanItem) -> UIImage? {
-        scanReader.resolveEarVerificationImage(from: item.folderURL)
-    }
 }
 
 final class PreviewFitWorkflow {
     private let previewViewModel: PreviewStore
     private let previewOverlayUI: PreviewOverlayUIController
-    private let alertPresenter: PreviewAlertPresenter
     private let settingsStore: SettingsStore
     private let scanReader: PreviewScanReading
     private let fitModelPackService = FitModelPackService()
@@ -159,7 +129,6 @@ final class PreviewFitWorkflow {
     init(
         previewViewModel: PreviewStore,
         previewOverlayUI: PreviewOverlayUIController,
-        alertPresenter: PreviewAlertPresenter,
         settingsStore: SettingsStore,
         scanReader: PreviewScanReading,
         useCase: PreviewFitUseCase,
@@ -167,7 +136,6 @@ final class PreviewFitWorkflow {
     ) {
         self.previewViewModel = previewViewModel
         self.previewOverlayUI = previewOverlayUI
-        self.alertPresenter = alertPresenter
         self.settingsStore = settingsStore
         self.scanReader = scanReader
         self.useCase = useCase
@@ -212,7 +180,7 @@ final class PreviewFitWorkflow {
     }
 
     func exportFitPack(scenePreviewVC: ScenePreviewViewController?, currentPreviewedFolderURL: URL?) {
-        guard let previewVC = scenePreviewVC else { return }
+        guard scenePreviewVC != nil else { return }
         guard let fitResult = previewViewModel.latestFitCheckResult,
               let meshData = previewViewModel.latestFitMeshData else {
             runFitModelCheck(
@@ -243,14 +211,7 @@ final class PreviewFitWorkflow {
             )
             onToast?(String(format: L("scan.preview.fit.export.success"), packURL.lastPathComponent))
         } catch {
-            previewVC.present(
-                alertPresenter.makeAlert(
-                    title: L("scan.preview.fit.export.failed.title"),
-                    message: String(format: L("scan.preview.fit.export.failed.message"), error.localizedDescription),
-                    identifier: "fitExportFailedAlert"
-                ),
-                animated: true
-            )
+            previewViewModel.presentFitExportFailure(message: error.localizedDescription)
         }
     }
 
@@ -280,9 +241,8 @@ final class PreviewFitWorkflow {
             if let fitCheckResult = output.0.fitCheckResult {
                 updateFitResultsCard(summaryText: output.0.summaryText, result: fitCheckResult)
             }
-            guard let result = output.0.fitCheckResult else { return }
             if allowEarPickPrompt,
-               result.fitData.ear_left_xyz_mm == nil || result.fitData.ear_right_xyz_mm == nil {
+               useCase.shouldPromptForManualEarPicking(output.0) {
                 beginFitEarPicking(in: previewVC, target: fitEarPickTarget, action: fitEarPickAction)
             }
         case .failure(let failure):
@@ -354,20 +314,17 @@ final class PreviewFitWorkflow {
 final class PreviewEarVerificationWorkflow {
     private let previewViewModel: PreviewStore
     private let previewOverlayUI: PreviewOverlayUIController
-    private let alertPresenter: PreviewAlertPresenter
     private let sceneAdapter: PreviewSceneAdapter
     private let useCase: PreviewEarVerificationUseCase
 
     init(
         previewViewModel: PreviewStore,
         previewOverlayUI: PreviewOverlayUIController,
-        alertPresenter: PreviewAlertPresenter,
         sceneAdapter: PreviewSceneAdapter,
         useCase: PreviewEarVerificationUseCase
     ) {
         self.previewViewModel = previewViewModel
         self.previewOverlayUI = previewOverlayUI
-        self.alertPresenter = alertPresenter
         self.sceneAdapter = sceneAdapter
         self.useCase = useCase
     }
@@ -402,24 +359,13 @@ final class PreviewEarVerificationWorkflow {
         onComplete: @escaping () -> Void
     ) {
         let previewSnapshot = sceneAdapter.makeSceneSnapshot(from: previewVC).renderedImage ?? UIImage()
-        let verificationImage = previewViewModel.preservedEarVerificationImage ?? previewSnapshot
-        let verificationSource: PreviewStore.EarVerificationImageSource =
-            previewViewModel.preservedEarVerificationSelectionMetadata.map {
-                switch $0.source {
-                case .bestCaptureFrame:
-                    return .bestCaptureFrame
-                case .latestCaptureFallback:
-                    return .latestCaptureFallback
-                }
-            } ?? (previewViewModel.preservedEarVerificationImage != nil ? .latestCaptureFallback : .previewSnapshotFallback)
+        let request = previewViewModel.makeEarVerificationRequest(previewSnapshot: previewSnapshot)
         let mlStart = CFAbsoluteTimeGetCurrent()
         beginVerificationUI()
 
         useCase.verify(
             service: service,
-            verificationImage: verificationImage,
-            source: verificationSource,
-            selectionMetadata: previewViewModel.preservedEarVerificationSelectionMetadata
+            request: request
         ) { [weak self] result in
             guard let self else { return }
             defer { onComplete() }
@@ -427,7 +373,7 @@ final class PreviewEarVerificationWorkflow {
 
             switch result {
             case .success(let verification):
-                self.previewViewModel.setEarVerificationImageSource(verificationSource)
+                self.previewViewModel.setEarVerificationImageSource(request.source)
                 self.previewViewModel.send(.earVerificationCompleted(.success(verification)))
 
                 let mlElapsed = CFAbsoluteTimeGetCurrent() - mlStart

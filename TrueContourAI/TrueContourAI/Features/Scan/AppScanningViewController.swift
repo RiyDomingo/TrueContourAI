@@ -154,7 +154,7 @@ struct ScanMetalContext {
     let visualizationCommandQueue: MTLCommandQueue
 }
 
-private final class UnavailableScanRuntimeEngine: ScanRuntimeEngining {
+final class UnavailableScanRuntimeEngine: ScanRuntimeEngining {
     var onEvent: ((ScanRuntimeEvent) -> Void)?
     var onRenderFrame: ((ScanRenderFrame) -> Void)?
 
@@ -323,77 +323,7 @@ final class AppScanningViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
     }
 
-    convenience init(
-        reconstructionManagerFactory: @escaping (MTLDevice, MTLCommandQueue, Int32) -> ReconstructionManaging = {
-            SCReconstructionManagerAdapter(device: $0, commandQueue: $1, maxThreadCount: $2)
-        },
-        cameraManager: CameraManaging = CameraManagerAdapter(),
-        hapticEngine: ScanningHapticFeedbackProviding = ScanningHapticFeedbackEngine.shared,
-        autoFinishSeconds: Int = 0,
-        requiresManualFinish: Bool = false,
-        developerModeEnabled: Bool = false,
-        maxDepthResolution: Int = 320,
-        generatesTexturedMeshes: Bool = true,
-        texturedMeshColorBufferSaveInterval: Int = 8,
-        processingConfig: SettingsStore.ProcessingConfig = SettingsStore().processingConfig,
-        backgroundWorkRunner: @escaping (@escaping () -> Void) -> Void = { work in
-            DispatchQueue.global(qos: .userInitiated).async(execute: work)
-        }
-    ) {
-        let captureConfiguration = ScanCaptureConfiguration(
-            maxDepthResolution: maxDepthResolution,
-            textureSaveInterval: texturedMeshColorBufferSaveInterval,
-            developerModeEnabled: developerModeEnabled
-        )
-        let runtimeConfiguration = ScanRuntimeConfiguration(
-            processingConfig: processingConfig,
-            texturedMeshEnabled: generatesTexturedMeshes,
-            textureSaveInterval: texturedMeshColorBufferSaveInterval
-        )
-        let orientationSource = ScanInterfaceOrientationSource()
-        let captureService = ScanCaptureService(
-            cameraManager: cameraManager,
-            configuration: captureConfiguration,
-            orientationProvider: { orientationSource.current }
-        )
-        let metalContext = Self.makeMetalContextForAssembly()
-        let runtimeEngine: ScanRuntimeEngining
-        if let metalContext {
-            runtimeEngine = ScanRuntimeEngine(
-                reconstructionManager: reconstructionManagerFactory(
-                    metalContext.device,
-                    metalContext.algorithmCommandQueue,
-                    2
-                ),
-                configuration: runtimeConfiguration,
-                developerModeEnabled: developerModeEnabled,
-                requiresManualFinish: requiresManualFinish,
-                backgroundWorkRunner: backgroundWorkRunner
-            )
-        } else {
-            runtimeEngine = UnavailableScanRuntimeEngine()
-        }
-        let store = ScanStore(
-            captureService: captureService,
-            runtimeEngine: runtimeEngine,
-            autoFinishSeconds: autoFinishSeconds,
-            requiresManualFinish: requiresManualFinish,
-            developerModeEnabled: developerModeEnabled,
-            hapticEngine: hapticEngine
-        )
-        self.init(
-            store: store,
-            runtimeEngine: runtimeEngine,
-            viewConfiguration: ScanViewConfiguration(
-                autoFinishSeconds: autoFinishSeconds,
-                developerModeEnabled: developerModeEnabled
-            ),
-            orientationSource: orientationSource,
-            metalContext: metalContext
-        )
-    }
-
-    @available(*, unavailable, message: "Programmatic-only. Use init(reconstructionManagerFactory:cameraManager:hapticEngine:).")
+    @available(*, unavailable, message: "Programmatic-only. Use the assembled initializer.")
     required init?(coder: NSCoder) {
         fatalError("init(coder:) is unavailable")
     }
@@ -653,8 +583,14 @@ final class AppScanningViewController: UIViewController {
         }
         progressLabel.text = viewData.progressText
         progressLabel.isHidden = viewData.progressText == nil
-        autoFinishLabel.text = viewConfiguration.autoFinishSeconds > 0 ? String(format: L("scanning.autofinish"), max(0, viewConfiguration.autoFinishSeconds - (Int(round((viewData.progressFraction ?? 0) * Float(viewConfiguration.autoFinishSeconds)))))) : nil
-        autoFinishLabel.isHidden = viewConfiguration.autoFinishSeconds <= 0
+        let showsAutoFinishCountdown = viewConfiguration.autoFinishSeconds > 0 && !viewData.finishButtonVisible
+        autoFinishLabel.text = showsAutoFinishCountdown
+            ? String(
+                format: L("scanning.autofinish"),
+                max(0, viewConfiguration.autoFinishSeconds - (Int(round((viewData.progressFraction ?? 0) * Float(viewConfiguration.autoFinishSeconds)))))
+            )
+            : nil
+        autoFinishLabel.isHidden = !showsAutoFinishCountdown
         focusHintLabel.text = viewData.focusHintText
         focusHintLabel.isHidden = viewData.focusHintText == nil
         thermalWarningLabel.isHidden = !viewData.thermalWarningVisible
@@ -691,23 +627,6 @@ final class AppScanningViewController: UIViewController {
         if presentedViewController == nil {
             present(alert, animated: true)
         }
-    }
-
-    static func makeMetalContextForAssembly() -> ScanMetalContext? {
-        guard let device = MTLCreateSystemDefaultDevice(),
-              let algorithmCommandQueue = device.makeCommandQueue(),
-              let visualizationCommandQueue = device.makeCommandQueue() else {
-            return nil
-        }
-        return ScanMetalContext(
-            device: device,
-            algorithmCommandQueue: algorithmCommandQueue,
-            visualizationCommandQueue: visualizationCommandQueue
-        )
-    }
-
-    static func makeUnavailableRuntimeEngineForAssembly() -> ScanRuntimeEngining {
-        UnavailableScanRuntimeEngine()
     }
 
     private func refreshCurrentInterfaceOrientation() {
@@ -792,6 +711,10 @@ final class AppScanningViewController: UIViewController {
 
     var debug_viewConfiguration: ScanViewConfiguration {
         viewConfiguration
+    }
+
+    func debug_triggerDismissTapped() {
+        dismissTapped()
     }
 #endif
 }

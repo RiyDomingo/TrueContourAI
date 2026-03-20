@@ -61,7 +61,6 @@ final class PreviewViewController: UIViewController {
     private lazy var fitWorkflow = PreviewFitWorkflow(
         previewViewModel: previewStore,
         previewOverlayUI: previewOverlayUI,
-        alertPresenter: alertPresenter,
         settingsStore: settingsStore,
         scanReader: scanReader,
         useCase: fitUseCase,
@@ -74,14 +73,12 @@ final class PreviewViewController: UIViewController {
     )
 
     private lazy var existingScanWorkflow = PreviewExistingScanWorkflow(
-        scanReader: scanReader,
-        overlayWorkflow: overlayWorkflow
+        scanReader: scanReader
     )
 
     private lazy var earVerificationWorkflow = PreviewEarVerificationWorkflow(
         previewViewModel: previewStore,
         previewOverlayUI: previewOverlayUI,
-        alertPresenter: alertPresenter,
         sceneAdapter: sceneAdapter,
         useCase: earVerificationUseCase
     )
@@ -261,13 +258,8 @@ final class PreviewViewController: UIViewController {
                         folderURL: item.folderURL
                     )
                 ))
-                self.existingScanWorkflow.finalizePresentation(
-                    summary: presentationData.summary,
-                    previewVC: previewVC,
-                    configureSceneUI: { [weak self] scenePreviewVC in
-                        self?.configureExistingSceneUI(previewVC: scenePreviewVC)
-                    }
-                )
+                self.renderExistingDerivedMeasurements(summary: presentationData.summary, in: previewVC)
+                self.configureExistingSceneUI(previewVC: previewVC)
             }
         }
     }
@@ -299,15 +291,6 @@ final class PreviewViewController: UIViewController {
                 buttonActionTarget: actionTarget
             )
         )
-        embedContent(previewVC)
-        meshingWorkflow.beginMeshing(in: previewVC)
-        meshingWorkflow.startTimeout(
-            in: previewVC,
-            sessionID: previewSessionID,
-            isCurrentPreviewSession: { [weak self] sessionID in
-                self?.previewStore.isCurrentSession(sessionID) ?? false
-            }
-        )
         meshingWorkflow.configureCallbacks(
             for: previewVC,
             previewSessionID: previewSessionID,
@@ -316,6 +299,15 @@ final class PreviewViewController: UIViewController {
             },
             onMeshReady: { [weak self] mesh in
                 self?.previewStore.setMeshForExport(mesh)
+            }
+        )
+        embedContent(previewVC)
+        meshingWorkflow.beginMeshing(in: previewVC)
+        meshingWorkflow.startTimeout(
+            in: previewVC,
+            sessionID: previewSessionID,
+            isCurrentPreviewSession: { [weak self] sessionID in
+                self?.previewStore.isCurrentSession(sessionID) ?? false
             }
         )
         measurementWorkflow.generate(
@@ -554,6 +546,21 @@ final class PreviewViewController: UIViewController {
     private func renderDerivedMeasurementsIfAvailable() {
         guard let summary = previewStore.measurementSummary else { return }
         overlayWorkflow.renderDerivedMeasurements(summary: summary, hostView: overlayView)
+    }
+
+    private func renderExistingDerivedMeasurements(summary: ScanSummary?, in previewVC: ScenePreviewViewController) {
+        guard let derived = summary?.derivedMeasurements else { return }
+        overlayWorkflow.renderDerivedMeasurements(
+            summary: .init(
+                sliceHeightNormalized: derived.sliceHeightNormalized,
+                circumferenceMm: derived.circumferenceMm,
+                widthMm: derived.widthMm,
+                depthMm: derived.depthMm,
+                confidence: derived.confidence,
+                status: derived.status
+            ),
+            hostView: previewVC.view
+        )
     }
 
     private func handle(effect: PreviewEffect) {

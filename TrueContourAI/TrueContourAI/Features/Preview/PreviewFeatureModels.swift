@@ -123,6 +123,12 @@ struct PreviewEarVerificationResult: Equatable {
     }
 }
 
+struct PreviewEarVerificationRequest {
+    let verificationImage: UIImage
+    let source: PreviewStore.EarVerificationImageSource
+    let selectionMetadata: EarVerificationSelectionMetadata?
+}
+
 struct PreviewFitResult: Equatable {
     let summaryText: String
     let fitCheckResult: FitModelCheckResult?

@@ -4,6 +4,7 @@ import StandardCyborgUI
 final class PreviewPresentationController {
     private var scenePreviewVC: ScenePreviewViewController?
     private var previewContainerVC: PreviewViewController?
+    private var postScanButtonActionTarget: PreviewButtonActionTarget?
 
     var resolvedScenePreviewViewController: ScenePreviewViewController? {
         if let scenePreviewVC {
@@ -25,6 +26,7 @@ final class PreviewPresentationController {
 
     func setExistingPreview(viewController: UIViewController, scenePreviewViewController: ScenePreviewViewController?) {
         scenePreviewVC = scenePreviewViewController
+        postScanButtonActionTarget = nil
         if scenePreviewViewController == nil {
             previewContainerVC = nil
         } else if let container = viewController as? PreviewViewController {
@@ -35,6 +37,7 @@ final class PreviewPresentationController {
     func setPostScanPreview(context: PreviewPostScanPresentationContext) {
         scenePreviewVC = context.previewVC
         previewContainerVC = context.container
+        postScanButtonActionTarget = context.buttonActionTarget
     }
 
     func bringOverlayToFront() {

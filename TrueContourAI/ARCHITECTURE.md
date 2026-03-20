@@ -35,6 +35,7 @@ This document explains how TrueContourAI is organized and how scan data moves th
 - `ScanCaptureService`: owns `CameraManager` session lifecycle, frame delivery, and focus requests.
 - `ScanRuntimeEngine`: owns reconstruction/runtime lifecycle, motion/thermal handling, preview payload finalization, and scan render-frame generation.
 - `AppScanningViewController`: renders Metal/UIKit surfaces, binds `ScanStore`, and forwards user intents only.
+  - In practice this controller is now a scan-screen boundary rather than a feature graph builder, but it still retains meaningful UIKit/platform wiring such as Metal rendering, orientation capture, volume-shutter support, and alert presentation.
 - Supporting scan helpers that still remain intentionally:
   - `ScanSessionController` for countdown and auto-finish timing
   - `ScanRuntimeController` for idle-timer and thermal-notification plumbing used by `ScanRuntimeEngine`
@@ -121,7 +122,7 @@ Failure transitions:
 ## Known Constraints
 - Some tests still rely on hardware/runtime-sensitive flows and remain slower or less deterministic than ideal.
 - Device smoke on physical TrueDepth hardware remains a release gate.
-- One representative save/reopen smoke path is still the most failure-prone end-to-end check, so unit coverage now carries more of the export-policy matrix that used to live in diagnostics-heavy smoke assertions.
+- The representative `save -> return home -> reopen` path is now passing again on the connected TrueDepth device, but it remains a release-facing path that should continue to be rerun after scan/preview/export changes.
 
 ## Current Convergence Summary
 - Fully converged:
@@ -134,7 +135,8 @@ Failure transitions:
   - Preview UI/session helper layers
   - Scan timer/runtime helper layers under `ScanStore` / `ScanRuntimeEngine`
 - Acceptable debt:
-  - the save -> return home -> reopen physical-device smoke path is still the most failure-prone release-facing check
+  - Preview still relies on a small helper layer for presentation, overlays, and async session plumbing
+  - Scan still relies on narrow timer/platform helpers under the store/runtime boundary
 
 ## Closest Reference Implementation
 The scan engine architecture in TrueContourAI is closer to the old `TrueDepthFusion` pattern than `StandardCyborgExample`, because it uses:

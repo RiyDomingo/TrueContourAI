@@ -1,6 +1,7 @@
 import XCTest
 import UIKit
 import SceneKit
+import ObjectiveC.runtime
 import StandardCyborgFusion
 @testable import TrueContourAI
 
@@ -281,5 +282,185 @@ final class PreviewCoordinatorExportTests: XCTestCase {
         } else {
             XCTFail("Expected export failure alert")
         }
+    }
+
+    func testMakeExportSnapshotIncludesVerifiedEarArtifactsAndSummaryFlag() {
+        let settings = SettingsStore(defaults: defaults)
+        let useCase = PreviewExportUseCase(settingsStore: settings, scanExporter: ScanExporterFake())
+        let store = PreviewStore(settingsStore: settings)
+        _ = store.beginPreviewSession(
+            sessionMetrics: .init(
+                startedAt: Date(timeIntervalSince1970: 100),
+                finishedAt: Date(timeIntervalSince1970: 130),
+                durationSeconds: 30
+            )
+        )
+        store.setMeshForExport(makeMeshPlaceholder())
+        store.setMeasurementSummary(
+            .init(
+                sliceHeightNormalized: 0.62,
+                circumferenceMm: 560,
+                widthMm: 150,
+                depthMm: 190,
+                confidence: 0.8,
+                status: "validated"
+            )
+        )
+        store.setVerifiedEar(
+            image: UIImage(),
+            result: EarLandmarksResult(
+                confidence: 0.9,
+                earBoundingBox: .init(x: 0, y: 0, w: 1, h: 1),
+                landmarks: [],
+                usedLeftEarMirroringHeuristic: false
+            ),
+            overlay: UIImage(),
+            cropOverlay: UIImage()
+        )
+
+        let snapshot = useCase.makeExportSnapshot(
+            store: store,
+            sceneSnapshot: .init(scene: makeScenePlaceholder(), renderedImage: UIImage())
+        )
+
+        XCTAssertNotNil(snapshot)
+        XCTAssertNotNil(snapshot?.earArtifacts)
+        XCTAssertEqual(snapshot?.scanSummary?.hadEarVerification, true)
+        XCTAssertEqual(snapshot?.scanSummary?.durationSeconds, 30)
+        XCTAssertEqual(snapshot?.exportGLTF, true)
+        XCTAssertEqual(snapshot?.exportOBJ, true)
+    }
+
+    func testExportSuccessPersistsLastScanFolderAndReturnsSavedResult() {
+        let exporter = ScanExporterFake()
+        let savedFolder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        exporter.result = .success(folderURL: savedFolder)
+        let settings = SettingsStore(defaults: defaults)
+        settings.exportOBJ = false
+        let useCase = PreviewExportUseCase(settingsStore: settings, scanExporter: exporter)
+        let expectation = expectation(description: "export completion")
+
+        useCase.export(
+            snapshot: .init(
+                mesh: makeMeshPlaceholder(),
+                sceneSnapshot: .init(scene: makeScenePlaceholder(), renderedImage: UIImage()),
+                earArtifacts: nil,
+                scanSummary: nil,
+                exportGLTF: true,
+                exportOBJ: false
+            ),
+            earServiceUnavailable: true
+        ) { result in
+            switch result {
+            case .success(let saved):
+                XCTAssertEqual(saved.folderURL, savedFolder)
+                XCTAssertEqual(saved.folderName, savedFolder.lastPathComponent)
+                XCTAssertEqual(saved.formatSummary, "GLTF")
+                XCTAssertTrue(saved.earServiceUnavailable)
+            case .failure(let error):
+                XCTFail("Expected success, got \(error)")
+            }
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 2.0)
+        XCTAssertEqual(exporter.lastScanFolderURL, savedFolder)
+    }
+
+    func testExportFailureDoesNotPersistLastScanFolder() {
+        let exporter = ScanExporterFake()
+        exporter.result = .failure("disk full")
+        let useCase = PreviewExportUseCase(settingsStore: SettingsStore(defaults: defaults), scanExporter: exporter)
+        let expectation = expectation(description: "export failure completion")
+
+        useCase.export(
+            snapshot: .init(
+                mesh: makeMeshPlaceholder(),
+                sceneSnapshot: .init(scene: makeScenePlaceholder(), renderedImage: UIImage()),
+                earArtifacts: nil,
+                scanSummary: nil,
+                exportGLTF: true,
+                exportOBJ: true
+            ),
+            earServiceUnavailable: false
+        ) { result in
+            switch result {
+            case .success(let saved):
+                XCTFail("Expected failure, got \(saved)")
+            case .failure(let error):
+                XCTAssertEqual(error, .exportFailed("disk full"))
+            }
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 2.0)
+        XCTAssertNil(exporter.lastScanFolderURL)
+    }
+
+    func testPreviewFitUseCaseFlagsMissingEarDataForManualPicking() {
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        let repository = ScanRepository(scansRootURL: tempDir, defaults: defaults)
+        let useCase = PreviewFitUseCase(scanReader: repository)
+
+        let missingEarResult = PreviewFitResult(
+            summaryText: "summary",
+            fitCheckResult: FitModelCheckResult(
+                fitData: .init(
+                    head_circumference_brow_mm: 560,
+                    head_width_max_mm: 150,
+                    head_length_max_mm: 190,
+                    ear_to_ear_over_top_mm: 320,
+                    ear_left_xyz_mm: nil,
+                    ear_right_xyz_mm: FitPoint3MM(SIMD3<Float>(1, 2, 3)),
+                    occipital_offset_mm: 12,
+                    quality_flags: .init(
+                        holes_detected: false,
+                        mesh_closed: true,
+                        triangle_count: 2000,
+                        scan_coverage_score: 0.8,
+                        confidence_score: 0.9
+                    )
+                ),
+                metadata: .init(
+                    units: "mm",
+                    coordinate_frame: "head",
+                    up_axis: "y",
+                    scale_factor_used: 1,
+                    timestamp_iso8601: "2026-03-20T12:00:00Z",
+                    app_version: "1.0",
+                    device_model: "iPhone",
+                    brow_plane_drop_from_top_fraction: 0.25,
+                    axis_sign_convention: "rhs"
+                ),
+                warnings: []
+            ),
+            meshDataAvailable: true
+        )
+
+        XCTAssertTrue(useCase.shouldPromptForManualEarPicking(missingEarResult))
+    }
+
+    func testPreviewEarVerificationUseCaseBuildsSnapshotFallbackRequest() {
+        let useCase = PreviewEarVerificationUseCase()
+        let snapshot = UIImage()
+
+        let request = useCase.makeRequest(
+            preservedImage: nil,
+            preservedSelectionMetadata: nil,
+            previewSnapshot: snapshot
+        )
+
+        XCTAssertTrue(request.verificationImage === snapshot)
+        XCTAssertEqual(request.source, .previewSnapshotFallback)
+        XCTAssertNil(request.selectionMetadata)
+    }
+
+    private func makeMeshPlaceholder() -> SCMesh {
+        class_createInstance(SCMesh.self, 0) as! SCMesh
+    }
+
+    private func makeScenePlaceholder() -> SCScene {
+        class_createInstance(SCScene.self, 0) as! SCScene
     }
 }

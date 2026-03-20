@@ -327,6 +327,64 @@ final class PreviewStoreTests: XCTestCase {
         XCTAssertTrue(viewData.meshingSpinnerVisible)
     }
 
+    func testSaveBecomesEnabledOnlyAfterMeshingCompletesAndMeshIsAvailable() {
+        let store = PreviewStore()
+
+        store.send(.postScanLoaded(makePreviewInput()))
+
+        guard case .meshing(let initial) = store.state else {
+            return XCTFail("Expected meshing state after post-scan load")
+        }
+        XCTAssertFalse(initial.saveButtonEnabled)
+
+        store.setMeshForExport(makeMeshPlaceholder())
+        guard case .meshing(let stillMeshing) = store.state else {
+            return XCTFail("Expected meshing state while meshing remains active")
+        }
+        XCTAssertFalse(stillMeshing.saveButtonEnabled)
+
+        store.setMeshingActive(false)
+        guard case .ready(let ready) = store.state else {
+            return XCTFail("Expected ready state after meshing completes")
+        }
+        XCTAssertTrue(ready.saveButtonEnabled)
+        XCTAssertEqual(ready.meshingStatusText, L("scan.preview.readyToSave"))
+    }
+
+    func testSavingStateRetainsFitSummaryAndVerifiedEarStatus() {
+        let store = PreviewStore()
+        store.setFitResult(
+            .init(
+                summaryText: "fit summary",
+                fitCheckResult: nil,
+                meshDataAvailable: true
+            )
+        )
+        store.setVerifiedEar(
+            image: UIImage(),
+            result: EarLandmarksResult(
+                confidence: 0.9,
+                earBoundingBox: .init(x: 0, y: 0, w: 1, h: 1),
+                landmarks: [],
+                usedLeftEarMirroringHeuristic: false
+            ),
+            overlay: UIImage(),
+            cropOverlay: UIImage()
+        )
+        store.setMeshForExport(makeMeshPlaceholder())
+        store.setMeshingActive(false)
+
+        store.send(.saveTapped)
+
+        guard case .saving(let viewData) = store.state else {
+            return XCTFail("Expected saving state")
+        }
+        XCTAssertEqual(viewData.measurementSummaryText, "fit summary")
+        XCTAssertTrue(viewData.earVerified)
+        XCTAssertFalse(viewData.saveButtonEnabled)
+        XCTAssertFalse(viewData.verifyEarButtonEnabled)
+    }
+
     func testNoEarVerificationFailureUsesNoEarAlert() {
         let store = PreviewStore()
         var effects: [PreviewEffect] = []
@@ -343,6 +401,46 @@ final class PreviewStoreTests: XCTestCase {
         }
     }
 
+    func testEarVerificationRequestPrefersPreservedBestCaptureFrameMetadata() {
+        let store = PreviewStore()
+        let preserved = UIImage()
+        _ = store.beginPreviewSession(
+            sessionMetrics: nil,
+            preservedEarVerificationImage: preserved,
+            preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata(
+                source: .bestCaptureFrame,
+                frameIndex: 4,
+                totalScore: 0.9,
+                profileScore: 0.8,
+                trackingScore: 0.7,
+                guidanceScore: 0.6,
+                timingScore: 0.5
+            )
+        )
+
+        let request = store.makeEarVerificationRequest(previewSnapshot: UIImage())
+
+        XCTAssertTrue(request.verificationImage === preserved)
+        XCTAssertEqual(request.source, .bestCaptureFrame)
+        XCTAssertEqual(request.selectionMetadata?.frameIndex, 4)
+    }
+
+    func testPresentFitExportFailureEmitsFitExportAlert() {
+        let store = PreviewStore()
+        var effects: [PreviewEffect] = []
+        store.onEffect = { effects.append($0) }
+
+        store.presentFitExportFailure(message: "disk full")
+
+        if case .alert(let title, let message, let identifier)? = effects.first {
+            XCTAssertEqual(title, L("scan.preview.fit.export.failed.title"))
+            XCTAssertEqual(message, String(format: L("scan.preview.fit.export.failed.message"), "disk full"))
+            XCTAssertEqual(identifier, "fitExportFailedAlert")
+        } else {
+            XCTFail("Expected fit export failure alert")
+        }
+    }
+
     private func makePreviewInput() -> ScanPreviewInput {
         let pointCloud = class_createInstance(SCPointCloud.self, 0) as! SCPointCloud
         return ScanPreviewInput(
@@ -351,5 +449,9 @@ final class PreviewStoreTests: XCTestCase {
             earVerificationImage: nil,
             earVerificationSelectionMetadata: nil
         )
+    }
+
+    private func makeMeshPlaceholder() -> SCMesh {
+        class_createInstance(SCMesh.self, 0) as! SCMesh
     }
 }

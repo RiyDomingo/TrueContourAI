@@ -24,7 +24,7 @@ final class ScanCoordinator {
     init(
         environment: AppEnvironment = .current,
         deviceCapabilityProvider: @escaping DeviceCapabilityProvider,
-        scanningViewControllerFactory: @escaping ScanningViewControllerFactory = { AppScanningViewController() },
+        scanningViewControllerFactory: @escaping ScanningViewControllerFactory,
         simulatorProvider: @escaping SimulatorProvider = ScanCoordinator.defaultSimulatorState,
         cameraAuthorizationStatusProvider: @escaping CameraAuthorizationStatusProvider = ScanCoordinator.defaultCameraAuthorizationStatus,
         cameraAccessRequester: @escaping CameraAccessRequester = ScanCoordinator.defaultRequestCameraAccess
@@ -39,7 +39,7 @@ final class ScanCoordinator {
 
     convenience init(
         environment: AppEnvironment = .current,
-        scanningViewControllerFactory: @escaping ScanningViewControllerFactory = { AppScanningViewController() },
+        scanningViewControllerFactory: @escaping ScanningViewControllerFactory,
         simulatorProvider: @escaping SimulatorProvider = ScanCoordinator.defaultSimulatorState,
         cameraAuthorizationStatusProvider: @escaping CameraAuthorizationStatusProvider = ScanCoordinator.defaultCameraAuthorizationStatus,
         cameraAccessRequester: @escaping CameraAccessRequester = ScanCoordinator.defaultRequestCameraAccess

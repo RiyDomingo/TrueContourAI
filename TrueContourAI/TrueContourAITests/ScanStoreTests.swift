@@ -46,6 +46,18 @@ final class ScanStoreTests: XCTestCase {
         XCTAssertEqual(capture.startSessionCount, 0)
     }
 
+    func testStartSessionBeforeCaptureStartsRequestsCaptureSession() {
+        let capture = ScanCaptureServiceFake()
+        let store = makeStore(capture: capture)
+
+        store.send(.startSession)
+
+        XCTAssertEqual(capture.startSessionCount, 1)
+        guard case .requestingPermission = store.state else {
+            return XCTFail("Expected permission-requesting state before capture session starts")
+        }
+    }
+
     func testReadyStartSessionBeginsCountdown() {
         let store = makeStore()
         store.send(.viewDidAppear)
@@ -127,6 +139,29 @@ final class ScanStoreTests: XCTestCase {
         guard case .completed = store.state else {
             return XCTFail("Expected completed state")
         }
+    }
+
+    func testManualFinishModeDoesNotAutoFinishEvenWhenDurationIsConfigured() {
+        let capture = ScanCaptureServiceFake()
+        let runtime = ScanRuntimeEngineFake()
+        let store = ScanStore(
+            captureService: capture,
+            runtimeEngine: runtime,
+            autoFinishSeconds: 1,
+            requiresManualFinish: true,
+            developerModeEnabled: false,
+            hapticEngine: HapticsFake()
+        )
+
+        store.send(.viewDidAppear)
+        store.send(.captureEvent(.started))
+        store.send(.startSession)
+        RunLoop.current.run(until: Date().addingTimeInterval(3.6))
+
+        guard case .capturing = store.state else {
+            return XCTFail("Expected capturing state to remain active in manual-finish mode")
+        }
+        XCTAssertEqual(capture.stopSessionCount, 0)
     }
 
     func testDismissWhileCapturingEmitsDismissEffect() {
@@ -240,6 +275,29 @@ final class ScanStoreTests: XCTestCase {
                 identifier: "thermalShutdown"
             )
         )
+    }
+
+    func testRuntimeCancellationEmitsDismissEffect() {
+        let store = makeStore()
+        var effects: [ScanEffect] = []
+        store.onEffect = { effects.append($0) }
+
+        store.send(.runtimeEvent(.failed(.canceled)))
+
+        XCTAssertEqual(effects.last, .dismiss)
+    }
+
+    func testReconstructionFailureTransitionsToRetryableFailureState() {
+        let store = makeStore()
+
+        store.send(.runtimeEvent(.failed(.reconstructionFailed("reconstruction failed"))))
+
+        guard case .failed(let failure) = store.state else {
+            return XCTFail("Expected failed state")
+        }
+        XCTAssertEqual(failure.title, L("scan.start.cameraUnavailable.title"))
+        XCTAssertEqual(failure.message, "reconstruction failed")
+        XCTAssertTrue(failure.allowsRetry)
     }
 
     func testFocusIsForwardedOnlyWhenReady() {

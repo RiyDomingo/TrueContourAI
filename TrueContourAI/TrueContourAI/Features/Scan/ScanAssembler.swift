@@ -38,7 +38,7 @@ struct ScanAssembler {
             orientationProvider: { orientationSource.current }
         )
 
-        let metalContext = AppScanningViewController.makeMetalContextForAssembly()
+        let metalContext = makeMetalContext()
         let runtimeEngine: ScanRuntimeEngining
         let initialFailure: ScanFailureViewData?
         if let metalContext {
@@ -55,7 +55,7 @@ struct ScanAssembler {
             )
             initialFailure = nil
         } else {
-            runtimeEngine = AppScanningViewController.makeUnavailableRuntimeEngineForAssembly()
+            runtimeEngine = makeUnavailableRuntimeEngine()
             initialFailure = ScanFailureViewData(
                 title: L("scan.start.unavailable.title"),
                 message: L("scan.start.cameraUnavailable.message"),
@@ -123,5 +123,22 @@ struct ScanAssembler {
             maxDepthResolution: maxDepthResolution,
             textureSaveInterval: textureSaveInterval
         )
+    }
+
+    private func makeMetalContext() -> ScanMetalContext? {
+        guard let device = MTLCreateSystemDefaultDevice(),
+              let algorithmCommandQueue = device.makeCommandQueue(),
+              let visualizationCommandQueue = device.makeCommandQueue() else {
+            return nil
+        }
+        return ScanMetalContext(
+            device: device,
+            algorithmCommandQueue: algorithmCommandQueue,
+            visualizationCommandQueue: visualizationCommandQueue
+        )
+    }
+
+    private func makeUnavailableRuntimeEngine() -> ScanRuntimeEngining {
+        UnavailableScanRuntimeEngine()
     }
 }

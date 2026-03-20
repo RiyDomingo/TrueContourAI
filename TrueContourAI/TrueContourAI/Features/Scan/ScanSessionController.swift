@@ -71,11 +71,15 @@ final class ScanSessionController {
         onCountdownChange?(nil)
     }
 
-    func beginScanning() {
+    func beginScanning(autoFinishEnabled: Bool) {
         hapticEngine.scanningBegan()
         isScanning = true
         onScanningChanged?(true)
-        startAutoFinishTimerIfNeeded()
+        if autoFinishEnabled {
+            startAutoFinishTimerIfNeeded()
+        } else {
+            stopAutoFinishTimers()
+        }
     }
 
     @discardableResult

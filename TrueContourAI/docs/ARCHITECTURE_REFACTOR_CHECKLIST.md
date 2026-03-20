@@ -90,7 +90,7 @@ Validation:
 - [x] Architecture docs match implemented structure, including the remaining UI/session helper layers
 - [x] No active production/doc/test references remain to retired preview or repository/exporter naming
 - [x] Export-policy/runtime-override coverage is primarily unit-tested; physical-device smoke remains reserved for true hardware/UI risk
-- [ ] The representative `save -> return home -> reopen` device-smoke path is fully stable again
+- [x] The representative `save -> return home -> reopen` device-smoke path is stable again on the current connected-device validation path
 
 ## Ongoing Release Rule
 
@@ -100,5 +100,5 @@ Validation:
 
 - [x] `HomeCoordinator` still owns narrow Home-side presentation helpers for details/library actions; Home is not as strictly route-only as Scan/Preview.
 - [x] Preview still keeps narrow UI/session helpers (`PreviewPresentationController`, `PreviewPresentationWorkflow`, `PreviewOverlayWorkflow`, `PreviewOverlayUIController`, `PreviewSessionWorkflows`) but `PreviewStore` remains the single preview feature owner.
-- [x] Scan still keeps `ScanSessionController` and `ScanRuntimeController` as timer/platform helpers under `ScanStore` / `ScanRuntimeEngine`; they are not alternate scan-state owners.
-- [x] One representative save/reopen device-smoke path is still the most failure-prone end-to-end check and remains a release-facing validation point rather than something hidden by docs.
+- [x] Scan still keeps `ScanSessionController` and `ScanRuntimeController` as timer/platform helpers under `ScanStore` / `ScanRuntimeEngine`, and `AppScanningViewController` still retains the UIKit/Metal/platform wiring that belongs at the screen edge rather than in the store.
+- [x] The save/reopen hardware smoke path is passing again, but it remains a release-facing validation point and should continue to be rerun after scan/preview/export changes.

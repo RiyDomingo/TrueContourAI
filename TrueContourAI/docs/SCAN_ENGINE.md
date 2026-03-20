@@ -138,6 +138,7 @@ Quality-gate blocking should be reviewed both for logic and for end-user recover
 Policy coverage note:
 - runtime override matrices, GLTF/OBJ policy, and preview save prechecks are now primarily covered in unit tests
 - physical-device smoke should stay focused on true capture/preview/save/reopen workflows rather than diagnostics-only artifact assertions
+- the representative `save -> return home -> reopen` path is currently passing again and should remain in the release-facing smoke subset after scan/preview/export changes
 
 ## Why It Resembles TrueDepthFusion
 Compared to `StandardCyborgExample`, this app has richer orchestration around the same underlying scan primitives:

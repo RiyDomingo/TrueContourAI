@@ -69,6 +69,11 @@ final class PreviewFitUseCase {
         ))
     }
 
+    func shouldPromptForManualEarPicking(_ result: PreviewFitResult) -> Bool {
+        guard let fitCheckResult = result.fitCheckResult else { return false }
+        return fitCheckResult.fitData.ear_left_xyz_mm == nil || fitCheckResult.fitData.ear_right_xyz_mm == nil
+    }
+
     private static func appVersionString() -> String {
         let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String

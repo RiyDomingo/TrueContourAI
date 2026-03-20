@@ -178,6 +178,75 @@ final class PreviewCoordinatorTests: XCTestCase {
         XCTAssertTrue(previewSurface.rightActionButton.isEnabled)
     }
 
+    func testPostScanPresentationRetainsButtonActionTargetForSaveButton() {
+        let repository = ScanRepository(scansRootURL: tempDir, defaults: defaults)
+        let exporter = ScanExporterService(scansRootURL: tempDir, defaults: defaults)
+        let settingsStore = SettingsStore(defaults: defaults)
+        let flowState = ScanFlowState()
+        let container = PreviewViewController(
+            input: .existingScan(
+                ScanItem(
+                    folderURL: tempDir.appendingPathComponent("existing", isDirectory: true),
+                    displayName: "existing",
+                    date: Date(),
+                    thumbnailURL: nil,
+                    sceneGLTFURL: tempDir.appendingPathComponent("existing/scene.gltf")
+                )
+            ),
+            scanReader: repository,
+            settingsStore: settingsStore,
+            runtimeSettings: settingsStore,
+            scanFlowState: flowState,
+            previewSessionState: PreviewSessionState(),
+            environment: .current,
+            scanExporter: exporter
+        )
+
+        let workflow = PreviewPresentationWorkflow(
+            previewOverlayUI: PreviewOverlayUIController(),
+            buttonConfigurator: PreviewButtonConfigurator(),
+            saveExportViewState: SaveExportViewStateController()
+        )
+        let presentationController = PreviewPresentationController()
+        var didSave = false
+        var didClose = false
+        weak var weakTarget: PreviewButtonActionTarget?
+
+        autoreleasepool {
+            let pointCloud = makePointCloudPlaceholder()
+            let actionTarget = PreviewButtonActionTarget(
+                onLeftTap: { didClose = true },
+                onRightTap: { didSave = true }
+            )
+            weakTarget = actionTarget
+
+            let previewVC = workflow.makePostScanPreview(
+                pointCloud: pointCloud,
+                meshTexturing: SCMeshTexturing(),
+                actionTarget: actionTarget
+            )
+            presentationController.setPostScanPreview(
+                context: .init(
+                    previewVC: previewVC,
+                    container: container,
+                    buttonActionTarget: actionTarget
+                )
+            )
+        }
+
+        XCTAssertNotNil(weakTarget, "Expected post-scan action target to be retained for button actions")
+
+        guard let previewVC = presentationController.resolvedScenePreviewViewController else {
+            return XCTFail("Expected retained post-scan preview controller")
+        }
+
+        previewVC.rightButton.sendActions(for: .touchUpInside)
+        previewVC.leftButton.sendActions(for: .touchUpInside)
+
+        XCTAssertTrue(didSave, "Expected save button tap to invoke retained action target")
+        XCTAssertTrue(didClose, "Expected close button tap to invoke retained action target")
+    }
+
     private func findView(withAccessibilityIdentifier identifier: String, in view: UIView?) -> UIView? {
         guard let view else { return nil }
         if view.accessibilityIdentifier == identifier {
@@ -193,5 +262,12 @@ final class PreviewCoordinatorTests: XCTestCase {
 
     private func accessibilityValue(in hostView: UIView, identifier: String) -> String? {
         findView(withAccessibilityIdentifier: identifier, in: hostView)?.accessibilityValue
+    }
+
+    private func makePointCloudPlaceholder() -> SCPointCloud {
+        guard let pointCloud = class_createInstance(SCPointCloud.self, 0) as? SCPointCloud else {
+            fatalError("Failed to allocate SCPointCloud placeholder")
+        }
+        return pointCloud
     }
 }

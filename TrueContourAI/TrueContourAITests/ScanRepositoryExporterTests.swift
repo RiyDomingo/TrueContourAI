@@ -197,6 +197,19 @@ final class ScanRepositoryExporterTests: XCTestCase {
         XCTAssertEqual(item?.date, date)
     }
 
+    func testResolveLastScanItemFallsBackToNewestValidScanWhenStoredFolderIsInvalid() throws {
+        let validDate = Date(timeIntervalSince1970: 240)
+        let valid = try makeScanFolder(name: "valid", date: validDate, withThumbnail: true, withScene: true)
+        let invalid = try makeScanFolder(name: "invalid", date: validDate.addingTimeInterval(10), withScene: false)
+        repository.setLastScanFolder(invalid)
+
+        let item = repository.resolveLastScanItem()
+
+        XCTAssertEqual(item?.folderURL, valid)
+        XCTAssertEqual(item?.sceneGLTFURL?.lastPathComponent, "scene.gltf")
+        XCTAssertEqual(item?.thumbnailURL?.lastPathComponent, "thumbnail.png")
+    }
+
     func testRenameScanFolderSanitizesName() throws {
         let date = Date(timeIntervalSince1970: 190)
         let folder = try makeScanFolder(name: "scan", date: date)

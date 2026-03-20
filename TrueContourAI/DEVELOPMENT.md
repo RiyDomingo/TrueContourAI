@@ -94,7 +94,7 @@ Do not push export-policy matrix coverage into diagnostics-only smoke assertions
 Current exceptions that are still acceptable:
 - `HomeCoordinator` still owns narrow Home-side presentation helpers.
 - Preview still keeps UI/session helper layers for overlays, meshing callback wiring, and existing-scan loading/session plumbing.
-- Scan still keeps `ScanSessionController` and `ScanRuntimeController` as internal timer/platform helpers under the store/runtime boundary.
+- Scan still keeps `ScanSessionController` and `ScanRuntimeController` as internal timer/platform helpers under the store/runtime boundary, and `AppScanningViewController` still owns the UIKit/Metal/platform work that belongs at the screen edge.
 
 ## Logging and Diagnostics
 - Use existing structured `Log.*` channels.

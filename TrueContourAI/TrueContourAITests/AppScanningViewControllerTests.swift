@@ -68,7 +68,7 @@ final class AppScanningViewControllerTests: XCTestCase {
 
         vc.beginAppearanceTransition(true, animated: false)
         vc.endAppearanceTransition()
-        vc.perform(Selector(("dismissTapped")))
+        vc.debug_triggerDismissTapped()
 
         XCTAssertEqual(delegate.cancelCount, 1)
     }
@@ -85,7 +85,7 @@ final class AppScanningViewControllerTests: XCTestCase {
         vc.shutterTapped(nil)
         RunLoop.current.run(until: Date().addingTimeInterval(0.1))
 
-        vc.perform(Selector(("dismissTapped")))
+        vc.debug_triggerDismissTapped()
 
         XCTAssertEqual(delegate.cancelCount, 1)
     }
@@ -123,13 +123,46 @@ final class AppScanningViewControllerTests: XCTestCase {
         autoFinishSeconds: Int = 0,
         requiresManualFinish: Bool = false
     ) -> AppScanningViewController {
-        AppScanningViewController(
-            reconstructionManagerFactory: { _, _, _ in reconstruction },
+        let orientationSource = ScanInterfaceOrientationSource()
+        let captureService = ScanCaptureService(
             cameraManager: camera,
-            hapticEngine: HapticsFake(),
-            autoFinishSeconds: autoFinishSeconds,
+            configuration: .init(maxDepthResolution: 320, textureSaveInterval: 8, developerModeEnabled: false),
+            orientationProvider: { orientationSource.current }
+        )
+        let runtimeEngine = ScanRuntimeEngine(
+            reconstructionManager: reconstruction,
+            configuration: .init(
+                processingConfig: .init(
+                    outlierSigma: 3,
+                    decimateRatio: 1,
+                    cropBelowNeck: true,
+                    meshResolution: 6,
+                    meshSmoothness: 2
+                ),
+                texturedMeshEnabled: true,
+                textureSaveInterval: 8
+            ),
+            developerModeEnabled: false,
             requiresManualFinish: requiresManualFinish,
             backgroundWorkRunner: { work in work() }
+        )
+        let store = ScanStore(
+            captureService: captureService,
+            runtimeEngine: runtimeEngine,
+            autoFinishSeconds: autoFinishSeconds,
+            requiresManualFinish: requiresManualFinish,
+            developerModeEnabled: false,
+            hapticEngine: HapticsFake()
+        )
+        return AppScanningViewController(
+            store: store,
+            runtimeEngine: runtimeEngine,
+            viewConfiguration: ScanViewConfiguration(
+                autoFinishSeconds: autoFinishSeconds,
+                developerModeEnabled: false
+            ),
+            orientationSource: orientationSource,
+            metalContext: nil
         )
     }
 

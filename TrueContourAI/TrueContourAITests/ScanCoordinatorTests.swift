@@ -34,7 +34,7 @@ final class ScanCoordinatorTests: XCTestCase {
         let presenter = CapturingPresenterViewController()
         let coordinator = ScanCoordinator(
             deviceCapabilityProvider: { false },
-            scanningViewControllerFactory: { AppScanningViewController() },
+            scanningViewControllerFactory: { self.makeScanningViewController() },
             simulatorProvider: { false }
         )
         let flowState = ScanFlowState()
@@ -84,7 +84,7 @@ final class ScanCoordinatorTests: XCTestCase {
         let presenter = CapturingPresenterViewController()
         let coordinator = ScanCoordinator(
             deviceCapabilityProvider: { true },
-            scanningViewControllerFactory: { AppScanningViewController() },
+            scanningViewControllerFactory: { self.makeScanningViewController() },
             simulatorProvider: { false },
             cameraAuthorizationStatusProvider: { .denied },
             cameraAccessRequester: { _ in XCTFail("Should not request camera access when denied") }
@@ -106,7 +106,7 @@ final class ScanCoordinatorTests: XCTestCase {
 
     func testUndeterminedCameraRequestsAccessBeforeStarting() {
         let presenter = CapturingPresenterViewController()
-        let scanVC = AppScanningViewController()
+        let scanVC = makeScanningViewController()
         var requestedAccess = false
         let coordinator = ScanCoordinator(
             deviceCapabilityProvider: { true },
@@ -190,6 +190,15 @@ final class ScanCoordinatorTests: XCTestCase {
                 environment: .current,
                 settingsStore: settingsStore
             )
+        )
+    }
+
+    private func makeScanningViewController() -> AppScanningViewController {
+        makeAssembler().makeScanningViewController(
+            reconstructionManagerFactory: { _, _, _ in ReconstructionManagerFake() },
+            cameraManager: CameraManagerFake(),
+            hapticEngine: HapticsFake(),
+            backgroundWorkRunner: { work in work() }
         )
     }
 }

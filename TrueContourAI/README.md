@@ -119,7 +119,7 @@ Physical-device validation should confirm the artifact set matches the active ex
 ## Current Intentional Exceptions
 - `HomeCoordinator` still owns narrow Home-side presentation helpers for scan details/library actions; it is not as strictly route-only as Scan/Preview.
 - Preview still keeps UI/session helper layers for hosting, overlays, meshing callbacks, and existing-scan loading/session plumbing, but `PreviewStore` remains the single preview feature owner.
-- Scan still keeps `ScanSessionController` and `ScanRuntimeController` as helper layers for timer/platform plumbing; scan UI state still lives in `ScanStore`.
+- Scan still keeps `ScanSessionController` and `ScanRuntimeController` as helper layers for timer/platform plumbing, and `AppScanningViewController` still owns the UIKit/Metal/platform wiring that cannot reasonably move lower.
 
 ## Key Dependencies
 - Local Swift packages:
@@ -143,4 +143,5 @@ Physical-device validation should confirm the artifact set matches the active ex
 ## Current Important Constraint
 - Real scan testing must be performed on physical hardware with TrueDepth.
 - Simulator is not accepted as scan-runtime validation for capture/finalize/export behavior.
-- The strongest current release evidence is physical-device UI/device-smoke coverage on `Riy's iPhone`, with export-policy and runtime-override matrices now primarily covered in unit tests instead of diagnostics-heavy smoke assertions.
+- The strongest current release evidence is still physical-device UI/device-smoke coverage on `Riy's iPhone`, with export-policy and runtime-override matrices now primarily covered in unit tests instead of diagnostics-heavy smoke assertions.
+- The representative `save -> return home -> reopen` smoke path is passing again, but it should remain part of the release-facing rerun set after scan/preview/export changes.

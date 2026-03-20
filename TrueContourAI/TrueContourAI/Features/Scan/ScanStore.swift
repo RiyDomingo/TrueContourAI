@@ -180,7 +180,7 @@ final class ScanStore {
         )
         latestProgress = makeInitialProgressSnapshot()
         thermalWarningVisible = false
-        sessionController.beginScanning()
+        sessionController.beginScanning(autoFinishEnabled: autoFinishSeconds > 0 && !requiresManualFinish)
     }
 
     private func handleCaptureEvent(_ event: ScanCaptureEvent) {

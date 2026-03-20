@@ -1,20 +1,40 @@
 import UIKit
 
 final class PreviewEarVerificationUseCase {
+    func makeRequest(
+        preservedImage: UIImage?,
+        preservedSelectionMetadata: EarVerificationSelectionMetadata?,
+        previewSnapshot: UIImage
+    ) -> PreviewEarVerificationRequest {
+        let source: PreviewStore.EarVerificationImageSource =
+            preservedSelectionMetadata.map {
+                switch $0.source {
+                case .bestCaptureFrame:
+                    return .bestCaptureFrame
+                case .latestCaptureFallback:
+                    return .latestCaptureFallback
+                }
+            } ?? (preservedImage != nil ? .latestCaptureFallback : .previewSnapshotFallback)
+
+        return PreviewEarVerificationRequest(
+            verificationImage: preservedImage ?? previewSnapshot,
+            source: source,
+            selectionMetadata: preservedSelectionMetadata
+        )
+    }
+
     func verify(
         service: EarLandmarksService,
-        verificationImage: UIImage,
-        source: PreviewStore.EarVerificationImageSource,
-        selectionMetadata: EarVerificationSelectionMetadata?,
+        request: PreviewEarVerificationRequest,
         completion: @escaping (Result<PreviewEarVerificationResult, PreviewFailure>) -> Void
     ) {
         PreviewQoSQueues.earVerification.async {
             do {
                 guard let verification = try service.verify(
-                    in: verificationImage,
-                    verificationSource: source.rawValue,
-                    usedPreviewSnapshotFallback: source == .previewSnapshotFallback,
-                    selectionMetadata: selectionMetadata
+                    in: request.verificationImage,
+                    verificationSource: request.source.rawValue,
+                    usedPreviewSnapshotFallback: request.source == .previewSnapshotFallback,
+                    selectionMetadata: request.selectionMetadata
                 ) else {
                     DispatchQueue.main.async {
                         completion(.failure(.verificationFailed(L("scan.preview.noEar.message"))))
