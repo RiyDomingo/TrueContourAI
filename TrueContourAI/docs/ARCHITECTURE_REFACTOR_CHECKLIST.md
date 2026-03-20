@@ -4,7 +4,7 @@ This checklist records the current architecture convergence state after the refa
 
 ## Final Outcome
 
-- [x] UIKit controllers render, bind, and forward intents only
+- [x] UIKit controllers primarily render, bind, and forward intents; remaining platform/UI wiring is kept local to the screen boundary
 - [x] One primary state owner exists per feature:
   - `HomeViewModel`
   - `ScanStore`
@@ -90,6 +90,7 @@ Validation:
 - [x] Architecture docs match implemented structure, including the remaining UI/session helper layers
 - [x] No active production/doc/test references remain to retired preview or repository/exporter naming
 - [x] Export-policy/runtime-override coverage is primarily unit-tested; physical-device smoke remains reserved for true hardware/UI risk
+- [ ] The representative `save -> return home -> reopen` device-smoke path is fully stable again
 
 ## Ongoing Release Rule
 
@@ -98,5 +99,6 @@ Validation:
 ## Intentional Exceptions And Remaining Acceptable Debt
 
 - [x] `HomeCoordinator` still owns narrow Home-side presentation helpers for details/library actions; Home is not as strictly route-only as Scan/Preview.
-- [x] Preview still keeps narrow UI/session helpers (`PreviewPresentationController`, `PreviewPresentationWorkflow`, `PreviewOverlayWorkflow`, `PreviewOverlayUIController`, `PreviewSessionController`, `PreviewSessionWorkflows`) but `PreviewStore` remains the single preview feature owner.
+- [x] Preview still keeps narrow UI/session helpers (`PreviewPresentationController`, `PreviewPresentationWorkflow`, `PreviewOverlayWorkflow`, `PreviewOverlayUIController`, `PreviewSessionWorkflows`) but `PreviewStore` remains the single preview feature owner.
+- [x] Scan still keeps `ScanSessionController` and `ScanRuntimeController` as timer/platform helpers under `ScanStore` / `ScanRuntimeEngine`; they are not alternate scan-state owners.
 - [x] One representative save/reopen device-smoke path is still the most failure-prone end-to-end check and remains a release-facing validation point rather than something hidden by docs.

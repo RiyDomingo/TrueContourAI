@@ -19,6 +19,8 @@ enum PreviewAction {
     case existingScanLoadFailed(PreviewFailure)
     case postScanLoaded(ScanPreviewInput)
     case saveTapped
+    case saveBlocked(PreviewBlockReason)
+    case saveInvocationFailed(String)
     case shareTapped
     case closeTapped
     case verifyEarTapped

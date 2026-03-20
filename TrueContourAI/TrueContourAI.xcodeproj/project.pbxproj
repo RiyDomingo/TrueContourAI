@@ -49,7 +49,6 @@
 		13DD59BA2F227BE900A33CAF /* Features/Preview/PreviewAlertPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59B92F227BE900A33CAF /* Features/Preview/PreviewAlertPresenter.swift */; };
 		13DD59BC2F227E3200A33CAF /* Features/Preview/PreviewButtonConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59BB2F227E3200A33CAF /* Features/Preview/PreviewButtonConfigurator.swift */; };
 		14B200122F7D000100ABC002 /* Features/Preview/PreviewSessionWorkflows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200112F7D000100ABC002 /* Features/Preview/PreviewSessionWorkflows.swift */; };
-		14B200262F7D000100ABC006 /* Features/Preview/PreviewSessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200272F7D000100ABC006 /* Features/Preview/PreviewSessionController.swift */; };
 		14B2002C2F7D000100ABC009 /* Features/Preview/PreviewPresentationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B2002D2F7D000100ABC009 /* Features/Preview/PreviewPresentationController.swift */; };
 		14E500012F8D000100ABC001 /* Features/Preview/PreviewPresentationWorkflow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14E500022F8D000100ABC001 /* Features/Preview/PreviewPresentationWorkflow.swift */; };
 		14E500032F8D000100ABC001 /* Features/Preview/PreviewOverlayWorkflow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14E500042F8D000100ABC001 /* Features/Preview/PreviewOverlayWorkflow.swift */; };
@@ -193,7 +192,6 @@
 		13DD59B92F227BE900A33CAF /* Features/Preview/PreviewAlertPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewAlertPresenter.swift; sourceTree = "<group>"; };
 		13DD59BB2F227E3200A33CAF /* Features/Preview/PreviewButtonConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewButtonConfigurator.swift; sourceTree = "<group>"; };
 		14B200112F7D000100ABC002 /* Features/Preview/PreviewSessionWorkflows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewSessionWorkflows.swift; sourceTree = "<group>"; };
-		14B200272F7D000100ABC006 /* Features/Preview/PreviewSessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewSessionController.swift; sourceTree = "<group>"; };
 		14B2002D2F7D000100ABC009 /* Features/Preview/PreviewPresentationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewPresentationController.swift; sourceTree = "<group>"; };
 		14E500022F8D000100ABC001 /* Features/Preview/PreviewPresentationWorkflow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewPresentationWorkflow.swift; sourceTree = "<group>"; };
 		14E500042F8D000100ABC001 /* Features/Preview/PreviewOverlayWorkflow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewOverlayWorkflow.swift; sourceTree = "<group>"; };
@@ -455,7 +453,6 @@
 				13DD59B92F227BE900A33CAF /* Features/Preview/PreviewAlertPresenter.swift */,
 				13DD59BB2F227E3200A33CAF /* Features/Preview/PreviewButtonConfigurator.swift */,
 				14B200112F7D000100ABC002 /* Features/Preview/PreviewSessionWorkflows.swift */,
-				14B200272F7D000100ABC006 /* Features/Preview/PreviewSessionController.swift */,
 				14B2002D2F7D000100ABC009 /* Features/Preview/PreviewPresentationController.swift */,
 				14E500022F8D000100ABC001 /* Features/Preview/PreviewPresentationWorkflow.swift */,
 				14E500042F8D000100ABC001 /* Features/Preview/PreviewOverlayWorkflow.swift */,
@@ -760,7 +757,6 @@
 				13DD59BC2F227E3200A33CAF /* Features/Preview/PreviewButtonConfigurator.swift in Sources */,
 				14B200122F7D000100ABC002 /* Features/Preview/PreviewSessionWorkflows.swift in Sources */,
 				14C300012F8A000100ABC001 /* Features/Preview/PreviewFeatureModels.swift in Sources */,
-				14B200262F7D000100ABC006 /* Features/Preview/PreviewSessionController.swift in Sources */,
 				14B2002C2F7D000100ABC009 /* Features/Preview/PreviewPresentationController.swift in Sources */,
 				14E500012F8D000100ABC001 /* Features/Preview/PreviewPresentationWorkflow.swift in Sources */,
 				14E500032F8D000100ABC001 /* Features/Preview/PreviewOverlayWorkflow.swift in Sources */,

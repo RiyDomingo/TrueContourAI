@@ -201,14 +201,6 @@ final class AppScanningViewController: UIViewController {
 
     weak var delegate: AppScanningViewControllerDelegate?
 
-    private(set) var autoFinishSeconds: Int
-    private(set) var requiresManualFinish: Bool
-    private(set) var developerModeEnabled: Bool
-    private(set) var maxDepthResolution: Int
-    private(set) var generatesTexturedMeshes: Bool
-    private(set) var texturedMeshColorBufferSaveInterval: Int
-    private(set) var processingConfig: SettingsStore.ProcessingConfig
-
     private let metalContainerView = UIView()
     private let metalLayer = CAMetalLayer()
     private let countdownLabel = UILabel()
@@ -297,6 +289,7 @@ final class AppScanningViewController: UIViewController {
     }()
 
     private let metalContext: ScanMetalContext?
+    private let viewConfiguration: ScanViewConfiguration
     private lazy var scanningViewRenderer: ScanningViewRenderer? = {
         guard let metalContext else { return nil }
         return DefaultScanningViewRenderer(
@@ -318,25 +311,13 @@ final class AppScanningViewController: UIViewController {
     init(
         store: ScanStore,
         runtimeEngine: ScanRuntimeEngining,
-        autoFinishSeconds: Int,
-        requiresManualFinish: Bool,
-        developerModeEnabled: Bool,
-        maxDepthResolution: Int,
-        generatesTexturedMeshes: Bool,
-        texturedMeshColorBufferSaveInterval: Int,
-        processingConfig: SettingsStore.ProcessingConfig,
+        viewConfiguration: ScanViewConfiguration,
         orientationSource: ScanInterfaceOrientationSource,
         metalContext: ScanMetalContext?
     ) {
         self.store = store
         self.runtimeEngine = runtimeEngine
-        self.autoFinishSeconds = autoFinishSeconds
-        self.requiresManualFinish = requiresManualFinish
-        self.developerModeEnabled = developerModeEnabled
-        self.maxDepthResolution = maxDepthResolution
-        self.generatesTexturedMeshes = generatesTexturedMeshes
-        self.texturedMeshColorBufferSaveInterval = texturedMeshColorBufferSaveInterval
-        self.processingConfig = processingConfig
+        self.viewConfiguration = viewConfiguration
         self.orientationSource = orientationSource
         self.metalContext = metalContext
         super.init(nibName: nil, bundle: nil)
@@ -403,13 +384,10 @@ final class AppScanningViewController: UIViewController {
         self.init(
             store: store,
             runtimeEngine: runtimeEngine,
-            autoFinishSeconds: autoFinishSeconds,
-            requiresManualFinish: requiresManualFinish,
-            developerModeEnabled: developerModeEnabled,
-            maxDepthResolution: maxDepthResolution,
-            generatesTexturedMeshes: generatesTexturedMeshes,
-            texturedMeshColorBufferSaveInterval: texturedMeshColorBufferSaveInterval,
-            processingConfig: processingConfig,
+            viewConfiguration: ScanViewConfiguration(
+                autoFinishSeconds: autoFinishSeconds,
+                developerModeEnabled: developerModeEnabled
+            ),
             orientationSource: orientationSource,
             metalContext: metalContext
         )
@@ -468,12 +446,6 @@ final class AppScanningViewController: UIViewController {
 
     @objc func finishScanNow() {
         store.send(.finishTapped)
-    }
-
-    func configureManualFinishButton(title: String, target: Any?, action: Selector) {
-        DesignSystem.applyButton(manualFinishButton, title: title, style: .primary, size: .regular)
-        manualFinishButton.accessibilityIdentifier = "finishScanNowButton"
-        manualFinishButton.accessibilityLabel = title
     }
 
     private func bindStore() {
@@ -594,7 +566,7 @@ final class AppScanningViewController: UIViewController {
         bottomSheet.setSnapHeights(
             collapsed: profile.collapsed,
             half: profile.half,
-            full: developerModeEnabled ? maxFull : profile.half
+            full: viewConfiguration.developerModeEnabled ? maxFull : profile.half
         )
         bottomSheet.setSnapPoint(.collapsed, animated: false)
     }
@@ -681,8 +653,8 @@ final class AppScanningViewController: UIViewController {
         }
         progressLabel.text = viewData.progressText
         progressLabel.isHidden = viewData.progressText == nil
-        autoFinishLabel.text = autoFinishSeconds > 0 ? String(format: L("scanning.autofinish"), max(0, autoFinishSeconds - (Int(round((viewData.progressFraction ?? 0) * Float(autoFinishSeconds)))))) : nil
-        autoFinishLabel.isHidden = autoFinishSeconds <= 0
+        autoFinishLabel.text = viewConfiguration.autoFinishSeconds > 0 ? String(format: L("scanning.autofinish"), max(0, viewConfiguration.autoFinishSeconds - (Int(round((viewData.progressFraction ?? 0) * Float(viewConfiguration.autoFinishSeconds)))))) : nil
+        autoFinishLabel.isHidden = viewConfiguration.autoFinishSeconds <= 0
         focusHintLabel.text = viewData.focusHintText
         focusHintLabel.isHidden = viewData.focusHintText == nil
         thermalWarningLabel.isHidden = !viewData.thermalWarningVisible
@@ -691,28 +663,33 @@ final class AppScanningViewController: UIViewController {
         manualFinishButton.isHidden = !viewData.finishButtonVisible
         manualFinishButton.isEnabled = viewData.finishButtonEnabled
         dismissButton.isEnabled = viewData.dismissButtonEnabled
-        bottomSheet.setSnapPoint(viewData.thermalWarningVisible || developerModeEnabled ? .half : .collapsed, animated: false)
+        bottomSheet.setSnapPoint(viewData.thermalWarningVisible || viewConfiguration.developerModeEnabled ? .half : .collapsed, animated: false)
     }
 
     private func handle(effect: ScanEffect) {
         switch effect {
         case let .alert(title, message, identifier):
-            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: L("common.ok"), style: .default, handler: { [weak self] _ in
-                guard let self else { return }
-                if identifier == "cameraDenied" || identifier == "cameraUnavailable" || identifier == "thermalShutdown" {
-                    self.dismiss(animated: true)
-                }
-            }))
-            if presentedViewController == nil {
-                present(alert, animated: true)
-            }
+            presentAlert(title: title, message: message, identifier: identifier, dismissAfterAcknowledgement: false)
+        case let .alertThenDismiss(title, message, identifier):
+            presentAlert(title: title, message: message, identifier: identifier, dismissAfterAcknowledgement: true)
         case .dismiss:
             guard !didRouteCancel && !didRouteCompletion else { return }
             didRouteCancel = true
             delegate?.appScanningViewControllerDidCancel(self)
         case .hapticPrimary:
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        }
+    }
+
+    private func presentAlert(title: String, message: String, identifier: String, dismissAfterAcknowledgement: Bool) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.view.accessibilityIdentifier = identifier
+        alert.addAction(UIAlertAction(title: L("common.ok"), style: .default, handler: { [weak self] _ in
+            guard let self, dismissAfterAcknowledgement else { return }
+            self.dismiss(animated: true)
+        }))
+        if presentedViewController == nil {
+            present(alert, animated: true)
         }
     }
 
@@ -811,6 +788,10 @@ final class AppScanningViewController: UIViewController {
 
     func debug_scanState() -> ScanState {
         store.state
+    }
+
+    var debug_viewConfiguration: ScanViewConfiguration {
+        viewConfiguration
     }
 #endif
 }

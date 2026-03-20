@@ -31,6 +31,11 @@ TrueContourAI scan runtime is built on StandardCyborg components and most closel
 - Renders live preview.
 - Forwards start, finish, dismiss, and focus events into `ScanStore`.
 - Applies `ScanStore` state/effects to the scan HUD and accessibility surface.
+- Still intentionally retains platform/UI wiring such as:
+  - volume shutter observation
+  - interface-orientation capture
+  - Metal layer rendering hookup
+  - UIKit alert presentation
 - Hot-path rule: camera callbacks must not create `UIImage` / `CIImage` / `CIContext`, run ML, or do heavy scoring/allocation work. Any preserved-frame design must use bounded retention and defer conversion until after scanning.
 
 3. `ScanCaptureService` owns the TrueDepth capture session
@@ -45,6 +50,11 @@ TrueContourAI scan runtime is built on StandardCyborg components and most closel
 5. `ScanSessionController`
 - `ScanSessionController` owns countdown and auto-finish timer mechanics.
 - Runtime activation/deactivation now routes through `ScanStore` + `ScanRuntimeEngine`; there is no separate runtime policy owner in the active scan flow.
+
+6. `ScanRuntimeController`
+- `ScanRuntimeController` is still active as a narrow helper used by `ScanRuntimeEngine`.
+- It owns idle-timer disabling and thermal-notification observation only.
+- It is not a second scan-state owner.
 
 ## Hot Path Constraints
 - Allowed in camera / reconstruction callbacks:
@@ -67,18 +77,18 @@ TrueContourAI scan runtime is built on StandardCyborg components and most closel
 - Validate depth resolution and texture-save interval on the connected TrueDepth iPhone before and after changes.
 - Compare tracking stability, preview output, and export behavior against the pre-change device baseline.
 
-6. Reconstruction callbacks
+7. Reconstruction callbacks
 - Uses `SCReconstructionManagerDelegate` callbacks for tracking state.
 - Saves color buffers periodically for mesh texturing.
 
-7. Finish/cancel behavior
+8. Finish/cancel behavior
 - `ScanStore` owns the UI-facing finish/cancel state transitions.
 - Cancel path resets reconstruction and returns delegate cancel callback.
 - Manual finish path finalizes reconstruction, builds point cloud, and returns delegate scan callback.
 - Auto-finish uses the configured scan duration when enabled.
 - Both finish paths should be validated on a physical TrueDepth device.
 
-8. Preview and export
+9. Preview and export
 - `PreviewCoordinator` routes presentation only.
 - `PreviewViewController` hosts preview UI and forwards intents into `PreviewStore`.
 - `PreviewExportUseCase` performs save prechecks and export execution.

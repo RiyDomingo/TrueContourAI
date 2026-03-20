@@ -140,13 +140,10 @@ final class AppScanningViewControllerTests: XCTestCase {
         AppScanningViewController(
             store: store,
             runtimeEngine: runtimeEngine,
-            autoFinishSeconds: 0,
-            requiresManualFinish: false,
-            developerModeEnabled: false,
-            maxDepthResolution: 320,
-            generatesTexturedMeshes: true,
-            texturedMeshColorBufferSaveInterval: 8,
-            processingConfig: SettingsStore.ProcessingConfig.default,
+            viewConfiguration: ScanViewConfiguration(
+                autoFinishSeconds: 0,
+                developerModeEnabled: false
+            ),
             orientationSource: ScanInterfaceOrientationSource(),
             metalContext: nil
         )

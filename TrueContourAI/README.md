@@ -102,13 +102,15 @@ Physical-device validation should confirm the artifact set matches the active ex
 - Scan flow centers on `ScanAssembler`, `ScanCoordinator`, `ScanStore`, `ScanCaptureService`, `ScanRuntimeEngine`, and `AppScanningViewController`.
 - Preview flow centers on `PreviewAssembler`, `PreviewCoordinator`, `PreviewViewController`, `PreviewStore`, `PreviewExportUseCase`, `PreviewFitUseCase`, `PreviewEarVerificationUseCase`, and `PreviewSceneAdapter`.
 - Settings flow centers on `SettingsAssembler`, `SettingsStore`, and `SettingsStorageUseCase`.
-- Preview still uses a few UI/session helpers for presentation and overlays:
+- Preview still uses a few UI/session helpers for presentation, overlays, and existing-scan loading/session plumbing:
   - `PreviewPresentationController`
   - `PreviewPresentationWorkflow`
   - `PreviewOverlayWorkflow`
   - `PreviewOverlayUIController`
-  - `PreviewSessionController`
   - `PreviewSessionWorkflows`
+- Scan still uses two narrow internal helpers under the store/runtime boundary:
+  - `ScanSessionController`
+  - `ScanRuntimeController`
 - Scan storage/export behavior is owned directly by:
   - `ScanRepository`
   - `ScanExporterService`
@@ -116,7 +118,8 @@ Physical-device validation should confirm the artifact set matches the active ex
 
 ## Current Intentional Exceptions
 - `HomeCoordinator` still owns narrow Home-side presentation helpers for scan details/library actions; it is not as strictly route-only as Scan/Preview.
-- Preview still keeps UI/session helper layers for hosting, overlays, meshing callbacks, and session bookkeeping, but `PreviewStore` remains the single preview feature owner.
+- Preview still keeps UI/session helper layers for hosting, overlays, meshing callbacks, and existing-scan loading/session plumbing, but `PreviewStore` remains the single preview feature owner.
+- Scan still keeps `ScanSessionController` and `ScanRuntimeController` as helper layers for timer/platform plumbing; scan UI state still lives in `ScanStore`.
 
 ## Key Dependencies
 - Local Swift packages:

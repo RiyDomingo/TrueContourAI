@@ -98,6 +98,7 @@ enum ScanAction {
 
 enum ScanEffect: Equatable {
     case alert(title: String, message: String, identifier: String)
+    case alertThenDismiss(title: String, message: String, identifier: String)
     case dismiss
     case hapticPrimary
 }
@@ -187,6 +188,19 @@ struct ScanRuntimeDiagnosticsSnapshot {
     let succeededCount: Int
     let lostTrackingCount: Int
     let droppedFrameCount: Int
+}
+
+struct ScanViewConfiguration: Equatable {
+    let autoFinishSeconds: Int
+    let developerModeEnabled: Bool
+}
+
+struct ResolvedScanFeatureConfiguration: Equatable {
+    let captureConfiguration: ScanCaptureConfiguration
+    let runtimeConfiguration: ScanRuntimeConfiguration
+    let viewConfiguration: ScanViewConfiguration
+    let requiresManualFinish: Bool
+    let texturedMeshEnabled: Bool
 }
 
 final class ScanInterfaceOrientationSource {

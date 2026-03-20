@@ -71,11 +71,13 @@ final class ScanCoordinatorTests: XCTestCase {
             backgroundWorkRunner: { work in work() }
         )
 
-        XCTAssertEqual(scanVC.autoFinishSeconds, 20)
-        XCTAssertTrue(scanVC.requiresManualFinish)
-        XCTAssertTrue(scanVC.generatesTexturedMeshes)
-        XCTAssertEqual(scanVC.maxDepthResolution, 256)
-        XCTAssertEqual(scanVC.texturedMeshColorBufferSaveInterval, 12)
+        let configuration = assembler.resolvedConfiguration(settingsStore: dependencies.runtimeSettings)
+
+        XCTAssertEqual(scanVC.debug_viewConfiguration.autoFinishSeconds, 20)
+        XCTAssertEqual(configuration.captureConfiguration.maxDepthResolution, 256)
+        XCTAssertEqual(configuration.captureConfiguration.textureSaveInterval, 12)
+        XCTAssertTrue(configuration.requiresManualFinish)
+        XCTAssertTrue(configuration.texturedMeshEnabled)
     }
 
     func testDeniedCameraPresentsCameraAccessAlert() {
@@ -139,13 +141,9 @@ final class ScanCoordinatorTests: XCTestCase {
         config.decimateRatio = 1.4
         config.meshResolution = 6
         settingsStore.processingConfig = config
-        let scanVC = makeAssembler().makeScanningViewController(
-            reconstructionManagerFactory: { _, _, _ in ReconstructionManagerFake() },
-            cameraManager: CameraManagerFake(),
-            hapticEngine: HapticsFake(),
-            backgroundWorkRunner: { work in work() }
-        )
-        XCTAssertEqual(scanVC.maxDepthResolution, 256)
+        let assembler = makeAssembler()
+        let configuration = assembler.resolvedConfiguration(settingsStore: settingsStore)
+        XCTAssertEqual(configuration.captureConfiguration.maxDepthResolution, 256)
     }
 
     func testScanAssemblerUsesLowerResolutionForLowMeshResolution() {
@@ -153,13 +151,9 @@ final class ScanCoordinatorTests: XCTestCase {
         config.decimateRatio = 1.0
         config.meshResolution = 5
         settingsStore.processingConfig = config
-        let scanVC = makeAssembler().makeScanningViewController(
-            reconstructionManagerFactory: { _, _, _ in ReconstructionManagerFake() },
-            cameraManager: CameraManagerFake(),
-            hapticEngine: HapticsFake(),
-            backgroundWorkRunner: { work in work() }
-        )
-        XCTAssertEqual(scanVC.maxDepthResolution, 256)
+        let assembler = makeAssembler()
+        let configuration = assembler.resolvedConfiguration(settingsStore: settingsStore)
+        XCTAssertEqual(configuration.captureConfiguration.maxDepthResolution, 256)
     }
 
     func testScanAssemblerUsesDefaultResolutionWhenConfigIsBalanced() {
@@ -167,39 +161,27 @@ final class ScanCoordinatorTests: XCTestCase {
         config.decimateRatio = 1.2
         config.meshResolution = 6
         settingsStore.processingConfig = config
-        let scanVC = makeAssembler().makeScanningViewController(
-            reconstructionManagerFactory: { _, _, _ in ReconstructionManagerFake() },
-            cameraManager: CameraManagerFake(),
-            hapticEngine: HapticsFake(),
-            backgroundWorkRunner: { work in work() }
-        )
-        XCTAssertEqual(scanVC.maxDepthResolution, 320)
+        let assembler = makeAssembler()
+        let configuration = assembler.resolvedConfiguration(settingsStore: settingsStore)
+        XCTAssertEqual(configuration.captureConfiguration.maxDepthResolution, 320)
     }
 
     func testScanAssemblerColorBufferIntervalClampsToMinimum() {
         var config = settingsStore.processingConfig
         config.decimateRatio = 0.1
         settingsStore.processingConfig = config
-        let scanVC = makeAssembler().makeScanningViewController(
-            reconstructionManagerFactory: { _, _, _ in ReconstructionManagerFake() },
-            cameraManager: CameraManagerFake(),
-            hapticEngine: HapticsFake(),
-            backgroundWorkRunner: { work in work() }
-        )
-        XCTAssertEqual(scanVC.texturedMeshColorBufferSaveInterval, 4)
+        let assembler = makeAssembler()
+        let configuration = assembler.resolvedConfiguration(settingsStore: settingsStore)
+        XCTAssertEqual(configuration.captureConfiguration.textureSaveInterval, 4)
     }
 
     func testScanAssemblerColorBufferIntervalScalesAndClampsToMaximum() {
         var config = settingsStore.processingConfig
         config.decimateRatio = 3.0
         settingsStore.processingConfig = config
-        let scanVC = makeAssembler().makeScanningViewController(
-            reconstructionManagerFactory: { _, _, _ in ReconstructionManagerFake() },
-            cameraManager: CameraManagerFake(),
-            hapticEngine: HapticsFake(),
-            backgroundWorkRunner: { work in work() }
-        )
-        XCTAssertEqual(scanVC.texturedMeshColorBufferSaveInterval, 20)
+        let assembler = makeAssembler()
+        let configuration = assembler.resolvedConfiguration(settingsStore: settingsStore)
+        XCTAssertEqual(configuration.captureConfiguration.textureSaveInterval, 20)
     }
 
     private func makeAssembler() -> ScanAssembler {

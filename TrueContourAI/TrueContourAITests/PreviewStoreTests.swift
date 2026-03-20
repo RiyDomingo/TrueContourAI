@@ -201,6 +201,132 @@ final class PreviewStoreTests: XCTestCase {
         }
     }
 
+    func testSaveBlockedByQualityGateEmitsAlertAndReturnsReady() {
+        let store = PreviewStore()
+        var effects: [PreviewEffect] = []
+        store.onEffect = { effects.append($0) }
+
+        store.send(.saveBlocked(.qualityGateBlocked(reason: "low quality", advice: "rescan")))
+
+        if case .ready = store.state {
+        } else {
+            XCTFail("Expected ready state after blocked save")
+        }
+        if case .alert(let title, let message, let identifier)? = effects.first {
+            XCTAssertEqual(title, L("scan.quality.gate.title"))
+            XCTAssertEqual(message, String(format: L("scan.quality.gate.message"), "low quality", "rescan"))
+            XCTAssertEqual(identifier, "qualityGateAlert")
+        } else {
+            XCTFail("Expected quality-gate alert")
+        }
+    }
+
+    func testSaveBlockedByMeshNotReadyEmitsAlertAndReturnsReady() {
+        let store = PreviewStore()
+        var effects: [PreviewEffect] = []
+        store.onEffect = { effects.append($0) }
+
+        store.send(.saveBlocked(.meshNotReady))
+
+        if case .ready = store.state {
+        } else {
+            XCTFail("Expected ready state after mesh-not-ready block")
+        }
+        if case .alert(let title, let message, let identifier)? = effects.first {
+            XCTAssertEqual(title, L("scan.preview.meshNotReady.title"))
+            XCTAssertEqual(message, L("scan.preview.meshNotReady.message"))
+            XCTAssertEqual(identifier, "meshNotReadyAlert")
+        } else {
+            XCTFail("Expected mesh-not-ready alert")
+        }
+    }
+
+    func testSaveBlockedByGLTFRequirementEmitsAlertAndReturnsReady() {
+        let store = PreviewStore()
+        var effects: [PreviewEffect] = []
+        store.onEffect = { effects.append($0) }
+
+        store.send(.saveBlocked(.gltfRequired))
+
+        if case .ready = store.state {
+        } else {
+            XCTFail("Expected ready state after GLTF-required block")
+        }
+        if case .alert(let title, let message, let identifier)? = effects.first {
+            XCTAssertEqual(title, L("settings.export.minimum.title"))
+            XCTAssertEqual(message, L("settings.export.minimum.message"))
+            XCTAssertEqual(identifier, "exportFormatsDisabledAlert")
+        } else {
+            XCTFail("Expected GLTF-required alert")
+        }
+    }
+
+    func testSaveBlockedByExportUnavailableEmitsAlertAndReturnsReady() {
+        let store = PreviewStore()
+        var effects: [PreviewEffect] = []
+        store.onEffect = { effects.append($0) }
+
+        store.send(.saveBlocked(.exportUnavailable))
+
+        if case .ready = store.state {
+        } else {
+            XCTFail("Expected ready state after export-unavailable block")
+        }
+        if case .alert(let title, let message, let identifier)? = effects.first {
+            XCTAssertEqual(title, L("scan.preview.exportFailed.title"))
+            XCTAssertEqual(message, String(format: L("scan.preview.exportFailed.message"), L("scan.preview.exportUnavailable.message")))
+            XCTAssertEqual(identifier, "exportUnavailableAlert")
+        } else {
+            XCTFail("Expected export-unavailable alert")
+        }
+    }
+
+    func testSaveInvocationFailureEmitsExportInvocationAlertAndReturnsReady() {
+        let store = PreviewStore()
+        var effects: [PreviewEffect] = []
+        store.onEffect = { effects.append($0) }
+
+        store.send(.saveInvocationFailed("export unavailable"))
+
+        if case .ready = store.state {
+        } else {
+            XCTFail("Expected ready state after invocation failure")
+        }
+        if case .alert(let title, _, let identifier)? = effects.first {
+            XCTAssertEqual(title, L("scan.preview.exportFailed.title"))
+            XCTAssertEqual(identifier, "exportInvocationAlert")
+        } else {
+            XCTFail("Expected export invocation alert")
+        }
+    }
+
+    func testSaveTappedTransitionsToSavingStateWithDisabledActions() {
+        let store = PreviewStore()
+
+        store.send(.saveTapped)
+
+        guard case .saving(let viewData) = store.state else {
+            return XCTFail("Expected saving state")
+        }
+        XCTAssertEqual(viewData.meshingStatusText, L("scan.preview.exporting"))
+        XCTAssertTrue(viewData.meshingSpinnerVisible)
+        XCTAssertFalse(viewData.saveButtonEnabled)
+        XCTAssertFalse(viewData.shareButtonEnabled)
+        XCTAssertFalse(viewData.verifyEarButtonEnabled)
+    }
+
+    func testPostScanLoadedTransitionsToMeshingState() {
+        let store = PreviewStore()
+
+        store.send(.postScanLoaded(makePreviewInput()))
+
+        guard case .meshing(let viewData) = store.state else {
+            return XCTFail("Expected meshing state after post-scan load")
+        }
+        XCTAssertEqual(viewData.meshingStatusText, L("scan.preview.meshing"))
+        XCTAssertTrue(viewData.meshingSpinnerVisible)
+    }
+
     func testNoEarVerificationFailureUsesNoEarAlert() {
         let store = PreviewStore()
         var effects: [PreviewEffect] = []

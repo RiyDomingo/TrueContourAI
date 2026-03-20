@@ -96,6 +96,190 @@ final class PreviewStore {
         }
     }
 
+    private struct ViewDataOverrides {
+        var statusText: String?
+        var spinner: Bool?
+        var saveEnabled: Bool?
+        var shareEnabled: Bool?
+        var verifyEnabled: Bool?
+    }
+
+    private enum EffectFactory {
+        static func missingShareFolder() -> PreviewEffect {
+            .alert(
+                title: L("scan.preview.missingFolder.title"),
+                message: L("scan.preview.missingFolder.message"),
+                identifier: "missingFolderAlert"
+            )
+        }
+
+        static func earServiceUnavailable() -> PreviewEffect {
+            .alert(
+                title: L("scan.preview.earUnavailable.title"),
+                message: L("scan.preview.earUnavailable.message"),
+                identifier: "earUnavailableAlert"
+            )
+        }
+
+        static func exportFailure(message: String, identifier: String) -> PreviewEffect {
+            .alert(
+                title: L("scan.preview.exportFailed.title"),
+                message: String(format: L("scan.preview.exportFailed.message"), message),
+                identifier: identifier
+            )
+        }
+
+        static func loadFailure(message: String) -> PreviewEffect {
+            .alertThenRoute(
+                title: L("scan.preview.missingScene.title"),
+                message: message,
+                identifier: "missingSceneAlert",
+                route: .dismiss
+            )
+        }
+
+        static func blockedSave(_ reason: PreviewBlockReason) -> PreviewEffect {
+            switch reason {
+            case .gltfRequired:
+                return .alert(
+                    title: L("settings.export.minimum.title"),
+                    message: L("settings.export.minimum.message"),
+                    identifier: "exportFormatsDisabledAlert"
+                )
+            case .meshNotReady:
+                return .alert(
+                    title: L("scan.preview.meshNotReady.title"),
+                    message: L("scan.preview.meshNotReady.message"),
+                    identifier: "meshNotReadyAlert"
+                )
+            case .qualityGateBlocked(let reason, let advice):
+                return .alert(
+                    title: L("scan.quality.gate.title"),
+                    message: String(format: L("scan.quality.gate.message"), reason, advice),
+                    identifier: "qualityGateAlert"
+                )
+            case .exportUnavailable:
+                return exportFailure(
+                    message: L("scan.preview.exportUnavailable.message"),
+                    identifier: "exportUnavailableAlert"
+                )
+            }
+        }
+
+        static func earVerificationFailure(message: String) -> PreviewEffect {
+            let isNoEarFailure = message == L("scan.preview.noEar.message")
+            return .alert(
+                title: isNoEarFailure ? L("scan.preview.noEar.title") : L("scan.preview.verifyFailed.title"),
+                message: message,
+                identifier: isNoEarFailure ? "noEarAlert" : "earVerifyFailedAlert"
+            )
+        }
+
+        static func fitFailure(message: String) -> PreviewEffect {
+            .alert(
+                title: L("scan.preview.fit.unavailable.title"),
+                message: message,
+                identifier: "fitUnavailableAlert"
+            )
+        }
+
+        static func earVerified() -> PreviewEffect {
+            .alert(
+                title: L("scan.preview.verified.alert.title"),
+                message: L("scan.preview.verified.alert.message"),
+                identifier: "earVerifiedAlert"
+            )
+        }
+
+        static func meshingTimeout() -> PreviewEffect {
+            .alert(
+                title: L("scan.preview.meshNotReady.title"),
+                message: L("scan.preview.meshNotReady.message"),
+                identifier: "meshTimeoutAlert"
+            )
+        }
+    }
+
+    private struct ViewDataFactory {
+        static func make(
+            render: RenderState,
+            fit: FitState,
+            verification: VerificationState,
+            settings: any AppSettingsReading,
+            overrides: ViewDataOverrides = .init()
+        ) -> PreviewViewData {
+            PreviewViewData(
+                qualityTitle: render.scanQuality?.title,
+                qualityColorToken: qualityToken(for: render.scanQuality),
+                qualityTipText: render.scanQuality?.tip,
+                measurementSummaryText: measurementSummaryText(render: render, fit: fit),
+                meshingStatusText: meshingStatusText(render: render, override: overrides.statusText),
+                meshingSpinnerVisible: overrides.spinner ?? render.isMeshingActive,
+                saveButtonEnabled: overrides.saveEnabled ?? canSave(render: render, settings: settings),
+                shareButtonEnabled: overrides.shareEnabled ?? true,
+                verifyEarButtonEnabled: overrides.verifyEnabled ?? true,
+                fitPanelVisible: settings.developerModeEnabled,
+                fitPanelExpanded: fit.showsPanel,
+                exportFormatSummary: exportFormatSummary(settings: settings),
+                earVerified: verification.hasVerifiedEar
+            )
+        }
+
+        private static func measurementSummaryText(render: RenderState, fit: FitState) -> String? {
+            render.measurementSummary.map {
+                String(
+                    format: L("scan.preview.fit.results.format"),
+                    Int($0.circumferenceMm.rounded()),
+                    Int($0.widthMm.rounded()),
+                    Int($0.depthMm.rounded()),
+                    0,
+                    Int(($0.confidence * 100).rounded())
+                )
+            } ?? fit.latestSummaryText
+        }
+
+        private static func qualityToken(for quality: ScanQuality?) -> PreviewColorToken? {
+            switch quality?.title {
+            case L("scan.preview.quality.great"):
+                return .good
+            case L("scan.preview.quality.ok"):
+                return .ok
+            case .some:
+                return .bad
+            case .none:
+                return nil
+            }
+        }
+
+        private static func meshingStatusText(render: RenderState, override: String?) -> String {
+            if let override {
+                return override
+            }
+            if render.isMeshingActive, let meshingProgressFraction = render.meshingProgressFraction {
+                return String(
+                    format: L("scan.preview.meshing.progressFormat"),
+                    meshingProgressFraction * 100
+                )
+            }
+            if render.isMeshingActive {
+                return L("scan.preview.meshing")
+            }
+            return L("scan.preview.readyToSave")
+        }
+
+        private static func canSave(render: RenderState, settings: any AppSettingsReading) -> Bool {
+            render.meshForExport != nil && settings.exportGLTF && !render.isMeshingActive
+        }
+
+        private static func exportFormatSummary(settings: any AppSettingsReading) -> String {
+            var formats: [String] = []
+            if settings.exportGLTF { formats.append(L("scan.preview.exportFormat.gltf")) }
+            if settings.exportOBJ { formats.append(L("scan.preview.exportFormat.obj")) }
+            if formats.isEmpty { return L("scan.preview.exportFormat.none") }
+            return formats.joined(separator: ", ")
+        }
+    }
+
     private let settingsStore: any AppSettingsReading
     private(set) var phase: Phase = .preview
 
@@ -166,6 +350,10 @@ final class PreviewStore {
         case .saveTapped:
             phase = .saving
             state = .saving(makeViewData(statusText: L("scan.preview.exporting"), spinner: true, saveEnabled: false, shareEnabled: false, verifyEnabled: false))
+        case .saveBlocked(let reason):
+            handleSaveBlocked(reason)
+        case .saveInvocationFailed(let reason):
+            handleSaveInvocationFailed(reason)
         case .shareTapped:
             emitEffect(.hapticPrimary)
         case .closeTapped:
@@ -195,16 +383,11 @@ final class PreviewStore {
         preservedEarVerificationImage: UIImage? = nil,
         preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata? = nil
     ) -> UUID {
-        let sessionID = UUID()
-        session.id = sessionID
-        verification.preservedImage = preservedEarVerificationImage
-        verification.preservedSelectionMetadata = preservedEarVerificationSelectionMetadata
-        session.metrics = nil
-        session.loadedScan = nil
-        resetSessionArtifacts()
-        phase = .preview
-        state = .loading
-        return sessionID
+        beginSession(
+            metrics: nil,
+            preservedEarVerificationImage: preservedEarVerificationImage,
+            preservedEarVerificationSelectionMetadata: preservedEarVerificationSelectionMetadata
+        )
     }
 
     @discardableResult
@@ -213,9 +396,21 @@ final class PreviewStore {
         preservedEarVerificationImage: UIImage? = nil,
         preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata? = nil
     ) -> UUID {
+        beginSession(
+            metrics: sessionMetrics,
+            preservedEarVerificationImage: preservedEarVerificationImage,
+            preservedEarVerificationSelectionMetadata: preservedEarVerificationSelectionMetadata
+        )
+    }
+
+    private func beginSession(
+        metrics: ScanFlowState.ScanSessionMetrics?,
+        preservedEarVerificationImage: UIImage?,
+        preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata?
+    ) -> UUID {
         let sessionID = UUID()
         session.id = sessionID
-        session.metrics = sessionMetrics
+        session.metrics = metrics
         verification.preservedImage = preservedEarVerificationImage
         verification.preservedSelectionMetadata = preservedEarVerificationSelectionMetadata
         session.loadedScan = nil
@@ -355,32 +550,16 @@ final class PreviewStore {
         )
     }
 
-    func blockSave(reason: PreviewBlockReason) {
-        state = .blocked(reason, makeViewData())
-    }
-
-    func restoreReadyState() {
-        refreshState()
-    }
-
     func presentShare(items: [Any], sourceRect: CGRect?) {
         emitEffect(.route(.presentShare(items: items, sourceRect: sourceRect)))
     }
 
     func presentMissingShareFolderAlert() {
-        emitEffect(.alert(
-            title: L("scan.preview.missingFolder.title"),
-            message: L("scan.preview.missingFolder.message"),
-            identifier: "missingFolderAlert"
-        ))
+        emitEffect(EffectFactory.missingShareFolder())
     }
 
     func presentEarServiceUnavailable() {
-        emitEffect(.alert(
-            title: L("scan.preview.earUnavailable.title"),
-            message: L("scan.preview.earUnavailable.message"),
-            identifier: "earUnavailableAlert"
-        ))
+        emitEffect(EffectFactory.earServiceUnavailable())
     }
 
     func evaluateScanQuality(report: ScanQualityReport) -> ScanQuality {
@@ -442,11 +621,7 @@ final class PreviewStore {
             state = .failed(failure, viewData)
             state = .ready(viewData)
             if case .exportFailed(let message) = failure {
-                emitEffect(.alert(
-                    title: L("scan.preview.exportFailed.title"),
-                    message: String(format: L("scan.preview.exportFailed.message"), message),
-                    identifier: "exportFailedAlert"
-                ))
+                emitEffect(EffectFactory.exportFailure(message: message, identifier: "exportFailedAlert"))
             }
         }
     }
@@ -456,19 +631,26 @@ final class PreviewStore {
         state = .failed(failure, makeViewData())
         switch failure {
         case .loadFailed(let message):
-            emitEffect(.alertThenRoute(
-                title: L("scan.preview.missingScene.title"),
-                message: message,
-                identifier: "missingSceneAlert",
-                route: .dismiss
-            ))
+            emitEffect(EffectFactory.loadFailure(message: message))
         case .exportFailed(let message), .verificationFailed(let message), .fitFailed(let message):
-            emitEffect(.alert(
-                title: L("scan.preview.exportFailed.title"),
-                message: message,
-                identifier: "previewLoadFailedAlert"
-            ))
+            emitEffect(EffectFactory.exportFailure(message: message, identifier: "previewLoadFailedAlert"))
         }
+    }
+
+    private func handleSaveBlocked(_ reason: PreviewBlockReason) {
+        phase = .preview
+        let readyViewData = makeViewData()
+        state = .blocked(reason, readyViewData)
+        emitEffect(EffectFactory.blockedSave(reason))
+        state = .ready(readyViewData)
+    }
+
+    private func handleSaveInvocationFailed(_ reason: String) {
+        phase = .preview
+        let readyViewData = makeViewData()
+        state = .failed(.exportFailed(reason), readyViewData)
+        emitEffect(EffectFactory.exportFailure(message: reason, identifier: "exportInvocationAlert"))
+        state = .ready(readyViewData)
     }
 
     private func handleEarVerificationCompleted(_ result: Result<PreviewEarVerificationResult, PreviewFailure>) {
@@ -480,19 +662,10 @@ final class PreviewStore {
                 overlay: verification.earOverlay,
                 cropOverlay: verification.earCropOverlay
             )
-            emitEffect(.alert(
-                title: L("scan.preview.verified.alert.title"),
-                message: L("scan.preview.verified.alert.message"),
-                identifier: "earVerifiedAlert"
-            ))
+            emitEffect(EffectFactory.earVerified())
         case .failure(let failure):
             if case .verificationFailed(let message) = failure {
-                let isNoEarFailure = message == L("scan.preview.noEar.message")
-                emitEffect(.alert(
-                    title: isNoEarFailure ? L("scan.preview.noEar.title") : L("scan.preview.verifyFailed.title"),
-                    message: message,
-                    identifier: isNoEarFailure ? "noEarAlert" : "earVerifyFailedAlert"
-                ))
+                emitEffect(EffectFactory.earVerificationFailure(message: message))
             }
             refreshState()
         }
@@ -507,11 +680,7 @@ final class PreviewStore {
             }
         case .failure(let failure):
             if case .fitFailed(let message) = failure {
-                emitEffect(.alert(
-                    title: L("scan.preview.fit.unavailable.title"),
-                    message: message,
-                    identifier: "fitUnavailableAlert"
-                ))
+                emitEffect(EffectFactory.fitFailure(message: message))
             }
         }
     }
@@ -532,11 +701,7 @@ final class PreviewStore {
 
     private func handleMeshingTimeout() {
         guard phase == .preview, render.meshForExport == nil else { return }
-        emitEffect(.alert(
-            title: L("scan.preview.meshNotReady.title"),
-            message: L("scan.preview.meshNotReady.message"),
-            identifier: "meshTimeoutAlert"
-        ))
+        emitEffect(EffectFactory.meshingTimeout())
     }
 
     private func evaluatePostScanQuality(from action: PreviewAction) {
@@ -577,66 +742,19 @@ final class PreviewStore {
         shareEnabled: Bool? = nil,
         verifyEnabled: Bool? = nil
     ) -> PreviewViewData {
-        let measurementText = render.measurementSummary.map {
-            String(
-                format: L("scan.preview.fit.results.format"),
-                Int($0.circumferenceMm.rounded()),
-                Int($0.widthMm.rounded()),
-                Int($0.depthMm.rounded()),
-                0,
-                Int(($0.confidence * 100).rounded())
+        ViewDataFactory.make(
+            render: render,
+            fit: fit,
+            verification: verification,
+            settings: settingsStore,
+            overrides: .init(
+                statusText: statusText,
+                spinner: spinner,
+                saveEnabled: saveEnabled,
+                shareEnabled: shareEnabled,
+                verifyEnabled: verifyEnabled
             )
-        }
-        let qualityToken: PreviewColorToken?
-        switch render.scanQuality?.title {
-        case L("scan.preview.quality.great"):
-            qualityToken = .good
-        case L("scan.preview.quality.ok"):
-            qualityToken = .ok
-        case .some:
-            qualityToken = .bad
-        case .none:
-            qualityToken = nil
-        }
-
-        let formatSummary = exportFormatSummary()
-        let meshingStatusText: String
-        if let statusText {
-            meshingStatusText = statusText
-        } else if render.isMeshingActive, let meshingProgressFraction = render.meshingProgressFraction {
-            meshingStatusText = String(
-                format: L("scan.preview.meshing.progressFormat"),
-                meshingProgressFraction * 100
-            )
-        } else if render.isMeshingActive {
-            meshingStatusText = L("scan.preview.meshing")
-        } else {
-            meshingStatusText = L("scan.preview.readyToSave")
-        }
-        let canSave = render.meshForExport != nil && settingsStore.exportGLTF && !render.isMeshingActive
-        return PreviewViewData(
-            qualityTitle: render.scanQuality?.title,
-            qualityColorToken: qualityToken,
-            qualityTipText: render.scanQuality?.tip,
-            measurementSummaryText: measurementText ?? fit.latestSummaryText,
-            meshingStatusText: meshingStatusText,
-            meshingSpinnerVisible: spinner ?? render.isMeshingActive,
-            saveButtonEnabled: saveEnabled ?? canSave,
-            shareButtonEnabled: shareEnabled ?? true,
-            verifyEarButtonEnabled: verifyEnabled ?? true,
-            fitPanelVisible: settingsStore.developerModeEnabled,
-            fitPanelExpanded: fit.showsPanel,
-            exportFormatSummary: formatSummary,
-            earVerified: hasVerifiedEar
         )
-    }
-
-    private func exportFormatSummary() -> String {
-        var formats: [String] = []
-        if settingsStore.exportGLTF { formats.append(L("scan.preview.exportFormat.gltf")) }
-        if settingsStore.exportOBJ { formats.append(L("scan.preview.exportFormat.obj")) }
-        if formats.isEmpty { return L("scan.preview.exportFormat.none") }
-        return formats.joined(separator: ", ")
     }
 
     private func emitStateChange() {

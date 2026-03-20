@@ -29,28 +29,12 @@ struct ScanAssembler {
         }
     ) -> AppScanningViewController {
         let settingsStore = dependencies.runtimeSettings
-        let processingConfig = settingsStore.processingConfig
-        let captureTuning = suggestedCaptureTuning(for: processingConfig)
-        let autoFinishSeconds = settingsStore.scanDurationSeconds
-        let requiresManualFinish = true
-        let developerModeEnabled = settingsStore.developerModeEnabled
-        let generatesTexturedMeshes = true
+        let configuration = resolvedConfiguration(settingsStore: settingsStore)
         let orientationSource = ScanInterfaceOrientationSource()
-
-        let captureConfiguration = ScanCaptureConfiguration(
-            maxDepthResolution: captureTuning.maxDepthResolution,
-            textureSaveInterval: captureTuning.textureSaveInterval,
-            developerModeEnabled: developerModeEnabled
-        )
-        let runtimeConfiguration = ScanRuntimeConfiguration(
-            processingConfig: processingConfig,
-            texturedMeshEnabled: generatesTexturedMeshes,
-            textureSaveInterval: captureTuning.textureSaveInterval
-        )
 
         let captureService = ScanCaptureService(
             cameraManager: cameraManager,
-            configuration: captureConfiguration,
+            configuration: configuration.captureConfiguration,
             orientationProvider: { orientationSource.current }
         )
 
@@ -64,9 +48,9 @@ struct ScanAssembler {
                     metalContext.algorithmCommandQueue,
                     2
                 ),
-                configuration: runtimeConfiguration,
-                developerModeEnabled: developerModeEnabled,
-                requiresManualFinish: requiresManualFinish,
+                configuration: configuration.runtimeConfiguration,
+                developerModeEnabled: configuration.viewConfiguration.developerModeEnabled,
+                requiresManualFinish: configuration.requiresManualFinish,
                 backgroundWorkRunner: backgroundWorkRunner
             )
             initialFailure = nil
@@ -82,9 +66,9 @@ struct ScanAssembler {
         let store = ScanStore(
             captureService: captureService,
             runtimeEngine: runtimeEngine,
-            autoFinishSeconds: autoFinishSeconds,
-            requiresManualFinish: requiresManualFinish,
-            developerModeEnabled: developerModeEnabled,
+            autoFinishSeconds: configuration.viewConfiguration.autoFinishSeconds,
+            requiresManualFinish: configuration.requiresManualFinish,
+            developerModeEnabled: configuration.viewConfiguration.developerModeEnabled,
             initialFailure: initialFailure,
             initialFailureAlertIdentifier: "metalUnavailable",
             hapticEngine: hapticEngine
@@ -93,15 +77,35 @@ struct ScanAssembler {
         return AppScanningViewController(
             store: store,
             runtimeEngine: runtimeEngine,
-            autoFinishSeconds: autoFinishSeconds,
-            requiresManualFinish: requiresManualFinish,
-            developerModeEnabled: developerModeEnabled,
-            maxDepthResolution: captureTuning.maxDepthResolution,
-            generatesTexturedMeshes: generatesTexturedMeshes,
-            texturedMeshColorBufferSaveInterval: captureTuning.textureSaveInterval,
-            processingConfig: processingConfig,
+            viewConfiguration: configuration.viewConfiguration,
             orientationSource: orientationSource,
             metalContext: metalContext
+        )
+    }
+
+    func resolvedConfiguration(settingsStore: any AppSettingsReading) -> ResolvedScanFeatureConfiguration {
+        let processingConfig = settingsStore.processingConfig
+        let captureTuning = suggestedCaptureTuning(for: processingConfig)
+        let texturedMeshEnabled = true
+        let requiresManualFinish = true
+
+        return ResolvedScanFeatureConfiguration(
+            captureConfiguration: ScanCaptureConfiguration(
+                maxDepthResolution: captureTuning.maxDepthResolution,
+                textureSaveInterval: captureTuning.textureSaveInterval,
+                developerModeEnabled: settingsStore.developerModeEnabled
+            ),
+            runtimeConfiguration: ScanRuntimeConfiguration(
+                processingConfig: processingConfig,
+                texturedMeshEnabled: texturedMeshEnabled,
+                textureSaveInterval: captureTuning.textureSaveInterval
+            ),
+            viewConfiguration: ScanViewConfiguration(
+                autoFinishSeconds: settingsStore.scanDurationSeconds,
+                developerModeEnabled: settingsStore.developerModeEnabled
+            ),
+            requiresManualFinish: requiresManualFinish,
+            texturedMeshEnabled: texturedMeshEnabled
         )
     }
 

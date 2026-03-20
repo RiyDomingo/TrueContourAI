@@ -20,7 +20,7 @@ final class PreviewViewController: UIViewController {
     private let settingsStore: SettingsStore
     private let runtimeSettings: any AppSettingsReading
     private let scanFlowState: ScanFlowState
-    private let previewSessionController: PreviewSessionController
+    private let previewSessionState: PreviewSessionState
     private let environment: AppEnvironment
     private let saveExportViewState: SaveExportUIStateAdapting
     private let onToast: ((String) -> Void)?
@@ -126,10 +126,7 @@ final class PreviewViewController: UIViewController {
         self.settingsStore = settingsStore
         self.runtimeSettings = runtimeSettings
         self.scanFlowState = scanFlowState
-        self.previewSessionController = PreviewSessionController(
-            store: store,
-            sessionState: previewSessionState
-        )
+        self.previewSessionState = previewSessionState
         self.environment = environment
         self.scanExporter = scanExporter
         self.saveExportViewState = saveExportViewState
@@ -212,12 +209,12 @@ final class PreviewViewController: UIViewController {
 
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
-                let sessionID = self.previewSessionController.beginExistingScanSession(
+                let sessionID = self.previewStore.beginExistingScanSession(
                     preservedEarVerificationImage: presentationData.preservedEarVerificationImage,
                     preservedEarVerificationSelectionMetadata: selectionMetadata
                 )
-                guard self.previewSessionController.isCurrentSession(sessionID) else { return }
-                self.previewSessionController.currentPreviewedFolderURL = item.folderURL
+                guard self.previewStore.isCurrentSession(sessionID) else { return }
+                self.previewSessionState.currentPreviewedFolderURL = item.folderURL
 
                 if self.environment.skipsGLTFPreview {
                     let testVC = self.presentationWorkflow.makeTestPreview(
@@ -279,7 +276,7 @@ final class PreviewViewController: UIViewController {
         payload: ScanPreviewInput,
         sessionMetrics: ScanFlowState.ScanSessionMetrics?
     ) {
-        let previewSessionID = previewSessionController.beginPreviewSession(
+        let previewSessionID = previewStore.beginPreviewSession(
             sessionMetrics: sessionMetrics,
             preservedEarVerificationImage: payload.earVerificationImage,
             preservedEarVerificationSelectionMetadata: payload.earVerificationSelectionMetadata
@@ -308,14 +305,14 @@ final class PreviewViewController: UIViewController {
             in: previewVC,
             sessionID: previewSessionID,
             isCurrentPreviewSession: { [weak self] sessionID in
-                self?.previewSessionController.isCurrentSession(sessionID) ?? false
+                self?.previewStore.isCurrentSession(sessionID) ?? false
             }
         )
         meshingWorkflow.configureCallbacks(
             for: previewVC,
             previewSessionID: previewSessionID,
             isCurrentPreviewSession: { [weak self] sessionID in
-                self?.previewSessionController.isCurrentSession(sessionID) ?? false
+                self?.previewStore.isCurrentSession(sessionID) ?? false
             },
             onMeshReady: { [weak self] mesh in
                 self?.previewStore.setMeshForExport(mesh)
@@ -325,7 +322,7 @@ final class PreviewViewController: UIViewController {
             from: payload.pointCloud,
             previewSessionID: previewSessionID,
             isCurrentPreviewSession: { [weak self] sessionID in
-                self?.previewSessionController.isCurrentSession(sessionID) ?? false
+                self?.previewStore.isCurrentSession(sessionID) ?? false
             }
         )
         configurePostScanSceneUI(previewVC: previewVC)
@@ -364,7 +361,12 @@ final class PreviewViewController: UIViewController {
     @objc
     private func saveTapped() {
         guard let previewVC = previewPresentationController.resolvedScenePreviewViewController else {
-            handleExportInvocationFailure(reason: L("scan.preview.exportUnavailable.message"))
+            let reason = L("scan.preview.exportUnavailable.message")
+            previewStore.send(.saveInvocationFailed(reason))
+            saveExportViewState.hideSavingToast()
+            scanFlowState.setPhase(.preview)
+            onExportResult?(.failure(message: reason))
+            Log.export.error("Save invocation failed: \(reason, privacy: .public)")
             return
         }
 
@@ -373,7 +375,9 @@ final class PreviewViewController: UIViewController {
             qualityReport: previewStore.qualityReport
         )
         if let blocked = exportUseCase.precheck(eligibility) {
-            presentBlockedSave(blocked, on: previewVC)
+            _ = previewVC
+            scanFlowState.setPhase(.preview)
+            previewStore.send(.saveBlocked(blocked))
             return
         }
 
@@ -381,7 +385,8 @@ final class PreviewViewController: UIViewController {
             store: previewStore,
             sceneSnapshot: sceneAdapter.makeSceneSnapshot(from: previewVC)
         ) else {
-            presentBlockedSave(.exportUnavailable, on: previewVC)
+            scanFlowState.setPhase(.preview)
+            previewStore.send(.saveBlocked(.exportUnavailable))
             return
         }
 
@@ -404,11 +409,6 @@ final class PreviewViewController: UIViewController {
             case .failure(let failure):
                 self.scanFlowState.setPhase(.preview)
                 self.previewStore.send(.exportCompleted(.failure(failure)))
-                self.saveExportViewState.markSaveFailed()
-                self.saveExportViewState.setButtonsEnabled(true)
-                self.saveExportViewState.setMeshingStatusText(L("scan.preview.readyToSave"))
-                self.saveExportViewState.setMeshingSpinnerActive(false)
-                self.saveExportViewState.hideSavingToast()
                 if case .exportFailed(let message) = failure {
                     self.onExportResult?(.failure(message: message))
                 }
@@ -421,7 +421,7 @@ final class PreviewViewController: UIViewController {
         previewStore.send(.shareTapped)
         let folder = environment.forcesMissingFolder
             ? nil
-            : (previewSessionController.currentPreviewedFolderURL ?? scanReader.resolveLastScanFolderURL())
+            : (previewSessionState.currentPreviewedFolderURL ?? scanReader.resolveLastScanFolderURL())
         guard let folder else {
             previewStore.presentMissingShareFolderAlert()
             return
@@ -442,14 +442,14 @@ final class PreviewViewController: UIViewController {
             return
         }
 
-        let previewSessionID = previewSessionController.sessionID
+        let previewSessionID = previewStore.sessionID
         isVerifyingEar = true
         earVerificationWorkflow.performVerification(
             using: service,
             previewVC: previewVC,
             isCurrentSession: { [weak self] in
                 guard let self else { return false }
-                return self.previewSessionController.isCurrentSession(previewSessionID)
+                return self.previewStore.isCurrentSession(previewSessionID)
             },
             onComplete: { [weak self] in
                 self?.isVerifyingEar = false
@@ -462,7 +462,7 @@ final class PreviewViewController: UIViewController {
         previewStore.send(.fitTapped)
         fitWorkflow.runFitModelCheck(
             scenePreviewVC: previewPresentationController.resolvedScenePreviewViewController,
-            currentPreviewedFolderURL: previewSessionController.currentPreviewedFolderURL,
+            currentPreviewedFolderURL: previewSessionState.currentPreviewedFolderURL,
             showHaptic: false,
             allowEarPickPrompt: true,
             fitEarPickTarget: self,
@@ -474,7 +474,7 @@ final class PreviewViewController: UIViewController {
     private func exportFitPackTapped() {
         fitWorkflow.exportFitPack(
             scenePreviewVC: previewPresentationController.resolvedScenePreviewViewController,
-            currentPreviewedFolderURL: previewSessionController.currentPreviewedFolderURL
+            currentPreviewedFolderURL: previewSessionState.currentPreviewedFolderURL
         )
     }
 
@@ -495,7 +495,7 @@ final class PreviewViewController: UIViewController {
         if previewStore.latestFitMeshData != nil {
             fitWorkflow.runFitModelCheck(
                 scenePreviewVC: previewPresentationController.resolvedScenePreviewViewController,
-                currentPreviewedFolderURL: previewSessionController.currentPreviewedFolderURL,
+                currentPreviewedFolderURL: previewSessionState.currentPreviewedFolderURL,
                 showHaptic: false,
                 allowEarPickPrompt: false,
                 fitEarPickTarget: self,
@@ -509,7 +509,7 @@ final class PreviewViewController: UIViewController {
         fitWorkflow.handleFitEarPickTap(
             gesture,
             scenePreviewVC: previewPresentationController.resolvedScenePreviewViewController,
-            currentPreviewedFolderURL: previewSessionController.currentPreviewedFolderURL
+            currentPreviewedFolderURL: previewSessionState.currentPreviewedFolderURL
         )
     }
 
@@ -559,11 +559,17 @@ final class PreviewViewController: UIViewController {
     private func handle(effect: PreviewEffect) {
         switch effect {
         case .alert(let title, let message, let identifier):
+            if shouldResetSaveUI(for: identifier) {
+                saveExportViewState.hideSavingToast()
+            }
             present(
                 alertPresenter.makeAlert(title: title, message: message, identifier: identifier),
                 animated: true
             )
         case .alertThenRoute(let title, let message, let identifier, let route):
+            if shouldResetSaveUI(for: identifier) {
+                saveExportViewState.hideSavingToast()
+            }
             let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
             alert.view.accessibilityIdentifier = identifier
             alert.addAction(UIAlertAction(title: L("common.ok"), style: .default) { [weak self] _ in
@@ -656,59 +662,15 @@ final class PreviewViewController: UIViewController {
         }
     }
 
-    private func presentBlockedSave(_ blocked: PreviewBlockReason, on previewVC: UIViewController) {
-        previewStore.blockSave(reason: blocked)
-        scanFlowState.setPhase(.preview)
-
-        let alert: UIAlertController
-        switch blocked {
-        case .gltfRequired:
-            alert = alertPresenter.makeAlert(
-                title: L("settings.export.minimum.title"),
-                message: L("settings.export.minimum.message"),
-                identifier: "exportFormatsDisabledAlert"
-            )
-        case .meshNotReady:
-            alert = alertPresenter.makeAlert(
-                title: L("scan.preview.meshNotReady.title"),
-                message: L("scan.preview.meshNotReady.message"),
-                identifier: "meshNotReadyAlert"
-            )
-        case .qualityGateBlocked(let reason, let advice):
-            alert = alertPresenter.makeAlert(
-                title: L("scan.quality.gate.title"),
-                message: String(format: L("scan.quality.gate.message"), reason, advice),
-                identifier: "qualityGateAlert"
-            )
-        case .exportUnavailable:
-            alert = alertPresenter.makeAlert(
-                title: L("scan.preview.exportFailed.title"),
-                message: String(format: L("scan.preview.exportFailed.message"), L("scan.preview.exportUnavailable.message")),
-                identifier: "exportUnavailableAlert"
-            )
-        }
-        previewVC.present(alert, animated: true)
-        restoreReadyState()
-    }
-
-    private func handleExportInvocationFailure(reason: String) {
-        present(
-            alertPresenter.makeAlert(
-                title: L("scan.preview.exportFailed.title"),
-                message: String(format: L("scan.preview.exportFailed.message"), reason),
-                identifier: "exportInvocationAlert"
-            ),
-            animated: true
-        )
-        scanFlowState.setPhase(.preview)
-        restoreReadyState()
-        onExportResult?(.failure(message: reason))
-        Log.export.error("Save invocation failed: \(reason, privacy: .public)")
-    }
-
-    private func restoreReadyState() {
-        previewStore.restoreReadyState()
-        saveExportViewState.hideSavingToast()
+    private func shouldResetSaveUI(for alertIdentifier: String) -> Bool {
+        [
+            "exportFormatsDisabledAlert",
+            "meshNotReadyAlert",
+            "qualityGateAlert",
+            "exportUnavailableAlert",
+            "exportInvocationAlert",
+            "exportFailedAlert"
+        ].contains(alertIdentifier)
     }
 
     #if DEBUG

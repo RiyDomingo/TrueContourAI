@@ -225,15 +225,7 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         )
         finishButton.tap()
         let saveButton = app.buttons["previewSaveButton"]
-        let saveStateView = app.otherElements["previewSaveStateView"]
         XCTAssertTrue(waitForExists(saveButton, timeout: 30), "Expected preview save button to appear")
-        XCTAssertTrue(waitForExists(saveStateView, timeout: 10), "Expected preview save state view to appear")
-        let previewReady = waitForCondition(timeout: 30) {
-            let state = saveStateView.exists ? (saveStateView.value as? String ?? "") : ""
-            return state == "ready" || saveButton.isEnabled
-        }
-        let initialSaveState = saveStateView.exists ? String(describing: saveStateView.value) : "missing"
-        XCTAssertTrue(previewReady, "Expected preview save flow to become ready before save. state=\(initialSaveState)")
         XCTAssertTrue(waitForEnabled(saveButton, timeout: 30), "Expected preview save button to become enabled before save")
         revealElementIfNeeded(saveButton, in: app)
         XCTAssertTrue(waitForHittable(saveButton, timeout: 4), "Expected preview save button to become hittable")
@@ -241,15 +233,6 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
 
         let homeStart = app.buttons["startScanButton"]
         let previewClose = app.buttons["previewCloseButton"]
-        let enteredSaveFlow = waitForCondition(timeout: 6.0) {
-            let state = saveStateView.exists ? (saveStateView.value as? String ?? "") : ""
-            return ["invoked", "saving", "completed", "blocked", "failed"].contains(state)
-                || !saveButton.exists
-                || !previewClose.exists
-        }
-        let saveStateDescription: String = saveStateView.exists ? String(describing: saveStateView.value) : "missing"
-        XCTAssertTrue(enteredSaveFlow, "Expected preview save state to advance after tapping save. state=\(saveStateDescription)")
-
         let didReturnHome = waitForCondition(timeout: 30.0) {
             homeStart.exists
                 && !previewClose.exists
@@ -263,7 +246,6 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
                 "exportAlert=\(exportAlert.exists ? exportAlert.label : "none")",
                 "qualityAlert=\(qualityAlert.exists ? qualityAlert.label : "none")",
                 "meshAlert=\(meshAlert.exists ? meshAlert.label : "none")",
-                "saveState=\(String(describing: saveStateView.value ?? "nil"))",
                 "homeStart.exists=\(homeStart.exists ? 1 : 0)",
                 "homeStart.hittable=\(homeStart.isHittable ? 1 : 0)",
                 "saveButton.exists=\(saveButton.exists ? 1 : 0)",

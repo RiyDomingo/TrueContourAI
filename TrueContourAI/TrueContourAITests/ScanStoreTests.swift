@@ -20,7 +20,7 @@ final class ScanStoreTests: XCTestCase {
             return XCTFail("Expected failed state")
         }
         XCTAssertEqual(failure.title, L("scan.start.cameraDenied.title"))
-        XCTAssertEqual(effects.last, .alert(title: L("scan.start.cameraDenied.title"), message: L("scan.start.cameraDenied.message"), identifier: "cameraDenied"))
+        XCTAssertEqual(effects.last, .alertThenDismiss(title: L("scan.start.cameraDenied.title"), message: L("scan.start.cameraDenied.message"), identifier: "cameraDenied"))
     }
 
     func testCaptureStartTransitionsToReady() {
@@ -178,6 +178,84 @@ final class ScanStoreTests: XCTestCase {
         }
     }
 
+    func testConfigurationFailureTransitionsToFailedAndDismissAlertEffect() {
+        let store = makeStore()
+        var effects: [ScanEffect] = []
+        store.onEffect = { effects.append($0) }
+
+        store.send(.viewDidAppear)
+        store.send(.startSession)
+        store.send(.captureEvent(.configurationFailed("camera unavailable")))
+
+        guard case .failed(let failure) = store.state else {
+            return XCTFail("Expected failed state")
+        }
+        XCTAssertEqual(failure.message, "camera unavailable")
+        XCTAssertEqual(
+            effects.last,
+            .alertThenDismiss(
+                title: L("scan.start.cameraUnavailable.title"),
+                message: "camera unavailable",
+                identifier: "cameraUnavailable"
+            )
+        )
+    }
+
+    func testThermalShutdownWhileCapturingEmitsDismissAlertAndFinishes() {
+        let capture = ScanCaptureServiceFake()
+        let runtime = ScanRuntimeEngineFake()
+        let store = makeStore(capture: capture, runtime: runtime)
+        var effects: [ScanEffect] = []
+        store.onEffect = { effects.append($0) }
+
+        store.send(.viewDidAppear)
+        store.send(.captureEvent(.started))
+        store.send(.startSession)
+        RunLoop.current.run(until: Date().addingTimeInterval(2.6))
+        store.send(
+            .runtimeEvent(
+                .progress(
+                    ScanProgressSnapshot(
+                        capturedSeconds: 2,
+                        targetSeconds: 50,
+                        progressFraction: 0.04,
+                        manualFinishAllowed: true,
+                        developerDiagnosticsText: nil
+                    )
+                )
+            )
+        )
+
+        store.send(.runtimeEvent(.thermalShutdown))
+
+        guard case .finishing = store.state else {
+            return XCTFail("Expected finishing state after thermal shutdown")
+        }
+        XCTAssertEqual(capture.stopSessionCount, 1)
+        XCTAssertEqual(
+            effects.last,
+            .alertThenDismiss(
+                title: L("scanning.thermal.title"),
+                message: L("scanning.thermal.message"),
+                identifier: "thermalShutdown"
+            )
+        )
+    }
+
+    func testFocusIsForwardedOnlyWhenReady() {
+        let capture = ScanCaptureServiceFake()
+        let store = makeStore(capture: capture)
+
+        store.send(.focusRequested(CGPoint(x: 4, y: 8)))
+        XCTAssertNil(capture.lastFocusPoint)
+
+        store.send(.viewDidAppear)
+        store.send(.captureEvent(.started))
+        store.send(.focusRequested(CGPoint(x: 4, y: 8)))
+
+        XCTAssertEqual(capture.lastFocusPoint, CGPoint(x: 4, y: 8))
+    }
+
     private func makeStore(
         capture: ScanCaptureServiceFake = ScanCaptureServiceFake(),
         runtime: ScanRuntimeEngineFake = ScanRuntimeEngineFake()
@@ -199,6 +277,7 @@ private final class ScanCaptureServiceFake: ScanCaptureServicing {
     var isSessionRunning = true
     private(set) var startSessionCount = 0
     private(set) var stopSessionCount = 0
+    private(set) var lastFocusPoint: CGPoint?
 
     func startSession() {
         startSessionCount += 1
@@ -209,7 +288,9 @@ private final class ScanCaptureServiceFake: ScanCaptureServicing {
         completion?()
     }
 
-    func focus(at location: CGPoint) {}
+    func focus(at location: CGPoint) {
+        lastFocusPoint = location
+    }
 }
 
 private final class ScanRuntimeEngineFake: ScanRuntimeEngining {

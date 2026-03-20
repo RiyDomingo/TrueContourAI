@@ -91,6 +91,11 @@ Do not push export-policy matrix coverage into diagnostics-only smoke assertions
 - New scan persistence/export work should target `ScanRepository` / `ScanExporterService`.
 - UI-test/device-smoke runtime shaping should go through `AppRuntimeSettings`, not persisted `SettingsStore` mutation.
 
+Current exceptions that are still acceptable:
+- `HomeCoordinator` still owns narrow Home-side presentation helpers.
+- Preview still keeps UI/session helper layers for overlays, meshing callback wiring, and existing-scan loading/session plumbing.
+- Scan still keeps `ScanSessionController` and `ScanRuntimeController` as internal timer/platform helpers under the store/runtime boundary.
+
 ## Logging and Diagnostics
 - Use existing structured `Log.*` channels.
 - Avoid `print(...)` for operational events.

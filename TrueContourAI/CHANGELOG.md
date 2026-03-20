@@ -67,6 +67,7 @@ This project follows a simple keep-a-changelog style:
 - UI-test/device-smoke runtime shaping now goes through `AppRuntimeSettings` instead of mutating persisted `SettingsStore`.
 - Preview state ownership is further consolidated around `PreviewStore`; remaining preview workflows are now thin UI/session plumbing rather than alternate product-state owners.
 - PreviewStore internals are now grouped by session/render/fit/verification concern to reduce mutable sprawl without changing external ownership.
+- Scan view cleanup further reduced `AppScanningViewController` to a scan-surface role by moving alert-dismiss policy into `ScanStore` effects and moving assembly/tuning assertions out of controller-owned fields.
 - Test architecture now favors unit coverage for runtime overrides, export-policy matrices, and preview save prechecks; physical-device smoke remains focused on true UI/hardware workflows instead of diagnostics-label artifact assertions.
 
 ### Fixed
@@ -92,4 +93,5 @@ This project follows a simple keep-a-changelog style:
 - Runtime override cleanup: connected-device build succeeded and focused `AppRuntimeSettingsTests`, `SettingsStorageUseCaseTests`, `SettingsViewControllerTests`, `ScanCoordinatorTests`, `ScanStoreTests`, `PreviewCoordinatorExportTests`, and `PreviewStoreTests` passed on `Riy's iPhone` on 2026-03-20
 - Preview ownership consolidation: connected-device build succeeded and focused `PreviewStoreTests`, `PreviewCoordinatorTests`, and `PreviewCoordinatorExportTests` passed on `Riy's iPhone` on 2026-03-20
 - PreviewStore internal refinement: connected-device build succeeded and focused `PreviewStoreTests`, `PreviewCoordinatorTests`, and `PreviewCoordinatorExportTests` passed on `Riy's iPhone` on 2026-03-20
-- Test-architecture cleanup: connected-device UI test target build succeeded, and focused `AppRuntimeSettingsTests`, `PreviewCoordinatorExportTests`, `ScanRepositoryExporterTests`, and `SettingsViewControllerTests` passed on `Riy's iPhone` on 2026-03-20; one representative save/reopen device-smoke rerun still failed and remains an active end-to-end stability check
+- Scan controller cleanup: connected-device build succeeded and focused `ScanStoreTests`, `AppScanningViewControllerTests`, and `ScanCoordinatorTests` passed on `Riy's iPhone` on 2026-03-20
+- Test-architecture cleanup: connected-device UI test target build succeeded, and focused `AppRuntimeSettingsTests`, `PreviewStoreTests`, `PreviewCoordinatorExportTests`, and `ScanStoreTests` passed on `Riy's iPhone` on 2026-03-20; one representative save/reopen device-smoke rerun still failed and remains an active end-to-end stability check

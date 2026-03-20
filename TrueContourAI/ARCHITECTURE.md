@@ -8,10 +8,10 @@ This document explains how TrueContourAI is organized and how scan data moves th
 - Coordinator-assisted flow for scan start, home actions, and preview presentation.
 - Service-oriented persistence/export layer with one production owner per responsibility.
 - Explicit feature state via `HomeViewModel`, `ScanStore`, `PreviewStore`, and `SettingsStore`.
-- Controllers bind/render/forward intents only; stores, coordinators, services, and use cases own the rest.
+- Controllers primarily bind/render/forward intents; the remaining non-stateful UI/platform wiring is kept local to the screen boundary.
 - Two intentional exceptions remain documented here rather than hidden:
   - `HomeCoordinator` still owns narrow Home-side presentation helpers beyond pure routing.
-  - Preview still uses narrow UI/session helper types for hosting, overlays, meshing callbacks, and session bookkeeping.
+  - Preview still uses narrow UI/session helper types for hosting, overlays, meshing callbacks, and existing-scan loading plumbing.
 
 ## Top-Level Modules
 - [TrueContourAI/App](./TrueContourAI/App): app lifecycle and dependency wiring.
@@ -35,6 +35,9 @@ This document explains how TrueContourAI is organized and how scan data moves th
 - `ScanCaptureService`: owns `CameraManager` session lifecycle, frame delivery, and focus requests.
 - `ScanRuntimeEngine`: owns reconstruction/runtime lifecycle, motion/thermal handling, preview payload finalization, and scan render-frame generation.
 - `AppScanningViewController`: renders Metal/UIKit surfaces, binds `ScanStore`, and forwards user intents only.
+- Supporting scan helpers that still remain intentionally:
+  - `ScanSessionController` for countdown and auto-finish timing
+  - `ScanRuntimeController` for idle-timer and thermal-notification plumbing used by `ScanRuntimeEngine`
 - `ScanFlowState`: current phase (`idle/scanning/preview/saving`) plus truthful session timing metrics.
 - `ScanQualityValidator`: quality scoring and export gate advice.
 - `LocalMeasurementGenerationService`: heuristic-only measurement summary generation.
@@ -56,12 +59,11 @@ This document explains how TrueContourAI is organized and how scan data moves th
   - `PreviewPresentationWorkflow`
   - `PreviewOverlayWorkflow`
   - `PreviewOverlayUIController`
-  - `PreviewSessionController`
   - `PreviewSessionWorkflows`
   - `PreviewAlertPresenter`
   - `PreviewButtonConfigurator`
   - `MeshingTimeoutController`
-- These helpers are still active, but they are no longer alternate owners of preview product state. `PreviewStore` remains the feature owner.
+- These helpers are still active, but they are no longer alternate owners of preview product state. `PreviewStore` remains the feature owner while those helpers provide UI/session plumbing.
 
 ### Settings
 - `SettingsAssembler`: stateless factory for Settings feature composition.
@@ -120,6 +122,19 @@ Failure transitions:
 - Some tests still rely on hardware/runtime-sensitive flows and remain slower or less deterministic than ideal.
 - Device smoke on physical TrueDepth hardware remains a release gate.
 - One representative save/reopen smoke path is still the most failure-prone end-to-end check, so unit coverage now carries more of the export-policy matrix that used to live in diagnostics-heavy smoke assertions.
+
+## Current Convergence Summary
+- Fully converged:
+  - assembler-based root composition
+  - repository/exporter ownership
+  - `ScanStore` / `PreviewStore` / `SettingsStore` / `HomeViewModel` as feature state owners
+  - ephemeral runtime overrides through `AppRuntimeSettings`
+- Intentionally retained:
+  - `HomeCoordinator` presentation helpers
+  - Preview UI/session helper layers
+  - Scan timer/runtime helper layers under `ScanStore` / `ScanRuntimeEngine`
+- Acceptable debt:
+  - the save -> return home -> reopen physical-device smoke path is still the most failure-prone release-facing check
 
 ## Closest Reference Implementation
 The scan engine architecture in TrueContourAI is closer to the old `TrueDepthFusion` pattern than `StandardCyborgExample`, because it uses:

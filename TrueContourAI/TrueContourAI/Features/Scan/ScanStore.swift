@@ -84,7 +84,7 @@ final class ScanStore {
                 guard !hasPresentedInitialFailureAlert else { return }
                 hasPresentedInitialFailureAlert = true
                 emitEffect(
-                    .alert(
+                    .alertThenDismiss(
                         title: initialFailure.title,
                         message: initialFailure.message,
                         identifier: initialFailureAlertIdentifier ?? "scanUnavailable"
@@ -197,7 +197,7 @@ final class ScanStore {
                 )
             )
             emitEffect(
-                .alert(
+                .alertThenDismiss(
                     title: L("scan.start.cameraDenied.title"),
                     message: L("scan.start.cameraDenied.message"),
                     identifier: "cameraDenied"
@@ -212,7 +212,7 @@ final class ScanStore {
                 )
             )
             emitEffect(
-                .alert(
+                .alertThenDismiss(
                     title: L("scan.start.cameraUnavailable.title"),
                     message: message,
                     identifier: "cameraUnavailable"
@@ -251,7 +251,7 @@ final class ScanStore {
         case .thermalShutdown:
             thermalWarningVisible = true
             emitEffect(
-                .alert(
+                .alertThenDismiss(
                     title: L("scanning.thermal.title"),
                     message: L("scanning.thermal.message"),
                     identifier: "thermalShutdown"
