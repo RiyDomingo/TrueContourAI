@@ -5,7 +5,7 @@ final class HomeScanFlowController {
     private let settingsStore: SettingsStore
     private let scanCoordinator: ScanCoordinator
     private let homeCoordinator: HomeCoordinator
-    private let previewCoordinator: ScanPreviewCoordinator
+    private let previewCoordinator: PreviewCoordinator
     private let scanFlowState: ScanFlowState
     private let scanSessionController: HomeScanSessionController
     private var latestScanMetrics: ScanFlowState.ScanSessionMetrics?
@@ -14,7 +14,7 @@ final class HomeScanFlowController {
         settingsStore: SettingsStore,
         scanCoordinator: ScanCoordinator,
         homeCoordinator: HomeCoordinator,
-        previewCoordinator: ScanPreviewCoordinator,
+        previewCoordinator: PreviewCoordinator,
         scanFlowState: ScanFlowState,
         scanSessionController: HomeScanSessionController
     ) {

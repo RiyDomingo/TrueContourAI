@@ -1,22 +1,16 @@
 import UIKit
 
 final class HomeRecentScansController: NSObject {
-    private weak var hostViewController: UIViewController?
-    private let homeViewModel: HomeViewModel
-    private let homeCoordinator: HomeCoordinator
-    private let previewCoordinator: ScanPreviewCoordinator
-    private var scans: [ScanItem] = []
+    private let onOpenScan: (URL) -> Void
+    private let onPresentActions: (URL, UIView?) -> Void
+    private var rows: [HomeScanRowViewData] = []
 
     init(
-        hostViewController: UIViewController,
-        homeViewModel: HomeViewModel,
-        homeCoordinator: HomeCoordinator,
-        previewCoordinator: ScanPreviewCoordinator
+        onOpenScan: @escaping (URL) -> Void,
+        onPresentActions: @escaping (URL, UIView?) -> Void
     ) {
-        self.hostViewController = hostViewController
-        self.homeViewModel = homeViewModel
-        self.homeCoordinator = homeCoordinator
-        self.previewCoordinator = previewCoordinator
+        self.onOpenScan = onOpenScan
+        self.onPresentActions = onPresentActions
     }
 
     func attach(to tableView: UITableView) {
@@ -25,14 +19,14 @@ final class HomeRecentScansController: NSObject {
         tableView.register(ScanCardCell.self, forCellReuseIdentifier: ScanCardCell.reuseID)
     }
 
-    func updateScans(_ scans: [ScanItem]) {
-        self.scans = scans
+    func updateRows(_ rows: [HomeScanRowViewData]) {
+        self.rows = rows
     }
 }
 
 extension HomeRecentScansController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        scans.count
+        rows.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -43,27 +37,49 @@ extension HomeRecentScansController: UITableViewDataSource, UITableViewDelegate 
             return UITableViewCell()
         }
 
-        let item = scans[indexPath.row]
-        let insightDisplay = homeViewModel.insight(for: item).map(HomeDisplayFormatter.insight)
-        let badgeDisplay = homeViewModel.qualityBadge(for: item).map(HomeDisplayFormatter.qualityBadge)
+        let row = rows[indexPath.row]
+        let badgeDisplay = row.qualityTier.map {
+            HomeDisplayFormatter.ScanQualityBadgeDisplay(
+                tier: mapTier($0),
+                text: qualityText($0),
+                accessibilityText: String(format: L("home.scan.badge.accessibility"), qualityText($0))
+            )
+        }
         cell.configure(
-            title: item.displayName,
-            date: item.date,
-            thumbnailURL: item.thumbnailURL,
-            detailText: insightDisplay?.compactText,
-            accessibilityDetail: insightDisplay?.accessibilityText,
-            qualityBadge: badgeDisplay
+            title: row.title,
+            date: nil,
+            thumbnailURL: row.thumbnailURL,
+            detailText: row.subtitle,
+            accessibilityDetail: row.subtitle,
+            qualityBadge: badgeDisplay,
+            isOpenEnabled: row.isOpenEnabled
         )
 
         cell.onOpenTapped = { [weak self] in
-            self?.previewCoordinator.presentExistingScan(item)
+            self?.onOpenScan(row.folderURL)
         }
 
         cell.onMoreTapped = { [weak self] sourceView in
-            guard let self, let hostViewController else { return }
-            self.homeCoordinator.presentScanActions(for: item, sourceView: sourceView ?? cell, from: hostViewController)
+            guard let self else { return }
+            self.onPresentActions(row.folderURL, sourceView ?? cell)
         }
 
         return cell
+    }
+
+    private func mapTier(_ tier: ScanQualityTier) -> HomeViewModel.ScanQualityBadge.Tier {
+        switch tier {
+        case .high: return .high
+        case .medium: return .medium
+        case .low: return .low
+        }
+    }
+
+    private func qualityText(_ tier: ScanQualityTier) -> String {
+        switch tier {
+        case .high: return L("home.scan.quality.high")
+        case .medium: return L("home.scan.quality.medium")
+        case .low: return L("home.scan.quality.low")
+        }
     }
 }

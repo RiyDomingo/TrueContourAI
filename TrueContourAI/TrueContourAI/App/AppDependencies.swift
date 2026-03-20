@@ -110,8 +110,11 @@ struct AppDependencies {
         guard environment.isDeviceSmokeMode else { return }
 
         settingsStore.showPreScanChecklist = false
-        if settingsStore.scanDurationSeconds <= 0 {
-            settingsStore.scanDurationSeconds = 10
+        if settingsStore.scanDurationSeconds < 30 {
+            // Keep device-smoke scans long enough for the UI test harness to observe progress
+            // and use the manual finish path before the runtime auto-finishes into preview,
+            // even if a shorter value was persisted by a prior run.
+            settingsStore.scanDurationSeconds = 30
         }
 
         settingsStore.exportGLTF = true
@@ -176,10 +179,16 @@ struct AppDependencies {
             testSeedService = nil
         }
 
-        return ScanRepository(
+        let repository = ScanRepository(
             scansRootURL: scansRootURL,
             testSeedService: testSeedService
         )
+        // Seed the dedicated UI-test scan root before Home's first async refresh begins so
+        // the recent-scans surface is deterministic from the initial launch frame.
+        if environment.isUITestMode {
+            testSeedService?.seedIfNeeded()
+        }
+        return repository
     }
 
     private static func makeScanExporter(

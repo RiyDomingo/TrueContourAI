@@ -1,7 +1,41 @@
 import Foundation
 
+struct SettingsState: Equatable {
+    let showPreScanChecklist: Bool
+    let developerModeEnabled: Bool
+    let exportGLTF: Bool
+    let exportOBJ: Bool
+    let showVerifyEarHint: Bool
+    let scanDurationSeconds: Int
+    let scanQualityConfig: SettingsStore.ScanQualityConfig
+    let processingConfig: SettingsStore.ProcessingConfig
+    let storageUsageText: String
+}
+
+enum SettingsAction {
+    case setShowPreScanChecklist(Bool)
+    case setDeveloperModeEnabled(Bool)
+    case setExportGLTF(Bool)
+    case setExportOBJ(Bool)
+    case setShowVerifyEarHint(Bool)
+    case setScanDurationSeconds(Int)
+    case setQualityGateEnabled(Bool)
+    case setMinQualityScorePercent(Int)
+    case setMinValidPoints(Int)
+    case setMinValidRatioPercent(Int)
+    case refreshStorageRequested
+    case storageUsageUpdated(String)
+    case deleteAllCompleted(Result<Void, Error>)
+    case resetDefaults
+}
+
+enum SettingsEffect: Equatable {
+    case alert(title: String, message: String, identifier: String)
+    case scansChanged
+}
+
 final class SettingsStore {
-    struct ScanQualityConfig {
+    struct ScanQualityConfig: Equatable {
         var gateEnabled: Bool
         var minValidPoints: Int
         var minValidRatio: Float
@@ -19,7 +53,7 @@ final class SettingsStore {
         )
     }
 
-    struct ProcessingConfig {
+    struct ProcessingConfig: Equatable {
         var outlierSigma: Float
         var decimateRatio: Float
         var cropBelowNeck: Bool
@@ -36,9 +70,22 @@ final class SettingsStore {
     }
 
     private let defaults: UserDefaults
+    private var storageUsageText = L("settings.calculating")
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        state = SettingsState(
+            showPreScanChecklist: true,
+            developerModeEnabled: false,
+            exportGLTF: true,
+            exportOBJ: true,
+            showVerifyEarHint: true,
+            scanDurationSeconds: 0,
+            scanQualityConfig: .default,
+            processingConfig: .default,
+            storageUsageText: L("settings.calculating")
+        )
+        syncState()
     }
 
     private enum Keys {
@@ -60,6 +107,16 @@ final class SettingsStore {
         static let processingMeshResolution = "settings_processing_mesh_resolution"
         static let processingMeshSmoothness = "settings_processing_mesh_smoothness"
     }
+
+    private(set) var state: SettingsState {
+        didSet {
+            guard oldValue != state else { return }
+            emitStateChange()
+        }
+    }
+
+    var onStateChange: ((SettingsState) -> Void)?
+    var onEffect: ((SettingsEffect) -> Void)?
 
     var showPreScanChecklist: Bool {
         get { bool(forKey: Keys.showPreScanChecklist, default: true) }
@@ -140,6 +197,78 @@ final class SettingsStore {
         exportGLTF
     }
 
+    func send(_ action: SettingsAction) {
+        switch action {
+        case .setShowPreScanChecklist(let value):
+            showPreScanChecklist = value
+            syncState()
+        case .setDeveloperModeEnabled(let value):
+            developerModeEnabled = value
+            syncState()
+        case .setExportGLTF(let value):
+            guard value || exportOBJ else {
+                emitEffect(.alert(
+                    title: L("settings.export.minimum.title"),
+                    message: L("settings.export.minimum.message"),
+                    identifier: "settings.export.minimum"
+                ))
+                syncState()
+                return
+            }
+            exportGLTF = value
+            syncState()
+        case .setExportOBJ(let value):
+            exportOBJ = value
+            syncState()
+        case .setShowVerifyEarHint(let value):
+            showVerifyEarHint = value
+            syncState()
+        case .setScanDurationSeconds(let value):
+            scanDurationSeconds = value
+            syncState()
+        case .setQualityGateEnabled(let value):
+            var config = scanQualityConfig
+            config.gateEnabled = value
+            scanQualityConfig = config
+            syncState()
+        case .setMinQualityScorePercent(let value):
+            var config = scanQualityConfig
+            config.minQualityScore = Float(value) / 100.0
+            scanQualityConfig = config
+            syncState()
+        case .setMinValidPoints(let value):
+            var config = scanQualityConfig
+            config.minValidPoints = value
+            scanQualityConfig = config
+            syncState()
+        case .setMinValidRatioPercent(let value):
+            var config = scanQualityConfig
+            config.minValidRatio = Float(value) / 100.0
+            scanQualityConfig = config
+            syncState()
+        case .refreshStorageRequested:
+            storageUsageText = L("settings.calculating")
+            syncState()
+        case .storageUsageUpdated(let text):
+            storageUsageText = text
+            syncState()
+        case .deleteAllCompleted(let result):
+            switch result {
+            case .success:
+                emitEffect(.scansChanged)
+            case .failure(let error):
+                emitEffect(.alert(
+                    title: L("settings.delete.failed"),
+                    message: error.localizedDescription,
+                    identifier: "settings.delete.failed"
+                ))
+            }
+        case .resetDefaults:
+            resetToDefaults()
+            syncState()
+        }
+    }
+
     func resetToDefaults() {
         defaults.removeObject(forKey: Keys.showPreScanChecklist)
         defaults.removeObject(forKey: Keys.developerModeEnabled)
@@ -173,5 +302,39 @@ final class SettingsStore {
     private func float(forKey key: String, default defaultValue: Float) -> Float {
         if defaults.object(forKey: key) == nil { return defaultValue }
         return defaults.float(forKey: key)
+    }
+
+    private func syncState() {
+        state = SettingsState(
+            showPreScanChecklist: showPreScanChecklist,
+            developerModeEnabled: developerModeEnabled,
+            exportGLTF: exportGLTF,
+            exportOBJ: exportOBJ,
+            showVerifyEarHint: showVerifyEarHint,
+            scanDurationSeconds: scanDurationSeconds,
+            scanQualityConfig: scanQualityConfig,
+            processingConfig: processingConfig,
+            storageUsageText: storageUsageText
+        )
+    }
+
+    private func emitStateChange() {
+        if Thread.isMainThread {
+            onStateChange?(state)
+        } else {
+            DispatchQueue.main.async { [weak self, state] in
+                self?.onStateChange?(state)
+            }
+        }
+    }
+
+    private func emitEffect(_ effect: SettingsEffect) {
+        if Thread.isMainThread {
+            onEffect?(effect)
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                self?.onEffect?(effect)
+            }
+        }
     }
 }

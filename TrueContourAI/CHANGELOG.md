@@ -12,32 +12,46 @@ This project follows a simple keep-a-changelog style:
 ### Added
 - Release-readiness documentation (`docs/RELEASE_CHECKLIST.md`)
 - CI workflow for build and test-target build validation (`.github/workflows/ios-build.yml`)
-- Preview runtime collaborators:
-  - `PreviewSessionController`
-  - `PreviewPresentationController`
-  - `PreviewRoutingController`
-  - `PreviewInteractionController`
-  - `PreviewExportController`
-  - `PreviewResetController`
-  - `PreviewActionController`
-  - `PreviewSceneUIController`
-  - `PreviewCoordinatorComponents`
-- Scan runtime collaborators:
+- Steady-state feature assemblers:
+  - `HomeAssembler`
+  - `ScanAssembler`
+  - `PreviewAssembler`
+  - `SettingsAssembler`
+- Preview steady-state collaborators:
+  - `PreviewCoordinator`
+  - `PreviewViewController`
+  - `PreviewStore`
+  - `PreviewFeatureModels`
+  - `PreviewSceneAdapter`
+  - `PreviewExportUseCase`
+  - `PreviewFitUseCase`
+  - `PreviewEarVerificationUseCase`
+- Scan steady-state collaborators:
+  - `ScanFeatureModels`
+  - `ScanCaptureService`
+  - `ScanRuntimeEngine`
+  - `ScanStore`
   - `ScanSessionController`
   - `ScanRuntimeController`
-  - `ScanHUDController`
-- Scan storage/export collaborators:
+- Persistence/export collaborators:
   - `ScanRepository`
   - `ScanExporterService`
   - `ScanTestSeedService`
 - Home/Settings support collaborators:
-  - `HomeScanSessionController`
-  - `HomeScanFlowController`
   - `HomeRecentScansController`
   - `HomeFeedbackController`
+  - `HomeScanSessionController`
+  - `HomeScanFlowController`
   - `SettingsFeedbackController`
+  - `SettingsStorageUseCase`
 
 ### Changed
+- Phase 1 boundary hardening now filters incomplete scan folders out of repository-backed listings and last-scan resolution, moves settings delete-all work off the main thread, and freezes `ScanService` as a compatibility adapter over repository/export services.
+- Phase 2 scan extraction now routes TrueDepth capture through `ScanCaptureService`, runtime/reconstruction through `ScanRuntimeEngine`, and all scan HUD/state/effects through `ScanStore`, leaving `AppScanningViewController` as a rendering/binding surface.
+- Phase 3 preview extraction now routes preview phase/state/effects through `PreviewStore`, save/export precheck/execution through `PreviewExportUseCase`, fit logic through `PreviewFitUseCase`, and ear verification through `PreviewEarVerificationUseCase`, with live scene reads isolated behind `PreviewSceneAdapter`.
+- Phase 4 Home/Settings assembly cleanup now routes Home and Settings feature graph construction through `HomeAssembler` and `SettingsAssembler`, removes large collaborator assembly from `HomeViewController`, and moves async settings storage/delete work behind `SettingsStorageUseCase`.
+- Phase 5 debt removal now deletes the concrete `ScanService`, moves shared scan protocols onto the repository/exporter path, adds root-owned `ScanAssembler` and `PreviewAssembler`, and removes obsolete preview transition helpers that duplicated the store/use-case architecture.
+- Final cleanup now aligns project/test/doc naming to `PreviewCoordinator`, `PreviewViewController`, `PreviewStore`, `ScanRepositoryExporterTests`, `PreviewStoreTests`, and `SettingsStorageUseCaseTests`.
 - Separated `TrueContourAITests` from `TrueContourAIUITests` in the shared unit-test scheme
 - Updated repo documentation to reflect physical-device TrueDepth validation requirements
 - Preview/save/reopen flow no longer depends on a single oversized coordinator for most workflow state.
@@ -52,13 +66,22 @@ This project follows a simple keep-a-changelog style:
 - UI-test scan seeding now includes a deterministic `ear_view.png`, and autonomous preview/device-smoke tests can trigger `Verify Ear` without a fresh manual scan.
 
 ### Fixed
+- Removed remaining scan/preview runtime force-unwrap crash paths in `StandardCyborgUI` for Metal/session/SceneKit/resource setup, replacing them with guarded fallbacks.
+- Removed fake preview presenter fallbacks from preview coordinator composition.
+- Removed the concrete legacy `ScanService` type from the active codebase.
+- Removed the active `PreviewCoordinatorComponents` composition wrapper and obsolete preview controller layer (`PreviewRoutingController`, `PreviewInteractionController`, `PreviewExportController`, `PreviewActionController`, `PreviewResetController`, `PreviewSceneUIController`).
+- Removed `ScanHUDController`; scan HUD state now comes from `ScanStore`.
 - Stabilized settings UI-test helpers to wait for an always-visible settings control instead of a non-visible storage-row anchor
 - Removed synchronous capture-state reads from scan callbacks.
 - Hardened package/runtime setup so several Metal/camera failure paths degrade instead of crashing immediately.
-- Full `TrueContourAIUITests` rerun on `Riy's iPhone` passed after tightening the device-smoke save/reopen helper.
 - Fixed a double Y-flip in ear landmark overlay rendering that was placing accepted landmark points above the ear even when crop generation and model output were valid.
 
 ### Validation
 - `TrueContourAIUITests` full physical-device rerun on `Riy's iPhone`: 22 tests passed, 0 failed on 2026-03-09
 - Focused repeated physical-device smoke for `testDeviceSmokeSaveThenReopenFromHome` stayed green across the preview/service/runtime refactor slices on 2026-03-09
 - Ear landmark recovery and overlay fixes: build-verified on 2026-03-14; physical-device confirmation of final anatomical placement still pending on the latest build
+- Phase 2 scan feature extraction: connected-device build succeeded and focused `ScanCoordinatorTests`, `AppScanningViewControllerTests`, and `ScanStoreTests` passed on `Riy's iPhone` on 2026-03-19
+- Phase 3 preview extraction: connected-device build succeeded and focused preview coordinator/export tests and `ScanFlowStateTests` passed on `Riy's iPhone` on 2026-03-19
+- Phase 4 Home/Settings assembly cleanup: connected-device build succeeded and focused `HomeViewModelTests`, `HomeCoordinatorTests`, `SettingsViewControllerTests`, `ScanTimingTests`, and `AccessibilitySmokeTests` passed on `Riy's iPhone` on 2026-03-19
+- Phase 5 debt removal: connected-device build succeeded and focused repository/export, preview coordinator/export, `ScanFlowStateTests`, `HomeViewModelTests`, `HomeCoordinatorTests`, `SettingsViewControllerTests`, `ScanTimingTests`, and `AccessibilitySmokeTests` passed on `Riy's iPhone` on 2026-03-19
+- Final refactor cleanup: connected-device build succeeded and focused `ScanRepositoryExporterTests`, `ScanStoreTests`, `PreviewStoreTests`, `PreviewCoordinatorTests`, `PreviewCoordinatorExportTests`, `SettingsStorageUseCaseTests`, and `SettingsViewControllerTests` passed on `Riy's iPhone` on 2026-03-20

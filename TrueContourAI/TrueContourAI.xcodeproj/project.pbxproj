@@ -15,12 +15,13 @@
 		132BDB622F1FD74300B012E2 /* Core/Utilities/UIView+Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132BDB612F1FD74300B012E2 /* Core/Utilities/UIView+Snapshot.swift */; };
 		132BDB642F1FD83200B012E2 /* Features/Home/PreScanChecklistViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132BDB632F1FD83200B012E2 /* Features/Home/PreScanChecklistViewController.swift */; };
 		132BDB672F1FD9D500B012E2 /* HomeCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132BDB652F1FD9D500B012E2 /* HomeCoordinatorTests.swift */; };
-		132BDB682F1FD9D500B012E2 /* ScanPreviewCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132BDB662F1FD9D500B012E2 /* ScanPreviewCoordinatorTests.swift */; };
+		132BDB682F1FD9D500B012E2 /* PreviewCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132BDB662F1FD9D500B012E2 /* PreviewCoordinatorTests.swift */; };
+		132BDB6F2F1FD9D500B012E2 /* PreviewStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132BDB702F1FD9D500B012E2 /* PreviewStoreTests.swift */; };
 		132BDB6B2F1FE78500B012E2 /* Resources/Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 132BDB692F1FE78500B012E2 /* Resources/Localizable.strings */; };
 		132BDB6C2F1FE78500B012E2 /* Core/Utilities/Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132BDB6A2F1FE78500B012E2 /* Core/Utilities/Localization.swift */; };
 		132BDB6E2F1FE8D500B012E2 /* AccessibilitySmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132BDB6D2F1FE8D500B012E2 /* AccessibilitySmokeTests.swift */; };
 		132BDB912F1FFBFF00B012E2 /* Features/Home/HowToScanViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132BDB902F1FFBFF00B012E2 /* Features/Home/HowToScanViewController.swift */; };
-		132BDB932F20023B00B012E2 /* ScanPreviewCoordinatorExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132BDB922F20023B00B012E2 /* ScanPreviewCoordinatorExportTests.swift */; };
+		132BDB932F20023B00B012E2 /* PreviewCoordinatorExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132BDB922F20023B00B012E2 /* PreviewCoordinatorExportTests.swift */; };
 		1343F3DE2F2108370003238B /* MathAndFormattingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1343F3DD2F2108370003238B /* MathAndFormattingTests.swift */; };
 		136674272F16AED100F7E18B /* App/SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 136674262F16AED100F7E18B /* App/SceneDelegate.swift */; };
 		136674292F1794DF00F7E18B /* Features/Home/ScanCardCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 136674282F1794DF00F7E18B /* Features/Home/ScanCardCell.swift */; };
@@ -38,8 +39,8 @@
 		13DD59932F225F2D00A33CAF /* stb in Frameworks */ = {isa = PBXBuildFile; productRef = 13DD59922F225F2D00A33CAF /* stb */; };
 		13DD59962F225F3E00A33CAF /* tinygltf in Frameworks */ = {isa = PBXBuildFile; productRef = 13DD59952F225F3E00A33CAF /* tinygltf */; };
 		13DD599D2F22698F00A33CAF /* App/AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD599C2F22698F00A33CAF /* App/AppDependencies.swift */; };
-		13DD59AB2F226E2A00A33CAF /* Features/Preview/PreviewViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59AA2F226E2A00A33CAF /* Features/Preview/PreviewViewModel.swift */; };
-		13DD59AD2F226E5800A33CAF /* Features/Preview/ScanPreviewCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59AC2F226E5800A33CAF /* Features/Preview/ScanPreviewCoordinator.swift */; };
+		13DD59AB2F226E2A00A33CAF /* Features/Preview/PreviewStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59AA2F226E2A00A33CAF /* Features/Preview/PreviewStore.swift */; };
+		13DD59AD2F226E5800A33CAF /* Features/Preview/PreviewCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59AC2F226E5800A33CAF /* Features/Preview/PreviewCoordinator.swift */; };
 		13DD59B22F2271000A33CAF /* Features/Preview/MeshingTimeoutController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59B12F2271000A33CAF /* Features/Preview/MeshingTimeoutController.swift */; };
 		13DD59B42F22712A0A33CAF /* MeshingTimeoutControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59B32F22712A0A33CAF /* MeshingTimeoutControllerTests.swift */; };
 		13DD59B62F2274B300A33CAF /* Features/Preview/SaveExportViewStateController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59B52F2274B300A33CAF /* Features/Preview/SaveExportViewStateController.swift */; };
@@ -49,18 +50,26 @@
 		14B200122F7D000100ABC002 /* Features/Preview/PreviewSessionWorkflows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200112F7D000100ABC002 /* Features/Preview/PreviewSessionWorkflows.swift */; };
 		14B200262F7D000100ABC006 /* Features/Preview/PreviewSessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200272F7D000100ABC006 /* Features/Preview/PreviewSessionController.swift */; };
 		14B2002C2F7D000100ABC009 /* Features/Preview/PreviewPresentationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B2002D2F7D000100ABC009 /* Features/Preview/PreviewPresentationController.swift */; };
-		14B200322F7D000100ABC00A /* Features/Preview/PreviewExportController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200332F7D000100ABC00A /* Features/Preview/PreviewExportController.swift */; };
-		14B200382F7D000100ABC00D /* Features/Preview/PreviewInteractionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200392F7D000100ABC00D /* Features/Preview/PreviewInteractionController.swift */; };
-		14B2004C2F7D000100ABC016 /* Features/Preview/PreviewActionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B2004D2F7D000100ABC016 /* Features/Preview/PreviewActionController.swift */; };
-		14B2003A2F7D000100ABC00E /* Features/Preview/PreviewRoutingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B2003B2F7D000100ABC00E /* Features/Preview/PreviewRoutingController.swift */; };
-		14B2004A2F7D000100ABC015 /* Features/Preview/PreviewResetController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B2004B2F7D000100ABC015 /* Features/Preview/PreviewResetController.swift */; };
-		14B200502F7D000100ABC018 /* Features/Preview/PreviewSceneUIController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200512F7D000100ABC018 /* Features/Preview/PreviewSceneUIController.swift */; };
-		14B200522F7D000100ABC019 /* Features/Preview/PreviewCoordinatorComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200532F7D000100ABC019 /* Features/Preview/PreviewCoordinatorComponents.swift */; };
+		14E500012F8D000100ABC001 /* Features/Preview/PreviewPresentationWorkflow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14E500022F8D000100ABC001 /* Features/Preview/PreviewPresentationWorkflow.swift */; };
+		14E500032F8D000100ABC001 /* Features/Preview/PreviewOverlayWorkflow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14E500042F8D000100ABC001 /* Features/Preview/PreviewOverlayWorkflow.swift */; };
+		14D500012F8C000100ABC001 /* Core/Services/ScanLibraryProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D500022F8C000100ABC001 /* Core/Services/ScanLibraryProtocols.swift */; };
+		14D500032F8C000100ABC001 /* Features/Scan/ScanAssembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D500042F8C000100ABC001 /* Features/Scan/ScanAssembler.swift */; };
+		14D500052F8C000100ABC001 /* Features/Preview/PreviewAssembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D500062F8C000100ABC001 /* Features/Preview/PreviewAssembler.swift */; };
+		14C300012F8A000100ABC001 /* Features/Preview/PreviewFeatureModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14C300022F8A000100ABC001 /* Features/Preview/PreviewFeatureModels.swift */; };
+		14C300032F8A000100ABC001 /* Features/Preview/PreviewSceneAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14C300042F8A000100ABC001 /* Features/Preview/PreviewSceneAdapter.swift */; };
+		14C300052F8A000100ABC001 /* Features/Preview/PreviewExportUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14C300062F8A000100ABC001 /* Features/Preview/PreviewExportUseCase.swift */; };
+		14C300072F8A000100ABC001 /* Features/Preview/PreviewFitUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14C300082F8A000100ABC001 /* Features/Preview/PreviewFitUseCase.swift */; };
+		14C300092F8A000100ABC001 /* Features/Preview/PreviewEarVerificationUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14C3000A2F8A000100ABC001 /* Features/Preview/PreviewEarVerificationUseCase.swift */; };
 		14B200402F7D000100ABC010 /* Features/Scan/ScanSessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200412F7D000100ABC010 /* Features/Scan/ScanSessionController.swift */; };
 		14B200422F7D000100ABC011 /* Features/Scan/ScanRuntimeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200432F7D000100ABC011 /* Features/Scan/ScanRuntimeController.swift */; };
-		14B200442F7D000100ABC012 /* Features/Scan/ScanHUDController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200452F7D000100ABC012 /* Features/Scan/ScanHUDController.swift */; };
+		14B200542F7D000100ABC01A /* Features/Scan/ScanFeatureModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200552F7D000100ABC01A /* Features/Scan/ScanFeatureModels.swift */; };
+		14B200562F7D000100ABC01B /* Features/Scan/ScanCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200572F7D000100ABC01B /* Features/Scan/ScanCaptureService.swift */; };
+		14B200582F7D000100ABC01C /* Features/Scan/ScanRuntimeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200592F7D000100ABC01C /* Features/Scan/ScanRuntimeEngine.swift */; };
+		14B2005A2F7D000100ABC01D /* Features/Scan/ScanStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B2005B2F7D000100ABC01D /* Features/Scan/ScanStore.swift */; };
 		14B200462F7D000100ABC013 /* Features/Home/HomeFeedbackController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200472F7D000100ABC013 /* Features/Home/HomeFeedbackController.swift */; };
 		14B200482F7D000100ABC014 /* Features/Settings/SettingsFeedbackController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200492F7D000100ABC014 /* Features/Settings/SettingsFeedbackController.swift */; };
+		14C400012F8B000100ABC001 /* Features/Home/HomeAssembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14C400022F8B000100ABC001 /* Features/Home/HomeAssembler.swift */; };
+		14C400032F8B000100ABC001 /* Features/Settings/SettingsAssembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14C400042F8B000100ABC001 /* Features/Settings/SettingsAssembler.swift */; };
 		13DD59C02F228A0000A33CAF /* Features/Home/ChecklistLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59BF2F228A0000A33CAF /* Features/Home/ChecklistLine.swift */; };
 		13DD59C22F228A0000A33CAF /* Features/Home/HomeHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59C12F228A0000A33CAF /* Features/Home/HomeHeaderView.swift */; };
 		13DD59C42F228A0000A33CAF /* Features/Home/StartScanCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DD59C32F228A0000A33CAF /* Features/Home/StartScanCardView.swift */; };
@@ -70,14 +79,13 @@
 		14B200282F7D000100ABC007 /* Features/Home/HomeScanSessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200292F7D000100ABC007 /* Features/Home/HomeScanSessionController.swift */; };
 		14B2002A2F7D000100ABC008 /* Features/Home/HomeScanFlowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B2002B2F7D000100ABC008 /* Features/Home/HomeScanFlowController.swift */; };
 		14B2002E2F7D000100ABC00A /* Features/Home/HomeRecentScansController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B2002F2F7D000100ABC00A /* Features/Home/HomeRecentScansController.swift */; };
-		13E2D3F42F1CE978003DE022 /* Core/Services/ScanService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13E2D3F32F1CE978003DE022 /* Core/Services/ScanService.swift */; };
 		14B200212F7D000100ABC003 /* Core/Services/ScanServiceSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200202F7D000100ABC003 /* Core/Services/ScanServiceSupport.swift */; };
 		14B200242F7D000100ABC005 /* Core/Services/ScanModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200252F7D000100ABC005 /* Core/Services/ScanModels.swift */; };
 		14B200342F7D000100ABC00B /* Core/Services/ScanRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200352F7D000100ABC00B /* Core/Services/ScanRepository.swift */; };
 		14B200362F7D000100ABC00C /* Core/Services/ScanExporterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B200372F7D000100ABC00C /* Core/Services/ScanExporterService.swift */; };
 		14B2003C2F7D000100ABC00F /* Core/Services/ScanTestSeedService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B2003D2F7D000100ABC00F /* Core/Services/ScanTestSeedService.swift */; };
-		13E2D3F62F1CF4E3003DE022 /* Features/Preview/PreviewContainerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13E2D3F52F1CF4E3003DE022 /* Features/Preview/PreviewContainerViewController.swift */; };
-		13E2D4042F1D0100003DE022 /* ScanServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13E2D4012F1D0100003DE022 /* ScanServiceTests.swift */; };
+		13E2D3F62F1CF4E3003DE022 /* Features/Preview/PreviewViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13E2D3F52F1CF4E3003DE022 /* Features/Preview/PreviewViewController.swift */; };
+		13E2D4042F1D0100003DE022 /* ScanRepositoryExporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13E2D4012F1D0100003DE022 /* ScanRepositoryExporterTests.swift */; };
 		13E2D4052F1D0100003DE022 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 13E2D40B2F1D0100003DE022 /* XCTest.framework */; };
 		13E2D4122F1D0300003DE022 /* EarLandmarksServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13E2D4132F1D0300003DE022 /* EarLandmarksServiceTests.swift */; };
 		13E2D4142F1D1000003DE022 /* Features/Settings/SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13E2D4152F1D1000003DE022 /* Features/Settings/SettingsStore.swift */; };
@@ -98,6 +106,8 @@
 		13F1A0152F6A123400111111 /* AppScanningViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F1A0162F6A123400111111 /* AppScanningViewControllerTests.swift */; };
 		13F1A0172F6A123400111111 /* LocalMeasurementGenerationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F1A0182F6A123400111111 /* LocalMeasurementGenerationServiceTests.swift */; };
 		13F1A0192F6A123400111111 /* SettingsViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F1A01A2F6A123400111111 /* SettingsViewControllerTests.swift */; };
+		13F1A01B2F6A123400111111 /* SettingsStorageUseCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F1A01C2F6A123400111111 /* SettingsStorageUseCaseTests.swift */; };
+		14B2005C2F7D000100ABC01E /* ScanStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14B2005D2F7D000100ABC01E /* ScanStoreTests.swift */; };
 		13FA01012F7B000100ABCDEF /* StandardCyborgFusion in Frameworks */ = {isa = PBXBuildFile; productRef = 766314032CEB185300CC7AF3 /* StandardCyborgFusion */; };
 		13FA01022F7B000100ABCDEF /* StandardCyborgUI in Frameworks */ = {isa = PBXBuildFile; productRef = 766314062CEB186300CC7AF3 /* StandardCyborgUI */; };
 		14A100012F7C000100ABC001 /* Features/Fit/FitModelPackModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14A100112F7C000100ABC001 /* Features/Fit/FitModelPackModels.swift */; };
@@ -154,12 +164,13 @@
 		132BDB612F1FD74300B012E2 /* Core/Utilities/UIView+Snapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Core/Utilities/UIView+Snapshot.swift"; sourceTree = "<group>"; };
 		132BDB632F1FD83200B012E2 /* Features/Home/PreScanChecklistViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/PreScanChecklistViewController.swift; sourceTree = "<group>"; };
 		132BDB652F1FD9D500B012E2 /* HomeCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeCoordinatorTests.swift; sourceTree = "<group>"; };
-		132BDB662F1FD9D500B012E2 /* ScanPreviewCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanPreviewCoordinatorTests.swift; sourceTree = "<group>"; };
+		132BDB662F1FD9D500B012E2 /* PreviewCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewCoordinatorTests.swift; sourceTree = "<group>"; };
+		132BDB702F1FD9D500B012E2 /* PreviewStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewStoreTests.swift; sourceTree = "<group>"; };
 		132BDB692F1FE78500B012E2 /* Resources/Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Resources/Localizable.strings; sourceTree = "<group>"; };
 		132BDB6A2F1FE78500B012E2 /* Core/Utilities/Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Utilities/Localization.swift; sourceTree = "<group>"; };
 		132BDB6D2F1FE8D500B012E2 /* AccessibilitySmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilitySmokeTests.swift; sourceTree = "<group>"; };
 		132BDB902F1FFBFF00B012E2 /* Features/Home/HowToScanViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HowToScanViewController.swift; sourceTree = "<group>"; };
-		132BDB922F20023B00B012E2 /* ScanPreviewCoordinatorExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanPreviewCoordinatorExportTests.swift; sourceTree = "<group>"; };
+		132BDB922F20023B00B012E2 /* PreviewCoordinatorExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewCoordinatorExportTests.swift; sourceTree = "<group>"; };
 		1343F3DD2F2108370003238B /* MathAndFormattingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MathAndFormattingTests.swift; sourceTree = "<group>"; };
 		136674262F16AED100F7E18B /* App/SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/SceneDelegate.swift; sourceTree = "<group>"; };
 		136674282F1794DF00F7E18B /* Features/Home/ScanCardCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/ScanCardCell.swift; sourceTree = "<group>"; };
@@ -170,8 +181,8 @@
 		137465802F150CDA00C2772D /* Features/Scan/EarLandmarksService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Scan/EarLandmarksService.swift; sourceTree = "<group>"; };
 		13806CB42F20C4AD00A6440D /* TrueContourAIUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TrueContourAIUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		13DD599C2F22698F00A33CAF /* App/AppDependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppDependencies.swift; sourceTree = "<group>"; };
-		13DD59AA2F226E2A00A33CAF /* Features/Preview/PreviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewViewModel.swift; sourceTree = "<group>"; };
-		13DD59AC2F226E5800A33CAF /* Features/Preview/ScanPreviewCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/ScanPreviewCoordinator.swift; sourceTree = "<group>"; };
+		13DD59AA2F226E2A00A33CAF /* Features/Preview/PreviewStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewStore.swift; sourceTree = "<group>"; };
+		13DD59AC2F226E5800A33CAF /* Features/Preview/PreviewCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewCoordinator.swift; sourceTree = "<group>"; };
 		13DD59B12F2271000A33CAF /* Features/Preview/MeshingTimeoutController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/MeshingTimeoutController.swift; sourceTree = "<group>"; };
 		13DD59B32F22712A0A33CAF /* MeshingTimeoutControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshingTimeoutControllerTests.swift; sourceTree = "<group>"; };
 		13DD59B52F2274B300A33CAF /* Features/Preview/SaveExportViewStateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/SaveExportViewStateController.swift; sourceTree = "<group>"; };
@@ -181,16 +192,20 @@
 		14B200112F7D000100ABC002 /* Features/Preview/PreviewSessionWorkflows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewSessionWorkflows.swift; sourceTree = "<group>"; };
 		14B200272F7D000100ABC006 /* Features/Preview/PreviewSessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewSessionController.swift; sourceTree = "<group>"; };
 		14B2002D2F7D000100ABC009 /* Features/Preview/PreviewPresentationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewPresentationController.swift; sourceTree = "<group>"; };
-		14B200332F7D000100ABC00A /* Features/Preview/PreviewExportController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewExportController.swift; sourceTree = "<group>"; };
-		14B200392F7D000100ABC00D /* Features/Preview/PreviewInteractionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewInteractionController.swift; sourceTree = "<group>"; };
-		14B2004D2F7D000100ABC016 /* Features/Preview/PreviewActionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewActionController.swift; sourceTree = "<group>"; };
-		14B2003B2F7D000100ABC00E /* Features/Preview/PreviewRoutingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewRoutingController.swift; sourceTree = "<group>"; };
-		14B2004B2F7D000100ABC015 /* Features/Preview/PreviewResetController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewResetController.swift; sourceTree = "<group>"; };
-		14B200512F7D000100ABC018 /* Features/Preview/PreviewSceneUIController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewSceneUIController.swift; sourceTree = "<group>"; };
-		14B200532F7D000100ABC019 /* Features/Preview/PreviewCoordinatorComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewCoordinatorComponents.swift; sourceTree = "<group>"; };
+		14E500022F8D000100ABC001 /* Features/Preview/PreviewPresentationWorkflow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewPresentationWorkflow.swift; sourceTree = "<group>"; };
+		14E500042F8D000100ABC001 /* Features/Preview/PreviewOverlayWorkflow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewOverlayWorkflow.swift; sourceTree = "<group>"; };
+		14C300022F8A000100ABC001 /* Features/Preview/PreviewFeatureModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewFeatureModels.swift; sourceTree = "<group>"; };
+		14C300042F8A000100ABC001 /* Features/Preview/PreviewSceneAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewSceneAdapter.swift; sourceTree = "<group>"; };
+		14C300062F8A000100ABC001 /* Features/Preview/PreviewExportUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewExportUseCase.swift; sourceTree = "<group>"; };
+		14C300082F8A000100ABC001 /* Features/Preview/PreviewFitUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewFitUseCase.swift; sourceTree = "<group>"; };
+		14C3000A2F8A000100ABC001 /* Features/Preview/PreviewEarVerificationUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewEarVerificationUseCase.swift; sourceTree = "<group>"; };
+		14D500062F8C000100ABC001 /* Features/Preview/PreviewAssembler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewAssembler.swift; sourceTree = "<group>"; };
 		14B200412F7D000100ABC010 /* Features/Scan/ScanSessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Scan/ScanSessionController.swift; sourceTree = "<group>"; };
 		14B200432F7D000100ABC011 /* Features/Scan/ScanRuntimeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Scan/ScanRuntimeController.swift; sourceTree = "<group>"; };
-		14B200452F7D000100ABC012 /* Features/Scan/ScanHUDController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Scan/ScanHUDController.swift; sourceTree = "<group>"; };
+		14B200552F7D000100ABC01A /* Features/Scan/ScanFeatureModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Scan/ScanFeatureModels.swift; sourceTree = "<group>"; };
+		14B200572F7D000100ABC01B /* Features/Scan/ScanCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Scan/ScanCaptureService.swift; sourceTree = "<group>"; };
+		14B200592F7D000100ABC01C /* Features/Scan/ScanRuntimeEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Scan/ScanRuntimeEngine.swift; sourceTree = "<group>"; };
+		14B2005B2F7D000100ABC01D /* Features/Scan/ScanStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Scan/ScanStore.swift; sourceTree = "<group>"; };
 		14B200472F7D000100ABC013 /* Features/Home/HomeFeedbackController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeFeedbackController.swift; sourceTree = "<group>"; };
 		13DD59BF2F228A0000A33CAF /* Features/Home/ChecklistLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/ChecklistLine.swift; sourceTree = "<group>"; };
 		13DD59C12F228A0000A33CAF /* Features/Home/HomeHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeHeaderView.swift; sourceTree = "<group>"; };
@@ -201,14 +216,14 @@
 		14B200292F7D000100ABC007 /* Features/Home/HomeScanSessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeScanSessionController.swift; sourceTree = "<group>"; };
 		14B2002B2F7D000100ABC008 /* Features/Home/HomeScanFlowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeScanFlowController.swift; sourceTree = "<group>"; };
 		14B2002F2F7D000100ABC00A /* Features/Home/HomeRecentScansController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeRecentScansController.swift; sourceTree = "<group>"; };
-		13E2D3F32F1CE978003DE022 /* Core/Services/ScanService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Services/ScanService.swift; sourceTree = "<group>"; };
+		14D500022F8C000100ABC001 /* Core/Services/ScanLibraryProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Services/ScanLibraryProtocols.swift; sourceTree = "<group>"; };
 		14B200202F7D000100ABC003 /* Core/Services/ScanServiceSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Services/ScanServiceSupport.swift; sourceTree = "<group>"; };
 		14B200252F7D000100ABC005 /* Core/Services/ScanModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Services/ScanModels.swift; sourceTree = "<group>"; };
 		14B200352F7D000100ABC00B /* Core/Services/ScanRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Services/ScanRepository.swift; sourceTree = "<group>"; };
 		14B200372F7D000100ABC00C /* Core/Services/ScanExporterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Services/ScanExporterService.swift; sourceTree = "<group>"; };
 		14B2003D2F7D000100ABC00F /* Core/Services/ScanTestSeedService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Services/ScanTestSeedService.swift; sourceTree = "<group>"; };
-		13E2D3F52F1CF4E3003DE022 /* Features/Preview/PreviewContainerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewContainerViewController.swift; sourceTree = "<group>"; };
-		13E2D4012F1D0100003DE022 /* ScanServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanServiceTests.swift; sourceTree = "<group>"; };
+		13E2D3F52F1CF4E3003DE022 /* Features/Preview/PreviewViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Preview/PreviewViewController.swift; sourceTree = "<group>"; };
+		13E2D4012F1D0100003DE022 /* ScanRepositoryExporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanRepositoryExporterTests.swift; sourceTree = "<group>"; };
 		13E2D4022F1D0100003DE022 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		13E2D4032F1D0100003DE022 /* TrueContourAITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TrueContourAITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		13E2D40B2F1D0100003DE022 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
@@ -217,7 +232,10 @@
 		13E2D4172F1D1000003DE022 /* Features/Settings/SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Settings/SettingsViewController.swift; sourceTree = "<group>"; };
 		14B200232F7D000100ABC004 /* Features/Settings/SettingsSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Settings/SettingsSupport.swift; sourceTree = "<group>"; };
 		14B200492F7D000100ABC014 /* Features/Settings/SettingsFeedbackController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Settings/SettingsFeedbackController.swift; sourceTree = "<group>"; };
+		14C400022F8B000100ABC001 /* Features/Home/HomeAssembler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeAssembler.swift; sourceTree = "<group>"; };
+		14C400042F8B000100ABC001 /* Features/Settings/SettingsAssembler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Settings/SettingsAssembler.swift; sourceTree = "<group>"; };
 		13E2D4192F1D2000003DE022 /* Features/Scan/ScanCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Scan/ScanCoordinator.swift; sourceTree = "<group>"; };
+		14D500042F8C000100ABC001 /* Features/Scan/ScanAssembler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Scan/ScanAssembler.swift; sourceTree = "<group>"; };
 		13E2D41B2F1D2500003DE022 /* Features/Home/HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeViewModel.swift; sourceTree = "<group>"; };
 		13F0A0022F6A123400111111 /* Features/Scan/AppScanningViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Scan/AppScanningViewController.swift; sourceTree = "<group>"; };
 		13F0A0042F6A123400111111 /* Features/Home/ScanDetailsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/ScanDetailsViewController.swift; sourceTree = "<group>"; };
@@ -232,6 +250,8 @@
 		13F1A0162F6A123400111111 /* AppScanningViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppScanningViewControllerTests.swift; sourceTree = "<group>"; };
 		13F1A0182F6A123400111111 /* LocalMeasurementGenerationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalMeasurementGenerationServiceTests.swift; sourceTree = "<group>"; };
 		13F1A01A2F6A123400111111 /* SettingsViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewControllerTests.swift; sourceTree = "<group>"; };
+		13F1A01C2F6A123400111111 /* SettingsStorageUseCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStorageUseCaseTests.swift; sourceTree = "<group>"; };
+		14B2005D2F7D000100ABC01E /* ScanStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanStoreTests.swift; sourceTree = "<group>"; };
 		14A100112F7C000100ABC001 /* Features/Fit/FitModelPackModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Fit/FitModelPackModels.swift; sourceTree = "<group>"; };
 		14A100122F7C000100ABC001 /* Features/Fit/FitModelPackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Fit/FitModelPackService.swift; sourceTree = "<group>"; };
 		14A100132F7C000100ABC001 /* FitModelPackServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitModelPackServiceTests.swift; sourceTree = "<group>"; };
@@ -292,12 +312,13 @@
 				131CF1392F23C61E00D173CC /* ScanTimingTests.swift */,
 				1343F3DD2F2108370003238B /* MathAndFormattingTests.swift */,
 				13DD59B32F22712A0A33CAF /* MeshingTimeoutControllerTests.swift */,
-				132BDB922F20023B00B012E2 /* ScanPreviewCoordinatorExportTests.swift */,
+				132BDB922F20023B00B012E2 /* PreviewCoordinatorExportTests.swift */,
 				132BDB6D2F1FE8D500B012E2 /* AccessibilitySmokeTests.swift */,
 				132BDB652F1FD9D500B012E2 /* HomeCoordinatorTests.swift */,
-				132BDB662F1FD9D500B012E2 /* ScanPreviewCoordinatorTests.swift */,
+				132BDB662F1FD9D500B012E2 /* PreviewCoordinatorTests.swift */,
+				132BDB702F1FD9D500B012E2 /* PreviewStoreTests.swift */,
 				13E2D4132F1D0300003DE022 /* EarLandmarksServiceTests.swift */,
-				13E2D4012F1D0100003DE022 /* ScanServiceTests.swift */,
+				13E2D4012F1D0100003DE022 /* ScanRepositoryExporterTests.swift */,
 				132BDB5B2F1FD0AC00B012E2 /* ScanFlowStateTests.swift */,
 				13F1A00C2F6A123400111111 /* HomeViewModelTests.swift */,
 				13F1A00E2F6A123400111111 /* SettingsStoreTests.swift */,
@@ -305,8 +326,10 @@
 				13F1A0122F6A123400111111 /* ScanCoordinatorTests.swift */,
 				13F1A0142F6A123400111111 /* ScanQualityValidatorTests.swift */,
 				13F1A0162F6A123400111111 /* AppScanningViewControllerTests.swift */,
+				14B2005D2F7D000100ABC01E /* ScanStoreTests.swift */,
 				13F1A0182F6A123400111111 /* LocalMeasurementGenerationServiceTests.swift */,
 				13F1A01A2F6A123400111111 /* SettingsViewControllerTests.swift */,
+				13F1A01C2F6A123400111111 /* SettingsStorageUseCaseTests.swift */,
 				13E2D4022F1D0100003DE022 /* Info.plist */,
 			);
 			path = TrueContourAITests;
@@ -334,7 +357,7 @@
 		13F1A0032F6A123400111111 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				13E2D3F32F1CE978003DE022 /* Core/Services/ScanService.swift */,
+				14D500022F8C000100ABC001 /* Core/Services/ScanLibraryProtocols.swift */,
 				14B200202F7D000100ABC003 /* Core/Services/ScanServiceSupport.swift */,
 				14B200252F7D000100ABC005 /* Core/Services/ScanModels.swift */,
 				14B200352F7D000100ABC00B /* Core/Services/ScanRepository.swift */,
@@ -381,6 +404,7 @@
 				14B200292F7D000100ABC007 /* Features/Home/HomeScanSessionController.swift */,
 				14B2002B2F7D000100ABC008 /* Features/Home/HomeScanFlowController.swift */,
 				14B2002F2F7D000100ABC00A /* Features/Home/HomeRecentScansController.swift */,
+				14C400022F8B000100ABC001 /* Features/Home/HomeAssembler.swift */,
 				136674282F1794DF00F7E18B /* Features/Home/ScanCardCell.swift */,
 				13DD59BF2F228A0000A33CAF /* Features/Home/ChecklistLine.swift */,
 				132BDB902F1FFBFF00B012E2 /* Features/Home/HowToScanViewController.swift */,
@@ -395,8 +419,12 @@
 			isa = PBXGroup;
 			children = (
 				13F0A0022F6A123400111111 /* Features/Scan/AppScanningViewController.swift */,
-				14B200452F7D000100ABC012 /* Features/Scan/ScanHUDController.swift */,
+				14B200552F7D000100ABC01A /* Features/Scan/ScanFeatureModels.swift */,
+				14B200572F7D000100ABC01B /* Features/Scan/ScanCaptureService.swift */,
+				14B200592F7D000100ABC01C /* Features/Scan/ScanRuntimeEngine.swift */,
 				14B200432F7D000100ABC011 /* Features/Scan/ScanRuntimeController.swift */,
+				14B2005B2F7D000100ABC01D /* Features/Scan/ScanStore.swift */,
+				14D500042F8C000100ABC001 /* Features/Scan/ScanAssembler.swift */,
 				14B200412F7D000100ABC010 /* Features/Scan/ScanSessionController.swift */,
 				13E2D4192F1D2000003DE022 /* Features/Scan/ScanCoordinator.swift */,
 				132BDB572F1FCFAB00B012E2 /* Features/Scan/ScanFlowState.swift */,
@@ -411,9 +439,11 @@
 		13F1A0082F6A123400111111 /* Preview */ = {
 			isa = PBXGroup;
 			children = (
-				13DD59AC2F226E5800A33CAF /* Features/Preview/ScanPreviewCoordinator.swift */,
-				13DD59AA2F226E2A00A33CAF /* Features/Preview/PreviewViewModel.swift */,
-				13E2D3F52F1CF4E3003DE022 /* Features/Preview/PreviewContainerViewController.swift */,
+				13DD59AC2F226E5800A33CAF /* Features/Preview/PreviewCoordinator.swift */,
+				14C300022F8A000100ABC001 /* Features/Preview/PreviewFeatureModels.swift */,
+				13DD59AA2F226E2A00A33CAF /* Features/Preview/PreviewStore.swift */,
+				14C300042F8A000100ABC001 /* Features/Preview/PreviewSceneAdapter.swift */,
+				13E2D3F52F1CF4E3003DE022 /* Features/Preview/PreviewViewController.swift */,
 				13DD59B52F2274B300A33CAF /* Features/Preview/SaveExportViewStateController.swift */,
 				13DD59B72F2278D800A33CAF /* Features/Preview/PreviewOverlayUIController.swift */,
 				13DD59B92F227BE900A33CAF /* Features/Preview/PreviewAlertPresenter.swift */,
@@ -421,13 +451,12 @@
 				14B200112F7D000100ABC002 /* Features/Preview/PreviewSessionWorkflows.swift */,
 				14B200272F7D000100ABC006 /* Features/Preview/PreviewSessionController.swift */,
 				14B2002D2F7D000100ABC009 /* Features/Preview/PreviewPresentationController.swift */,
-				14B200332F7D000100ABC00A /* Features/Preview/PreviewExportController.swift */,
-				14B200392F7D000100ABC00D /* Features/Preview/PreviewInteractionController.swift */,
-				14B2004D2F7D000100ABC016 /* Features/Preview/PreviewActionController.swift */,
-				14B2003B2F7D000100ABC00E /* Features/Preview/PreviewRoutingController.swift */,
-				14B2004B2F7D000100ABC015 /* Features/Preview/PreviewResetController.swift */,
-				14B200512F7D000100ABC018 /* Features/Preview/PreviewSceneUIController.swift */,
-				14B200532F7D000100ABC019 /* Features/Preview/PreviewCoordinatorComponents.swift */,
+				14E500022F8D000100ABC001 /* Features/Preview/PreviewPresentationWorkflow.swift */,
+				14E500042F8D000100ABC001 /* Features/Preview/PreviewOverlayWorkflow.swift */,
+				14C300062F8A000100ABC001 /* Features/Preview/PreviewExportUseCase.swift */,
+				14C300082F8A000100ABC001 /* Features/Preview/PreviewFitUseCase.swift */,
+				14C3000A2F8A000100ABC001 /* Features/Preview/PreviewEarVerificationUseCase.swift */,
+				14D500062F8C000100ABC001 /* Features/Preview/PreviewAssembler.swift */,
 				13DD59B12F2271000A33CAF /* Features/Preview/MeshingTimeoutController.swift */,
 				13F0A00A2F6A123400111111 /* Features/Preview/ScanSummaryBuilder.swift */,
 			);
@@ -441,6 +470,7 @@
 				13E2D4172F1D1000003DE022 /* Features/Settings/SettingsViewController.swift */,
 				14B200232F7D000100ABC004 /* Features/Settings/SettingsSupport.swift */,
 				14B200492F7D000100ABC014 /* Features/Settings/SettingsFeedbackController.swift */,
+				14C400042F8B000100ABC001 /* Features/Settings/SettingsAssembler.swift */,
 			);
 			name = Settings;
 			sourceTree = "<group>";
@@ -667,23 +697,26 @@
 			files = (
 				14A100032F7C000100ABC001 /* FitModelPackServiceTests.swift in Sources */,
 				13E2D4122F1D0300003DE022 /* EarLandmarksServiceTests.swift in Sources */,
-				13E2D4042F1D0100003DE022 /* ScanServiceTests.swift in Sources */,
+				13E2D4042F1D0100003DE022 /* ScanRepositoryExporterTests.swift in Sources */,
 				1343F3DE2F2108370003238B /* MathAndFormattingTests.swift in Sources */,
 				13DD59B42F22712A0A33CAF /* MeshingTimeoutControllerTests.swift in Sources */,
 				131CF13A2F23C61E00D173CC /* ScanTimingTests.swift in Sources */,
 				132BDB6E2F1FE8D500B012E2 /* AccessibilitySmokeTests.swift in Sources */,
 				132BDB5C2F1FD0AC00B012E2 /* ScanFlowStateTests.swift in Sources */,
 				132BDB672F1FD9D500B012E2 /* HomeCoordinatorTests.swift in Sources */,
-				132BDB682F1FD9D500B012E2 /* ScanPreviewCoordinatorTests.swift in Sources */,
-				132BDB932F20023B00B012E2 /* ScanPreviewCoordinatorExportTests.swift in Sources */,
+				132BDB682F1FD9D500B012E2 /* PreviewCoordinatorTests.swift in Sources */,
+				132BDB6F2F1FD9D500B012E2 /* PreviewStoreTests.swift in Sources */,
+				132BDB932F20023B00B012E2 /* PreviewCoordinatorExportTests.swift in Sources */,
 				13F1A00B2F6A123400111111 /* HomeViewModelTests.swift in Sources */,
 				13F1A00D2F6A123400111111 /* SettingsStoreTests.swift in Sources */,
 				13F1A00F2F6A123400111111 /* ScanSummaryBuilderTests.swift in Sources */,
 				13F1A0112F6A123400111111 /* ScanCoordinatorTests.swift in Sources */,
 				13F1A0132F6A123400111111 /* ScanQualityValidatorTests.swift in Sources */,
 				13F1A0152F6A123400111111 /* AppScanningViewControllerTests.swift in Sources */,
+				14B2005C2F7D000100ABC01E /* ScanStoreTests.swift in Sources */,
 				13F1A0172F6A123400111111 /* LocalMeasurementGenerationServiceTests.swift in Sources */,
 				13F1A0192F6A123400111111 /* SettingsViewControllerTests.swift in Sources */,
+				13F1A01B2F6A123400111111 /* SettingsStorageUseCaseTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -697,32 +730,38 @@
 				1374657B2F12A2C300C2772D /* Features/Scan/HeadMeasurementService.swift in Sources */,
 				7642B7FE21E679E800BC45C7 /* Features/Home/HomeViewController.swift in Sources */,
 				13E2D4182F1D2000003DE022 /* Features/Scan/ScanCoordinator.swift in Sources */,
-				14B200442F7D000100ABC012 /* Features/Scan/ScanHUDController.swift in Sources */,
+				14B200562F7D000100ABC01B /* Features/Scan/ScanCaptureService.swift in Sources */,
+				14B200542F7D000100ABC01A /* Features/Scan/ScanFeatureModels.swift in Sources */,
+				14B200582F7D000100ABC01C /* Features/Scan/ScanRuntimeEngine.swift in Sources */,
 				14B200402F7D000100ABC010 /* Features/Scan/ScanSessionController.swift in Sources */,
 				14B200422F7D000100ABC011 /* Features/Scan/ScanRuntimeController.swift in Sources */,
+				14B2005A2F7D000100ABC01D /* Features/Scan/ScanStore.swift in Sources */,
+				14D500032F8C000100ABC001 /* Features/Scan/ScanAssembler.swift in Sources */,
 				13E2D41A2F1D2500003DE022 /* Features/Home/HomeViewModel.swift in Sources */,
+				14C400012F8B000100ABC001 /* Features/Home/HomeAssembler.swift in Sources */,
 				13E2D4142F1D1000003DE022 /* Features/Settings/SettingsStore.swift in Sources */,
 				13E2D4162F1D1000003DE022 /* Features/Settings/SettingsViewController.swift in Sources */,
 				13F0A0072F6A123400111111 /* Features/Scan/LocalMeasurementGenerationService.swift in Sources */,
 				13F0A0092F6A123400111111 /* Features/Preview/ScanSummaryBuilder.swift in Sources */,
 				132BDB592F1FCFAB00B012E2 /* Features/Scan/ScanQuality.swift in Sources */,
 				132BDB5A2F1FCFAB00B012E2 /* Features/Scan/ScanFlowState.swift in Sources */,
-				13DD59AB2F226E2A00A33CAF /* Features/Preview/PreviewViewModel.swift in Sources */,
+				13DD59AB2F226E2A00A33CAF /* Features/Preview/PreviewStore.swift in Sources */,
 				13DD59B22F2271000A33CAF /* Features/Preview/MeshingTimeoutController.swift in Sources */,
 				13DD59B62F2274B300A33CAF /* Features/Preview/SaveExportViewStateController.swift in Sources */,
 				13DD59B82F2278D800A33CAF /* Features/Preview/PreviewOverlayUIController.swift in Sources */,
 				13DD59BA2F227BE900A33CAF /* Features/Preview/PreviewAlertPresenter.swift in Sources */,
 				13DD59BC2F227E3200A33CAF /* Features/Preview/PreviewButtonConfigurator.swift in Sources */,
 				14B200122F7D000100ABC002 /* Features/Preview/PreviewSessionWorkflows.swift in Sources */,
+				14C300012F8A000100ABC001 /* Features/Preview/PreviewFeatureModels.swift in Sources */,
 				14B200262F7D000100ABC006 /* Features/Preview/PreviewSessionController.swift in Sources */,
 				14B2002C2F7D000100ABC009 /* Features/Preview/PreviewPresentationController.swift in Sources */,
-				14B200322F7D000100ABC00A /* Features/Preview/PreviewExportController.swift in Sources */,
-				14B200382F7D000100ABC00D /* Features/Preview/PreviewInteractionController.swift in Sources */,
-				14B2004C2F7D000100ABC016 /* Features/Preview/PreviewActionController.swift in Sources */,
-				14B2003A2F7D000100ABC00E /* Features/Preview/PreviewRoutingController.swift in Sources */,
-				14B2004A2F7D000100ABC015 /* Features/Preview/PreviewResetController.swift in Sources */,
-				14B200502F7D000100ABC018 /* Features/Preview/PreviewSceneUIController.swift in Sources */,
-				14B200522F7D000100ABC019 /* Features/Preview/PreviewCoordinatorComponents.swift in Sources */,
+				14E500012F8D000100ABC001 /* Features/Preview/PreviewPresentationWorkflow.swift in Sources */,
+				14E500032F8D000100ABC001 /* Features/Preview/PreviewOverlayWorkflow.swift in Sources */,
+				14C300052F8A000100ABC001 /* Features/Preview/PreviewExportUseCase.swift in Sources */,
+				14C300072F8A000100ABC001 /* Features/Preview/PreviewFitUseCase.swift in Sources */,
+				14C300092F8A000100ABC001 /* Features/Preview/PreviewEarVerificationUseCase.swift in Sources */,
+				14D500052F8C000100ABC001 /* Features/Preview/PreviewAssembler.swift in Sources */,
+				14C300032F8A000100ABC001 /* Features/Preview/PreviewSceneAdapter.swift in Sources */,
 				13DD59C02F228A0000A33CAF /* Features/Home/ChecklistLine.swift in Sources */,
 				13DD59C22F228A0000A33CAF /* Features/Home/HomeHeaderView.swift in Sources */,
 				13DD59C42F228A0000A33CAF /* Features/Home/StartScanCardView.swift in Sources */,
@@ -734,7 +773,7 @@
 				14B2002A2F7D000100ABC008 /* Features/Home/HomeScanFlowController.swift in Sources */,
 				14B2002E2F7D000100ABC00A /* Features/Home/HomeRecentScansController.swift in Sources */,
 				132BDB622F1FD74300B012E2 /* Core/Utilities/UIView+Snapshot.swift in Sources */,
-				13E2D3F42F1CE978003DE022 /* Core/Services/ScanService.swift in Sources */,
+				14D500012F8C000100ABC001 /* Core/Services/ScanLibraryProtocols.swift in Sources */,
 				14B200212F7D000100ABC003 /* Core/Services/ScanServiceSupport.swift in Sources */,
 				14B200242F7D000100ABC005 /* Core/Services/ScanModels.swift in Sources */,
 				14B200342F7D000100ABC00B /* Core/Services/ScanRepository.swift in Sources */,
@@ -751,10 +790,11 @@
 				13DD599D2F22698F00A33CAF /* App/AppDependencies.swift in Sources */,
 				14B200222F7D000100ABC004 /* Features/Settings/SettingsSupport.swift in Sources */,
 				14B200482F7D000100ABC014 /* Features/Settings/SettingsFeedbackController.swift in Sources */,
+				14C400032F8B000100ABC001 /* Features/Settings/SettingsAssembler.swift in Sources */,
 				1374657F2F150C9C00C2772D /* Resources/MLModels/SCEarTrackingModel.mlmodel in Sources */,
-				13DD59AD2F226E5800A33CAF /* Features/Preview/ScanPreviewCoordinator.swift in Sources */,
+				13DD59AD2F226E5800A33CAF /* Features/Preview/PreviewCoordinator.swift in Sources */,
 				7642B7FC21E679E800BC45C7 /* App/AppDelegate.swift in Sources */,
-				13E2D3F62F1CF4E3003DE022 /* Features/Preview/PreviewContainerViewController.swift in Sources */,
+				13E2D3F62F1CF4E3003DE022 /* Features/Preview/PreviewViewController.swift in Sources */,
 				132BDB912F1FFBFF00B012E2 /* Features/Home/HowToScanViewController.swift in Sources */,
 				137465812F150CDA00C2772D /* Features/Scan/EarLandmarksService.swift in Sources */,
 				136674272F16AED100F7E18B /* App/SceneDelegate.swift in Sources */,

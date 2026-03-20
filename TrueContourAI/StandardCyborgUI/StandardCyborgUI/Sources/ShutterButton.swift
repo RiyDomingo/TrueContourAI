@@ -15,6 +15,9 @@ import UIKit
 
 /** Clients can customize by setting their own images per state */
 @objc public class ShutterButton: UIButton {
+    private static func loadImage(named name: String) -> UIImage {
+        UIImage(named: name, in: Bundle.scuiResourcesBundle, compatibleWith: nil) ?? UIImage()
+    }
     
     // MARK: - UIView
     
@@ -45,9 +48,9 @@ import UIKit
     // MARK: - Private
     
     private var _imageForState: [ShutterButtonState: UIImage] = [
-        .default: UIImage(named: "ShutterButton", in: Bundle.scuiResourcesBundle, compatibleWith: nil)!,
-        .countdown: UIImage(named: "ShutterButton-Selected", in: Bundle.scuiResourcesBundle, compatibleWith: nil)!,
-        .scanning: UIImage(named: "ShutterButton-Recording", in: Bundle.scuiResourcesBundle, compatibleWith: nil)!,
+        .default: loadImage(named: "ShutterButton"),
+        .countdown: loadImage(named: "ShutterButton-Selected"),
+        .scanning: loadImage(named: "ShutterButton-Recording"),
     ]
     
     private func _updateButtonImage() {

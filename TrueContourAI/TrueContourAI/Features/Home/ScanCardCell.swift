@@ -160,26 +160,35 @@ final class ScanCardCell: UITableViewCell {
 
     func configure(
         title: String,
-        date: Date,
+        date: Date?,
         thumbnailURL: URL?,
         detailText: String?,
         accessibilityDetail: String?,
-        qualityBadge: HomeDisplayFormatter.ScanQualityBadgeDisplay?
+        qualityBadge: HomeDisplayFormatter.ScanQualityBadgeDisplay?,
+        isOpenEnabled: Bool
     ) {
         titleLabel.text = title
         applyQualityBadge(qualityBadge)
-        let dateText = Self.df.string(from: date)
-        if let detailText, !detailText.isEmpty {
+        let dateText = date.map { Self.df.string(from: $0) }
+        if let dateText, let detailText, !detailText.isEmpty {
             dateLabel.text = "\(dateText)\n\(detailText)"
-        } else {
+        } else if let dateText {
             dateLabel.text = dateText
-        }
-        if let accessibilityDetail, !accessibilityDetail.isEmpty {
-            accessibilityLabel = "\(title), \(dateText), \(accessibilityDetail)"
         } else {
+            dateLabel.text = detailText
+        }
+        if let dateText, let accessibilityDetail, !accessibilityDetail.isEmpty {
+            accessibilityLabel = "\(title), \(dateText), \(accessibilityDetail)"
+        } else if let dateText {
             accessibilityLabel = "\(title), \(dateText)"
+        } else if let accessibilityDetail, !accessibilityDetail.isEmpty {
+            accessibilityLabel = "\(title), \(accessibilityDetail)"
+        } else {
+            accessibilityLabel = title
         }
         accessibilityHint = L("scan.card.hint")
+        openButton.isEnabled = isOpenEnabled
+        DesignSystem.updateButtonEnabled(openButton, style: .secondary)
 
         currentThumbnailURL = thumbnailURL
         thumbView.image = nil

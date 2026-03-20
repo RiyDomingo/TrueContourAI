@@ -1,87 +1,16 @@
-//
-//  HomeViewController.swift
-//  TrueContourAI
-//
-
 import UIKit
 import StandardCyborgUI
 import StandardCyborgFusion
 
 final class HomeViewController: UIViewController {
+    private let homeViewModel: HomeViewModel
+    private let feedbackController: HomeFeedbackController
+    private let homeCoordinator: HomeCoordinator
+    private let recentScansController: HomeRecentScansController
 
-    // MARK: - State
-    private let environment: AppEnvironment
-    private let earServiceFactory: () -> EarLandmarksService?
-
-    private let scanFlowState = ScanFlowState()
-    private let previewSessionState = PreviewSessionState()
-
-    private let scanListing: any ScanListing
-    private let scanLibrary: any HomeScanManaging & SettingsScanServicing
-    private let previewScanService: any PreviewScanReading
-    private let scanExporter: ScanExporting
-    private lazy var homeViewModel = HomeViewModel(scanService: scanListing)
-
-    private let settingsStore: SettingsStore
-    private lazy var scanSessionController = HomeScanSessionController(environment: environment)
-    private lazy var feedbackController = HomeFeedbackController(
-        hostViewController: self,
-        environment: environment,
-        diagnosticsTextProvider: { [weak self] in
-            self?.scanSessionController.deviceSmokeDiagnosticsText()
-        }
-    )
-    private lazy var scanCoordinator = ScanCoordinator(settingsStore: settingsStore, environment: environment)
-    private lazy var homeCoordinator = HomeCoordinator(
-        scanService: scanLibrary,
-        settingsStore: settingsStore,
-        previewSessionState: previewSessionState
-    )
-    private lazy var previewCoordinator = ScanPreviewCoordinator(
-        presenter: self,
-        scanService: previewScanService,
-        settingsStore: settingsStore,
-        scanFlowState: scanFlowState,
-        previewSessionState: previewSessionState,
-        environment: environment,
-        scanExporter: scanExporter,
-        earServiceFactory: earServiceFactory,
-        onToast: { [weak self] message in
-            self?.feedbackController.handleToast(message)
-        }
-    )
-    private lazy var recentScansController = HomeRecentScansController(
-        hostViewController: self,
-        homeViewModel: homeViewModel,
-        homeCoordinator: homeCoordinator,
-        previewCoordinator: previewCoordinator
-    )
-    private lazy var scanFlowController = HomeScanFlowController(
-        settingsStore: settingsStore,
-        scanCoordinator: scanCoordinator,
-        homeCoordinator: homeCoordinator,
-        previewCoordinator: previewCoordinator,
-        scanFlowState: scanFlowState,
-        scanSessionController: scanSessionController
-    )
-
-    init(dependencies: AppDependencies) {
-        self.environment = dependencies.environment
-        self.earServiceFactory = dependencies.earServiceFactory
-        self.scanListing = dependencies.scanRepository
-        self.scanLibrary = dependencies.scanRepository
-        self.previewScanService = dependencies.scanRepository
-        self.scanExporter = dependencies.scanExporter
-        self.settingsStore = dependencies.settingsStore
-        super.init(nibName: nil, bundle: nil)
-    }
-
-    @available(*, unavailable, message: "Programmatic-only. Use init(dependencies:).")
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) is unavailable")
-    }
-
-    // MARK: - UI
+    var previewCoordinator: PreviewCoordinator?
+    var scanFlowController: HomeScanFlowController?
+    var scanSessionController: HomeScanSessionController?
 
     private let scrollView: UIScrollView = {
         let s = UIScrollView()
@@ -104,7 +33,24 @@ final class HomeViewController: UIViewController {
 
     override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
 
-    // MARK: - Lifecycle
+    init(
+        homeViewModel: HomeViewModel,
+        feedbackController: HomeFeedbackController,
+        homeCoordinator: HomeCoordinator,
+        recentScansController: HomeRecentScansController
+    ) {
+        self.homeViewModel = homeViewModel
+        self.feedbackController = feedbackController
+        self.homeCoordinator = homeCoordinator
+        self.recentScansController = recentScansController
+        super.init(nibName: nil, bundle: nil)
+        feedbackController.attach(hostViewController: self)
+    }
+
+    @available(*, unavailable, message: "Programmatic-only. Use HomeAssembler.")
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is unavailable")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -112,37 +58,34 @@ final class HomeViewController: UIViewController {
 
         buildUI()
         wireActions()
-
         recentScansController.attach(to: recentScansView.tableView)
 
-        if case .failure = scanLibrary.ensureScansRootFolder() {
-            feedbackController.presentStorageUnavailableAlert()
+        homeCoordinator.presentStorageUnavailableIfNeeded(from: self)
+
+        homeViewModel.onStateChange = { [weak self] in
+            self?.apply(state: $0)
         }
-        homeViewModel.onChange = { [weak self] in
-            self?.applyHomeViewModel()
+        homeViewModel.onEffect = { [weak self] effect in
+            switch effect {
+            case .refreshDiagnostics:
+                self?.feedbackController.refreshDiagnosticsIfNeeded()
+            }
         }
-        homeViewModel.refresh()
 
         homeCoordinator.onScansChanged = { [weak self] in
-            self?.homeViewModel.refresh()
-            self?.feedbackController.refreshDiagnosticsIfNeeded()
+            self?.homeViewModel.send(.scansChangedExternally)
         }
-        homeCoordinator.onOpenScan = { [weak self] item in
-            self?.previewCoordinator.presentExistingScan(item)
+        previewCoordinator?.onScansChanged = { [weak self] in
+            self?.homeViewModel.send(.scansChangedExternally)
         }
-        previewCoordinator.onScansChanged = { [weak self] in
-            self?.homeViewModel.refresh()
-            self?.feedbackController.refreshDiagnosticsIfNeeded()
-        }
+
+        homeViewModel.send(.viewDidLoad)
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        homeViewModel.refresh()
-        feedbackController.refreshDiagnosticsIfNeeded()
+        homeViewModel.send(.viewWillAppear)
     }
-
-    // MARK: - UI Layout
 
     private func buildUI() {
         view.addSubview(scrollView)
@@ -158,7 +101,6 @@ final class HomeViewController: UIViewController {
             contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
             contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
             contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
-
             contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)
         ])
 
@@ -208,11 +150,9 @@ final class HomeViewController: UIViewController {
         startScanCardView.startScanButton.accessibilityIdentifier = "startScanButton"
     }
 
-    // MARK: - Actions
-
     @objc private func startScanTapped() {
         DesignSystem.hapticPrimary()
-        scanFlowController.startScan(from: self, delegate: self)
+        scanFlowController?.startScan(from: self, delegate: self)
     }
 
     @objc private func viewLastScanTapped() {
@@ -232,86 +172,67 @@ final class HomeViewController: UIViewController {
     }
 
     @objc private func sortModeChanged() {
-        let selectedIndex = recentScansView.sortControl.selectedSegmentIndex
-        let mode = HomeViewModel.ScanSortMode(rawValue: selectedIndex) ?? .dateNewest
-        homeViewModel.updateSortMode(mode)
+        let mode = HomeViewModel.ScanSortMode(rawValue: recentScansView.sortControl.selectedSegmentIndex) ?? .dateNewest
+        homeViewModel.send(.sortChanged(mode))
     }
 
     @objc private func filterModeChanged() {
-        let selectedIndex = recentScansView.filterControl.selectedSegmentIndex
-        let mode = HomeViewModel.ScanFilterMode(rawValue: selectedIndex) ?? .all
-        homeViewModel.updateFilterMode(mode)
+        let mode = HomeViewModel.ScanFilterMode(rawValue: recentScansView.filterControl.selectedSegmentIndex) ?? .all
+        homeViewModel.send(.filterChanged(mode))
     }
 
     @objc private func clearFilterTapped() {
-        homeViewModel.updateFilterMode(.all)
+        homeViewModel.send(.clearFilter)
     }
 
-    // MARK: - Scans folder I/O
-
-    private func applyHomeViewModel() {
-        let viewState = homeViewModel.makeViewState()
-        recentScansController.updateScans(viewState.scans)
-        let trendDisplay = viewState.trend.map(HomeDisplayFormatter.trend)
+    private func apply(state: HomeState) {
+        let viewData = state.viewData
+        recentScansController.updateRows(viewData.scanRows)
         headerView.applySubtitle(
-            baseText: L("home.subtitle"),
-            trendText: trendDisplay?.compactText,
-            trendAccessibilityText: trendDisplay?.accessibilityText
+            baseText: viewData.subtitleText,
+            trendText: viewData.trendText,
+            trendAccessibilityText: viewData.trendAccessibilityText
         )
-        recentScansView.sortControl.selectedSegmentIndex = viewState.sortMode.rawValue
-        recentScansView.filterControl.selectedSegmentIndex = viewState.filterMode.rawValue
-        recentScansView.emptyLabel.isHidden = !viewState.isEmpty
-        if viewState.isFilteredEmpty {
+        recentScansView.sortControl.selectedSegmentIndex = viewData.selectedSortMode.rawValue
+        recentScansView.filterControl.selectedSegmentIndex = viewData.selectedFilterMode.rawValue
+        recentScansView.emptyLabel.isHidden = !viewData.isEmpty
+        if viewData.isFilteredEmpty {
             recentScansView.emptyLabel.text = L("home.empty.filtered.goodplus")
             recentScansView.emptyCTAButton.isHidden = true
             recentScansView.clearFilterButton.isHidden = false
         } else {
             recentScansView.emptyLabel.text = L("home.empty")
-            recentScansView.emptyCTAButton.isHidden = !viewState.isEmpty
+            recentScansView.emptyCTAButton.isHidden = !viewData.isEmpty
             recentScansView.clearFilterButton.isHidden = true
         }
         recentScansView.emptyCTAButton.isAccessibilityElement = !recentScansView.emptyCTAButton.isHidden
         recentScansView.clearFilterButton.isAccessibilityElement = !recentScansView.clearFilterButton.isHidden
         recentScansView.tableView.reloadData()
-        recentScansView.tableView.alwaysBounceVertical = !viewState.isEmpty
-        actionRowView.viewLastScanButton.isEnabled = viewState.canViewLast
+        recentScansView.tableView.alwaysBounceVertical = !viewData.isEmpty
+        actionRowView.viewLastScanButton.isEnabled = viewData.canViewLast
         DesignSystem.updateButtonEnabled(actionRowView.viewLastScanButton, style: .secondary)
     }
-
 }
-
-// MARK: - Scanning delegate
 
 extension HomeViewController: AppScanningViewControllerDelegate {
-
     func appScanningViewControllerDidCancel(_ controller: AppScanningViewController) {
-        scanFlowController.handleScanCanceled(from: self)
+        scanFlowController?.handleScanCanceled(from: self)
     }
 
-    func appScanningViewController(
-        _ controller: AppScanningViewController,
-        didCompleteScan payload: ScanPreviewInput
-    ) {
-        scanFlowController.handleScanCompleted(
-            from: controller,
-            payload: payload
-        )
+    func appScanningViewController(_ controller: AppScanningViewController, didCompleteScan payload: ScanPreviewInput) {
+        scanFlowController?.handleScanCompleted(from: controller, payload: payload)
     }
 
-    func appScanningViewController(
-        _ controller: AppScanningViewController,
-        didScan pointCloud: SCPointCloud,
-        meshTexturing: SCMeshTexturing
-    ) {
-        // Legacy callback retained for compatibility during scan preview payload migration.
-    }
-
+    func appScanningViewController(_ controller: AppScanningViewController, didScan pointCloud: SCPointCloud, meshTexturing: SCMeshTexturing) {}
 }
+
 #if DEBUG
 extension HomeViewController {
-    func _recordScanStartedForTesting() { scanSessionController.recordScanStarted() }
-    func _recordScanCompletedForTesting() { scanSessionController.recordScanCompleted() }
-    func _recordScanCanceledForTesting() { scanSessionController.recordScanCanceled() }
-    func _scanStartTimeForTesting() -> CFAbsoluteTime? { scanSessionController.scanStartTimeForTesting() }
+    func _recordScanStartedForTesting() { scanSessionController?.recordScanStarted() }
+    func _recordScanCompletedForTesting() { scanSessionController?.recordScanCompleted() }
+    func _recordScanCanceledForTesting() { scanSessionController?.recordScanCanceled() }
+    func _scanStartTimeForTesting() -> CFAbsoluteTime? { scanSessionController?.scanStartTimeForTesting() }
+    func debug_triggerScansChanged() { homeCoordinator.onScansChanged?() }
+    func debug_homeViewModel() -> HomeViewModel { homeViewModel }
 }
 #endif

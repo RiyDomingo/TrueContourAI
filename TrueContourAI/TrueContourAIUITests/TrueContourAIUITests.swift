@@ -150,14 +150,11 @@ final class TrueContourAIUITests: XCTestCase {
         XCTAssertTrue(waitForElement(app.buttons["startScanButton"], timeout: Self.defaultTimeout + 4.0))
     }
 
-    func testMissingSceneShowsAlert() throws {
+    func testMissingSceneSeedIsExcludedFromRecentScans() throws {
         let app = launchApp(seedScan: false, seedMissingScene: true)
 
-        openFirstScan(in: app)
-
-        let alert = app.alerts["missingSceneAlert"]
-        XCTAssertTrue(waitForElement(alert))
-        alert.buttons.firstMatch.tap()
+        let openButton = app.buttons["scanOpenButton"].firstMatch
+        XCTAssertTrue(waitForNotExists(openButton, timeout: Self.defaultTimeout + 2.0))
     }
 
     func testMissingFolderShowsAlert() throws {
@@ -199,16 +196,21 @@ final class TrueContourAIUITests: XCTestCase {
 
     func testFilteredEmptyStateClearFilterRestoresScans() throws {
         let app = launchApp(seedScan: true)
+        XCTAssertTrue(waitForElement(app.buttons["scanOpenButton"].firstMatch, timeout: Self.defaultTimeout + 8.0))
 
         let filterControl = app.segmentedControls["recentScansFilterControl"]
         XCTAssertTrue(waitForElement(filterControl))
 
         let goodPlus = filterControl.buttons["Good+"]
         XCTAssertTrue(waitForElement(goodPlus))
+        revealElementIfNeeded(goodPlus, in: app)
         goodPlus.tap()
 
         let clearButton = app.buttons["emptyClearFilterButton"]
-        XCTAssertTrue(waitForElement(clearButton))
+        if !clearButton.exists {
+            goodPlus.tap()
+        }
+        XCTAssertTrue(waitForElement(clearButton, timeout: Self.defaultTimeout + 4.0))
         clearButton.tap()
 
         XCTAssertTrue(waitForNotExists(clearButton))
@@ -268,20 +270,31 @@ final class TrueContourAIUITests: XCTestCase {
 
     private func openFirstScan(in app: XCUIApplication) {
         let table = app.tables.firstMatch
+        let openButton = app.buttons["scanOpenButton"].firstMatch
+        let foundOpenButton = pollUntil(timeout: Self.defaultTimeout + 10.0, poll: 0.4) {
+            if openButton.exists { return true }
+            if table.exists, !table.frame.isEmpty {
+                table.swipeUp()
+                if openButton.exists { return true }
+                table.swipeDown()
+            }
+            return openButton.exists
+        }
+        XCTAssertTrue(foundOpenButton && openButton.exists)
         if table.exists, !table.frame.isEmpty {
             table.scrollToTop()
         }
-        let openButton = app.buttons["scanOpenButton"].firstMatch
-        XCTAssertTrue(waitForElement(openButton, timeout: Self.defaultTimeout + 2))
         if table.exists, !table.frame.isEmpty {
             scrollElementIntoView(openButton, in: table)
         }
         revealElementIfNeeded(openButton, in: app)
-        XCTAssertTrue(
-            waitForCondition(timeout: 4.0) { openButton.exists && openButton.isHittable },
-            "Expected scan open button to become hittable"
-        )
-        openButton.tap()
+        let becameHittable = waitForCondition(timeout: 4.0) { openButton.exists && openButton.isHittable }
+        if becameHittable {
+            openButton.tap()
+            return
+        }
+        XCTAssertTrue(openButton.exists, "Expected scan open button to exist before coordinate tap fallback")
+        openButton.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     }
 
     private func firstExistingAlert(

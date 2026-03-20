@@ -484,7 +484,7 @@ public extension Notification.Name {
         // Use an AVCaptureDataOutputSynchronizer to synchronize the video data and depth data outputs.
         // The first output in the dataOutputs array, in this case the AVCaptureVideoDataOutput, is the "master" output.
         _outputSynchronizer = AVCaptureDataOutputSynchronizer(dataOutputs: [_videoDataOutput, _depthDataOutput])
-        _outputSynchronizer!.setDelegate(self, queue: _dataOutputQueue)
+        _outputSynchronizer?.setDelegate(self, queue: _dataOutputQueue)
         _captureSession.commitConfiguration()
         
         return .success

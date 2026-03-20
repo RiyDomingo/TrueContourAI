@@ -2,7 +2,7 @@ import XCTest
 import UIKit
 @testable import TrueContourAI
 
-final class ScanServiceTests: XCTestCase {
+final class ScanRepositoryExporterTests: XCTestCase {
 
     private var tempDir: URL!
     private var defaults: UserDefaults!
@@ -14,7 +14,7 @@ final class ScanServiceTests: XCTestCase {
         super.setUp()
         tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        suiteName = "ScanServiceTests.\(UUID().uuidString)"
+        suiteName = "ScanRepositoryExporterTests.\(UUID().uuidString)"
         defaults = UserDefaults(suiteName: suiteName)
         defaults.removePersistentDomain(forName: suiteName)
         repository = ScanRepository(scansRootURL: tempDir, defaults: defaults)
@@ -41,7 +41,7 @@ final class ScanServiceTests: XCTestCase {
         date: Date,
         withOverlay: Bool = false,
         withThumbnail: Bool = false,
-        withScene: Bool = false
+        withScene: Bool = true
     ) throws -> URL {
         let folder = tempDir.appendingPathComponent(name, isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -147,14 +147,22 @@ final class ScanServiceTests: XCTestCase {
 
     func testResolveGLTFFromFolderMissingReturnsNil() throws {
         let date = Date(timeIntervalSince1970: 170)
-        let folder = try makeScanFolder(name: "scan", date: date)
+        let folder = try makeScanFolder(name: "scan", date: date, withScene: false)
 
         let gltf = repository.resolveGLTFFromFolder(folder)
         XCTAssertNil(gltf)
 
         let items = repository.listScans()
-        XCTAssertEqual(items.count, 1)
-        XCTAssertNil(items.first?.sceneGLTFURL)
+        XCTAssertTrue(items.isEmpty)
+    }
+
+    func testListScansExcludesIncompleteFolders() throws {
+        let date = Date(timeIntervalSince1970: 171)
+        _ = try makeScanFolder(name: "incomplete", date: date, withScene: false)
+
+        let items = repository.listScans()
+
+        XCTAssertTrue(items.isEmpty)
     }
 
     func testListScansIncludesSceneWhenPresent() throws {
@@ -169,7 +177,7 @@ final class ScanServiceTests: XCTestCase {
 
     func testResolveLastScanGLTFURLReturnsNilWhenMissing() throws {
         let date = Date(timeIntervalSince1970: 178)
-        let folder = try makeScanFolder(name: "scan", date: date)
+        let folder = try makeScanFolder(name: "scan", date: date, withScene: false)
         repository.setLastScanFolder(folder)
 
         XCTAssertNil(repository.resolveLastScanGLTFURL())
@@ -220,6 +228,16 @@ final class ScanServiceTests: XCTestCase {
 
         let resolved = repository.resolveLastScanFolderURL()
         XCTAssertEqual(resolved, newer)
+    }
+
+    func testResolveLastScanFolderFallsBackToNewestWhenStoredFolderIsInvalid() throws {
+        let valid = try makeScanFolder(name: "valid", date: Date(timeIntervalSince1970: 210))
+        let invalid = try makeScanFolder(name: "invalid", date: Date(timeIntervalSince1970: 220), withScene: false)
+        repository.setLastScanFolder(invalid)
+
+        let resolved = repository.resolveLastScanFolderURL()
+
+        XCTAssertEqual(resolved, valid)
     }
 
     func testRenameInvalidNameReturnsInvalidName() throws {

@@ -148,6 +148,32 @@ final class CameraManagerAdapter: CameraManaging {
     }
 }
 
+struct ScanMetalContext {
+    let device: MTLDevice
+    let algorithmCommandQueue: MTLCommandQueue
+    let visualizationCommandQueue: MTLCommandQueue
+}
+
+private final class UnavailableScanRuntimeEngine: ScanRuntimeEngining {
+    var onEvent: ((ScanRuntimeEvent) -> Void)?
+    var onRenderFrame: ((ScanRenderFrame) -> Void)?
+
+    var diagnosticsSnapshot: ScanRuntimeDiagnosticsSnapshot {
+        ScanRuntimeDiagnosticsSnapshot(
+            succeededCount: 0,
+            lostTrackingCount: 0,
+            droppedFrameCount: 0
+        )
+    }
+
+    func activate() {}
+    func deactivate() {}
+    func beginCapture(autoFinishSeconds: Int) {}
+    func processFrame(_ frame: ScanFramePayload, isScanning: Bool) {}
+    func finishCapture() {}
+    func cancelCapture() {}
+}
+
 protocol AppScanningViewControllerDelegate: AnyObject {
     func appScanningViewControllerDidCancel(_ controller: AppScanningViewController)
     func appScanningViewController(
@@ -161,94 +187,10 @@ protocol AppScanningViewControllerDelegate: AnyObject {
     )
 }
 
-final class AppScanningViewController: UIViewController, CameraManagerDelegate, SCReconstructionManagerDelegate {
-    typealias ScanningTerminationReason = AppScanningTerminationReason
-    private typealias State = AppScanningSessionState
-
-    private struct DistanceStabilityTracker {
-        private let maxSamples: Int
-        private var samples: [Float] = []
-        private var nextIndex = 0
-
-        init(maxSamples: Int = 8) {
-            self.maxSamples = maxSamples
-            self.samples.reserveCapacity(maxSamples)
-        }
-
-        mutating func reset() {
-            samples.removeAll(keepingCapacity: true)
-            nextIndex = 0
-        }
-
-        mutating func add(_ value: Float) {
-            if samples.count < maxSamples {
-                samples.append(value)
-                return
-            }
-            samples[nextIndex] = value
-            nextIndex = (nextIndex + 1) % maxSamples
-        }
-
-        func shouldWarn(threshold: Float) -> Bool {
-            guard samples.count >= maxSamples else { return false }
-            guard let minValue = samples.min(), let maxValue = samples.max() else { return false }
-            return (maxValue - minValue) > threshold
-        }
-    }
-
-    private struct ScanPerformanceMetrics {
-        private(set) var sampleCount = 0
-        private(set) var totalDuration: CFTimeInterval = 0
-        private(set) var peakDuration: CFTimeInterval = 0
-        private(set) var overBudgetCount = 0
-        private(set) var recentDurations: [CFTimeInterval] = []
-
-        mutating func reset() {
-            sampleCount = 0
-            totalDuration = 0
-            peakDuration = 0
-            overBudgetCount = 0
-            recentDurations.removeAll(keepingCapacity: true)
-        }
-
-        mutating func record(_ duration: CFTimeInterval, budget: CFTimeInterval) {
-            sampleCount += 1
-            totalDuration += duration
-            peakDuration = max(peakDuration, duration)
-            if duration > budget {
-                overBudgetCount += 1
-            }
-            if recentDurations.count == 32 {
-                recentDurations.removeFirst()
-            }
-            recentDurations.append(duration)
-        }
-
-        var averageDurationMs: Double {
-            guard sampleCount > 0 else { return 0 }
-            return (totalDuration / Double(sampleCount)) * 1000
-        }
-
-        var p95DurationMs: Double {
-            guard !recentDurations.isEmpty else { return 0 }
-            let sorted = recentDurations.sorted()
-            let index = min(sorted.count - 1, Int(Double(sorted.count - 1) * 0.95))
-            return sorted[index] * 1000
-        }
-
-        var peakDurationMs: Double {
-            peakDuration * 1000
-        }
-    }
-
-    private enum Layout {
+final class AppScanningViewController: UIViewController {
+    private struct Layout {
         static let topStatusInset: CGFloat = 10
-        static let instructionToProgressSpacing: CGFloat = 8
-        static let statusToFocusHintSpacing: CGFloat = 6
         static let sheetBottomInset: CGFloat = 10
-        static let sheetCollapsedHeight: CGFloat = 170
-        static let sheetHalfHeight: CGFloat = 260
-        static let sheetFullHeight: CGFloat = 360
     }
 
     private struct ScanSheetProfile {
@@ -258,22 +200,14 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     }
 
     weak var delegate: AppScanningViewControllerDelegate?
-    var onRealtimeGuidance: ((String) -> Void)?
-    var autoFinishSeconds: Int = 0
-    var requiresManualFinish: Bool = false
-    var developerModeEnabled = false
-    var maxDepthResolution: Int = 320 {
-        didSet {
-            if isViewLoaded && oldValue != maxDepthResolution {
-                cameraManager.configureCaptureSession(maxResolution: maxDepthResolution)
-            }
-        }
-    }
-    var generatesTexturedMeshes: Bool = true {
-        didSet { reconstructionManager.includesColorBuffersInMetadata = generatesTexturedMeshes }
-    }
-    var texturedMeshColorBufferSaveInterval: Int = 8
-    private var meshTexturing = SCMeshTexturing()
+
+    private(set) var autoFinishSeconds: Int
+    private(set) var requiresManualFinish: Bool
+    private(set) var developerModeEnabled: Bool
+    private(set) var maxDepthResolution: Int
+    private(set) var generatesTexturedMeshes: Bool
+    private(set) var texturedMeshColorBufferSaveInterval: Int
+    private(set) var processingConfig: SettingsStore.ProcessingConfig
 
     private let metalContainerView = UIView()
     private let metalLayer = CAMetalLayer()
@@ -284,6 +218,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
     private let bottomSheet = BottomSheetController()
     private let sheetStack = UIStackView()
     private let shutterContainer = UIView()
+    private let thermalWarningLabel = UILabel()
 
     private let promptLabel: UILabel = {
         let label = UILabel()
@@ -291,7 +226,6 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         label.textAlignment = .center
         label.font = DesignSystem.Typography.bodyEmphasis()
         label.textColor = DesignSystem.Colors.textPrimary
-        label.backgroundColor = .clear
         label.adjustsFontForContentSizeCategory = true
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = L("scanning.prompt.initial")
@@ -305,9 +239,8 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         label.textAlignment = .center
         label.font = DesignSystem.Typography.caption()
         label.adjustsFontForContentSizeCategory = true
-        label.text = L("scanning.guidance.status.caution")
         label.backgroundColor = UIColor.systemOrange.withAlphaComponent(0.9)
-        label.textColor = UIColor.white
+        label.textColor = .white
         label.layer.cornerRadius = 10
         label.layer.masksToBounds = true
         label.isHidden = true
@@ -322,7 +255,6 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         label.font = DesignSystem.Typography.caption()
         label.textColor = DesignSystem.Colors.textSecondary
         label.adjustsFontForContentSizeCategory = true
-        label.text = L("scanning.focusHint")
         label.alpha = 1
         return label
     }()
@@ -335,21 +267,9 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         label.textColor = DesignSystem.Colors.textPrimary
         label.numberOfLines = 2
         label.adjustsFontForContentSizeCategory = true
-        label.text = L("scanning.progress.capturing")
         label.isHidden = true
         label.accessibilityIdentifier = "scanProgressLabel"
         return label
-    }()
-
-    private let captureProgressView: UIProgressView = {
-        let progressView = UIProgressView(progressViewStyle: .default)
-        progressView.translatesAutoresizingMaskIntoConstraints = false
-        progressView.trackTintColor = UIColor.white.withAlphaComponent(0.28)
-        progressView.progressTintColor = DesignSystem.Colors.actionPrimary
-        progressView.progress = 0
-        progressView.isHidden = true
-        progressView.accessibilityIdentifier = "scanCaptureProgressView"
-        return progressView
     }()
 
     private let developerDiagnosticsLabel: UILabel = {
@@ -358,7 +278,7 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         label.textColor = DesignSystem.Colors.textSecondary
         label.font = DesignSystem.Typography.caption()
         label.adjustsFontForContentSizeCategory = true
-        label.numberOfLines = 2
+        label.numberOfLines = 3
         label.textAlignment = .left
         label.isHidden = true
         label.accessibilityIdentifier = "scanDeveloperDiagnosticsLabel"
@@ -372,103 +292,135 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         label.font = DesignSystem.Typography.caption()
         label.textColor = DesignSystem.Colors.textSecondary
         label.adjustsFontForContentSizeCategory = true
-        label.text = ""
         label.isHidden = true
         return label
     }()
 
-    private let metalDevice = MTLCreateSystemDefaultDevice()!
-    private lazy var algorithmCommandQueue: MTLCommandQueue = metalDevice.makeCommandQueue()!
-    private lazy var visualizationCommandQueue: MTLCommandQueue = metalDevice.makeCommandQueue()!
-    private lazy var reconstructionManager: ReconstructionManaging = reconstructionManagerFactory(
-        metalDevice,
-        algorithmCommandQueue,
-        maxReconstructionThreadCount
-    )
-    private lazy var scanningViewRenderer: ScanningViewRenderer = DefaultScanningViewRenderer(
-        device: metalDevice,
-        commandQueue: visualizationCommandQueue
-    )
-    private let reconstructionManagerFactory: (MTLDevice, MTLCommandQueue, Int32) -> ReconstructionManaging
-    private let backgroundWorkRunner: (@escaping () -> Void) -> Void
-    private let cameraManager: CameraManaging
-    private let hapticEngine: ScanningHapticFeedbackProviding
-    private lazy var sessionController = makeSessionController()
-    private lazy var runtimeController = makeRuntimeController()
-    private let hudController = ScanHUDController()
-    private let motionManager = CMMotionManager()
-    private let scanStateLock = NSLock()
-    private var activeScanningState = false
+    private let metalContext: ScanMetalContext?
+    private lazy var scanningViewRenderer: ScanningViewRenderer? = {
+        guard let metalContext else { return nil }
+        return DefaultScanningViewRenderer(
+            device: metalContext.device,
+            commandQueue: metalContext.visualizationCommandQueue
+        )
+    }()
 
-    private var latestViewMatrix = matrix_identity_float4x4
-    private var assimilatedFrameIndex = 0
-    private var consecutiveFailedCount = 0
-    private var promptTimer: Timer?
-    private var currentHUDState: AppScanHUDState = .idlePrompts {
-        didSet { updateHUDVisibility() }
-    }
+    private let runtimeEngine: ScanRuntimeEngining
+    private lazy var metalInitializationFailure: ScanFailureViewData? = {
+        guard metalContext == nil else { return nil }
+        return ScanFailureViewData(
+            title: L("scan.start.unavailable.title"),
+            message: L("scan.start.cameraUnavailable.message"),
+            allowsRetry: false
+        )
+    }()
+    private let store: ScanStore
+    private let orientationSource: ScanInterfaceOrientationSource
 
+    private var didRouteCancel = false
+    private var didRouteCompletion = false
     private var volumeView: MPVolumeView?
     private var isObservingVolumeButtons = false
-
-    private let minSucceededFramesForCompletion = 50
-    private let maxReconstructionThreadCount: Int32 = 2
-    private let unstableMotionThreshold: Double = 0.16
-    private let goodTrackingFrameInterval = 40
-    private let progressUpdateMinimumInterval: TimeInterval = 0.25
-    private let motionSampleWindowSize = 6
-    private let distanceInstabilityThreshold: Float = 0.08
-    private let textureSaveSuppressionAssimilationWindow = 8
-    private let cameraCallbackBudget: CFTimeInterval = 1.0 / 30.0
-    private let reconstructionDelegateBudget: CFTimeInterval = 0.012
-    private let previewDrawBudget: CFTimeInterval = 0.010
-    private let previewSnapshotMinimumInterval: CFTimeInterval = 0.15
-    private var smoothedMotionSamples: [Double] = []
-    private var lastProgressUpdateAt: Date = .distantPast
-    private var distanceTracker = DistanceStabilityTracker()
-    private var suppressTextureSavingUntilAssimilationIndex = 0
-    private var cameraPerformanceMetrics = ScanPerformanceMetrics()
-    private var drawPerformanceMetrics = ScanPerformanceMetrics()
-    private var reconstructionPerformanceMetrics = ScanPerformanceMetrics()
-    private var previewSnapshotCache: SCPointCloud?
-    private var lastPreviewSnapshotBuiltAt: CFTimeInterval = -.greatestFiniteMagnitude
-    private var lastPreviewSnapshotRequestedAt: CFTimeInterval = -.greatestFiniteMagnitude
-    private var previewSnapshotBuildCount = 0
-    private var previewSnapshotReuseCount = 0
-    private var latestReconstructionStatistics = SCReconstructionManagerStatistics()
-#if DEBUG
-    private var debugFinishCompletionHandler: (() -> Void)?
-#endif
-
-    private func scanSheetProfile() -> ScanSheetProfile {
-        Self.scanSheetProfile(forHeight: view.bounds.height, isPad: traitCollection.userInterfaceIdiom == .pad)
-    }
-
-    private static func scanSheetProfile(forHeight h: CGFloat, isPad: Bool) -> ScanSheetProfile {
-        if isPad || h >= 900 {
-            return ScanSheetProfile(collapsed: 180, half: 250, full: 320)
-        }
-        if h <= 700 {
-            return ScanSheetProfile(collapsed: 168, half: 236, full: 300)
-        }
-        return ScanSheetProfile(collapsed: Layout.sheetCollapsedHeight, half: Layout.sheetHalfHeight, full: Layout.sheetFullHeight)
-    }
+    private var currentInterfaceOrientation: UIInterfaceOrientation = .portrait
 
     init(
+        store: ScanStore,
+        runtimeEngine: ScanRuntimeEngining,
+        autoFinishSeconds: Int,
+        requiresManualFinish: Bool,
+        developerModeEnabled: Bool,
+        maxDepthResolution: Int,
+        generatesTexturedMeshes: Bool,
+        texturedMeshColorBufferSaveInterval: Int,
+        processingConfig: SettingsStore.ProcessingConfig,
+        orientationSource: ScanInterfaceOrientationSource,
+        metalContext: ScanMetalContext?
+    ) {
+        self.store = store
+        self.runtimeEngine = runtimeEngine
+        self.autoFinishSeconds = autoFinishSeconds
+        self.requiresManualFinish = requiresManualFinish
+        self.developerModeEnabled = developerModeEnabled
+        self.maxDepthResolution = maxDepthResolution
+        self.generatesTexturedMeshes = generatesTexturedMeshes
+        self.texturedMeshColorBufferSaveInterval = texturedMeshColorBufferSaveInterval
+        self.processingConfig = processingConfig
+        self.orientationSource = orientationSource
+        self.metalContext = metalContext
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    convenience init(
         reconstructionManagerFactory: @escaping (MTLDevice, MTLCommandQueue, Int32) -> ReconstructionManaging = {
             SCReconstructionManagerAdapter(device: $0, commandQueue: $1, maxThreadCount: $2)
         },
         cameraManager: CameraManaging = CameraManagerAdapter(),
         hapticEngine: ScanningHapticFeedbackProviding = ScanningHapticFeedbackEngine.shared,
+        autoFinishSeconds: Int = 0,
+        requiresManualFinish: Bool = false,
+        developerModeEnabled: Bool = false,
+        maxDepthResolution: Int = 320,
+        generatesTexturedMeshes: Bool = true,
+        texturedMeshColorBufferSaveInterval: Int = 8,
+        processingConfig: SettingsStore.ProcessingConfig = SettingsStore().processingConfig,
         backgroundWorkRunner: @escaping (@escaping () -> Void) -> Void = { work in
             DispatchQueue.global(qos: .userInitiated).async(execute: work)
         }
     ) {
-        self.reconstructionManagerFactory = reconstructionManagerFactory
-        self.backgroundWorkRunner = backgroundWorkRunner
-        self.cameraManager = cameraManager
-        self.hapticEngine = hapticEngine
-        super.init(nibName: nil, bundle: nil)
+        let captureConfiguration = ScanCaptureConfiguration(
+            maxDepthResolution: maxDepthResolution,
+            textureSaveInterval: texturedMeshColorBufferSaveInterval,
+            developerModeEnabled: developerModeEnabled
+        )
+        let runtimeConfiguration = ScanRuntimeConfiguration(
+            processingConfig: processingConfig,
+            texturedMeshEnabled: generatesTexturedMeshes,
+            textureSaveInterval: texturedMeshColorBufferSaveInterval
+        )
+        let orientationSource = ScanInterfaceOrientationSource()
+        let captureService = ScanCaptureService(
+            cameraManager: cameraManager,
+            configuration: captureConfiguration,
+            orientationProvider: { orientationSource.current }
+        )
+        let metalContext = Self.makeMetalContextForAssembly()
+        let runtimeEngine: ScanRuntimeEngining
+        if let metalContext {
+            runtimeEngine = ScanRuntimeEngine(
+                reconstructionManager: reconstructionManagerFactory(
+                    metalContext.device,
+                    metalContext.algorithmCommandQueue,
+                    2
+                ),
+                configuration: runtimeConfiguration,
+                developerModeEnabled: developerModeEnabled,
+                requiresManualFinish: requiresManualFinish,
+                backgroundWorkRunner: backgroundWorkRunner
+            )
+        } else {
+            runtimeEngine = UnavailableScanRuntimeEngine()
+        }
+        let store = ScanStore(
+            captureService: captureService,
+            runtimeEngine: runtimeEngine,
+            autoFinishSeconds: autoFinishSeconds,
+            requiresManualFinish: requiresManualFinish,
+            developerModeEnabled: developerModeEnabled,
+            hapticEngine: hapticEngine
+        )
+        self.init(
+            store: store,
+            runtimeEngine: runtimeEngine,
+            autoFinishSeconds: autoFinishSeconds,
+            requiresManualFinish: requiresManualFinish,
+            developerModeEnabled: developerModeEnabled,
+            maxDepthResolution: maxDepthResolution,
+            generatesTexturedMeshes: generatesTexturedMeshes,
+            texturedMeshColorBufferSaveInterval: texturedMeshColorBufferSaveInterval,
+            processingConfig: processingConfig,
+            orientationSource: orientationSource,
+            metalContext: metalContext
+        )
     }
 
     @available(*, unavailable, message: "Programmatic-only. Use init(reconstructionManagerFactory:cameraManager:hapticEngine:).")
@@ -480,7 +432,92 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        bindStore()
+        configureUI()
+        store.onStateChange?(store.state)
+        if let metalInitializationFailure {
+            apply(state: .failed(metalInitializationFailure))
+        }
+    }
 
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        refreshCurrentInterfaceOrientation()
+        installVolumeShutterIfNeeded()
+        guard metalInitializationFailure == nil else {
+            handle(
+                effect: .alert(
+                    title: L("scan.start.unavailable.title"),
+                    message: L("scan.start.cameraUnavailable.message"),
+                    identifier: "metalUnavailable"
+                )
+            )
+            return
+        }
+        store.send(.viewDidAppear)
+        store.send(.startSession)
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        removeVolumeShutterObserver()
+        if !didRouteCancel && !didRouteCompletion {
+            store.send(.dismissTapped)
+        }
+        runtimeEngine.deactivate()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        refreshCurrentInterfaceOrientation()
+        CATransaction.begin()
+        CATransaction.disableActions()
+        metalLayer.frame = metalContainerView.bounds
+        let scale = view.window?.windowScene?.screen.scale ?? traitCollection.displayScale
+        metalLayer.drawableSize = CGSize(width: metalLayer.frame.width * scale, height: metalLayer.frame.height * scale)
+        CATransaction.commit()
+        updateSheetLayout()
+    }
+
+    @objc private func dismissTapped() {
+        store.send(.dismissTapped)
+    }
+
+    @objc func shutterTapped(_ sender: UIButton?) {
+        store.send(.startSession)
+    }
+
+    @objc func finishScanNow() {
+        store.send(.finishTapped)
+    }
+
+    func configureManualFinishButton(title: String, target: Any?, action: Selector) {
+        DesignSystem.applyButton(manualFinishButton, title: title, style: .primary, size: .regular)
+        manualFinishButton.accessibilityIdentifier = "finishScanNowButton"
+        manualFinishButton.accessibilityLabel = title
+    }
+
+    private func bindStore() {
+        store.onStateChange = { [weak self] state in
+            self?.apply(state: state)
+        }
+        store.onEffect = { [weak self] effect in
+            self?.handle(effect: effect)
+        }
+        runtimeEngine.onRenderFrame = { [weak self] renderFrame in
+            guard let self else { return }
+            guard let scanningViewRenderer = self.scanningViewRenderer else { return }
+            scanningViewRenderer.draw(
+                colorBuffer: renderFrame.colorBuffer,
+                pointCloud: renderFrame.pointCloud,
+                depthCameraCalibrationData: renderFrame.calibrationData,
+                viewMatrix: renderFrame.viewMatrix,
+                into: self.metalLayer
+            )
+        }
+    }
+
+    private func configureUI() {
         view.backgroundColor = .black
         metalContainerView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(metalContainerView)
@@ -488,26 +525,21 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         view.addSubview(guidanceStatusChip)
         view.addSubview(dismissButton)
         view.addSubview(manualFinishButton)
+
         bottomSheet.install(in: view, bottomInset: Layout.sheetBottomInset)
         sheetStack.translatesAutoresizingMaskIntoConstraints = false
         sheetStack.axis = .vertical
         sheetStack.spacing = DesignSystem.Spacing.s
-        sheetStack.alignment = .fill
         bottomSheet.contentView.addSubview(sheetStack)
         sheetStack.addArrangedSubview(promptLabel)
         sheetStack.addArrangedSubview(progressLabel)
         sheetStack.addArrangedSubview(autoFinishLabel)
+        sheetStack.addArrangedSubview(focusHintLabel)
+        sheetStack.addArrangedSubview(thermalWarningLabel)
         sheetStack.addArrangedSubview(developerDiagnosticsLabel)
         shutterContainer.translatesAutoresizingMaskIntoConstraints = false
         shutterContainer.addSubview(shutterButton)
         sheetStack.addArrangedSubview(shutterContainer)
-
-        bottomSheet.setSnapHeights(
-            collapsed: scanSheetProfile().collapsed,
-            half: scanSheetProfile().half,
-            full: developerModeEnabled ? scanSheetProfile().full : scanSheetProfile().half
-        )
-        bottomSheet.setSnapPoint(.collapsed, animated: false)
 
         NSLayoutConstraint.activate([
             metalContainerView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -517,9 +549,6 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
 
             guidanceStatusChip.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             guidanceStatusChip.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: Layout.topStatusInset),
-            guidanceStatusChip.heightAnchor.constraint(greaterThanOrEqualToConstant: 24),
-            guidanceStatusChip.leadingAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 12),
-            guidanceStatusChip.trailingAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -12),
 
             sheetStack.topAnchor.constraint(equalTo: bottomSheet.contentView.topAnchor),
             sheetStack.leadingAnchor.constraint(equalTo: bottomSheet.contentView.leadingAnchor),
@@ -527,11 +556,17 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
             sheetStack.bottomAnchor.constraint(equalTo: bottomSheet.contentView.bottomAnchor),
             shutterContainer.heightAnchor.constraint(equalToConstant: 92),
             shutterButton.centerXAnchor.constraint(equalTo: shutterContainer.centerXAnchor),
-            shutterButton.centerYAnchor.constraint(equalTo: shutterContainer.centerYAnchor)
+            shutterButton.centerYAnchor.constraint(equalTo: shutterContainer.centerYAnchor),
+
+            countdownLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            countdownLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+
+            dismissButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 12),
+            dismissButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+
+            manualFinishButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -12),
+            manualFinishButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8)
         ])
-        promptLabel.setContentCompressionResistancePriority(.required, for: .vertical)
-        progressLabel.setContentCompressionResistancePriority(.required, for: .vertical)
-        autoFinishLabel.setContentCompressionResistancePriority(.required, for: .vertical)
 
         countdownLabel.translatesAutoresizingMaskIntoConstraints = false
         countdownLabel.textColor = .white
@@ -539,636 +574,208 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         countdownLabel.textAlignment = .center
         countdownLabel.isHidden = true
         countdownLabel.accessibilityIdentifier = "scanCountdownLabel"
-        NSLayoutConstraint.activate([
-            countdownLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            countdownLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor)
-        ])
 
-        dismissButton.setTitle(L("common.close"), for: .normal)
         DesignSystem.applyButton(dismissButton, title: L("common.close"), style: .secondary, size: .regular)
         dismissButton.accessibilityIdentifier = "scanDismissButton"
         dismissButton.addTarget(self, action: #selector(dismissTapped), for: .touchUpInside)
         dismissButton.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            dismissButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 12),
-            dismissButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8)
-        ])
 
+        DesignSystem.applyButton(manualFinishButton, title: L("common.finish"), style: .primary, size: .regular)
         manualFinishButton.isHidden = true
+        manualFinishButton.accessibilityIdentifier = "finishScanNowButton"
+        manualFinishButton.addTarget(self, action: #selector(finishScanNow), for: .touchUpInside)
         manualFinishButton.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            manualFinishButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -12),
-            manualFinishButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8)
-        ])
 
         shutterButton.addTarget(self, action: #selector(shutterTapped(_:)), for: .touchUpInside)
         shutterButton.accessibilityIdentifier = "scanShutterButton"
         shutterButton.translatesAutoresizingMaskIntoConstraints = false
+        shutterButton.isEnabled = false
         shutterButton.widthAnchor.constraint(equalToConstant: 84).isActive = true
         shutterButton.heightAnchor.constraint(equalTo: shutterButton.widthAnchor).isActive = true
 
+        thermalWarningLabel.translatesAutoresizingMaskIntoConstraints = false
+        thermalWarningLabel.font = DesignSystem.Typography.caption()
+        thermalWarningLabel.textColor = .systemOrange
+        thermalWarningLabel.numberOfLines = 2
+        thermalWarningLabel.text = L("scanning.thermal.message")
+        thermalWarningLabel.isHidden = true
+
         metalLayer.isOpaque = true
-        metalLayer.device = metalDevice
+        metalLayer.device = metalContext?.device
         metalLayer.pixelFormat = .bgra8Unorm
         metalLayer.framebufferOnly = false
         metalContainerView.layer.addSublayer(metalLayer)
-
         metalContainerView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(focusOnTap(_:))))
-
-        cameraManager.delegate = self
-        cameraManager.configureCaptureSession(maxResolution: maxDepthResolution)
-        reconstructionManager.delegate = self
-        reconstructionManager.includesColorBuffersInMetadata = generatesTexturedMeshes
-
+        updateSheetLayout()
     }
 
-    private func makeSessionController() -> ScanSessionController {
-        let controller = ScanSessionController(hapticEngine: hapticEngine)
-        controller.autoFinishSeconds = autoFinishSeconds
-        controller.onStateChange = { [weak self] state in
-            guard let self else { return }
-            self.setActiveScanningState(state == .scanning)
-            self.updateUI()
-        }
-        controller.onAutoFinishRemainingChange = { [weak self] _ in
-            guard let self else { return }
-            if self.state == .scanning {
-                self.updateCaptureProgress()
-                self.updateAutoFinishLabel()
-            }
-        }
-        controller.onAutoFinishTriggered = { [weak self] in
-            self?.finishScanNow()
-        }
-        return controller
-    }
-
-    private func makeRuntimeController() -> ScanRuntimeController {
-        let controller = ScanRuntimeController()
-        controller.onCriticalThermalState = { [weak self] in
-            self?.handleCriticalThermalState()
-        }
-        return controller
-    }
-
-    private var state: State {
-        sessionController.state
-    }
-
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        runtimeController.activate()
-        startPromptLoop()
-        showFocusHintIfIdle()
-        installVolumeShutterIfNeeded()
-        startCameraSession()
-        startMotionUpdates()
-    }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        stopScanning(reason: .canceled)
-        stopMotionUpdates()
-        cameraManager.stopSession(nil)
-        removeVolumeShutterObserver()
-
-        promptTimer?.invalidate()
-        promptTimer = nil
-        sessionController.invalidate()
-        runtimeController.deactivate()
-    }
-
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        CATransaction.begin()
-        CATransaction.disableActions()
-        metalLayer.frame = metalContainerView.bounds
-        let scale = view.window?.windowScene?.screen.scale ?? traitCollection.displayScale
-        metalLayer.drawableSize = CGSize(width: metalLayer.frame.width * scale,
-                                         height: metalLayer.frame.height * scale)
-        CATransaction.commit()
-        let profile = scanSheetProfile()
+    private func updateSheetLayout() {
+        let profile = Self.scanSheetProfile(forHeight: view.bounds.height, isPad: traitCollection.userInterfaceIdiom == .pad)
         let maxFull = max(profile.half, min(profile.full, view.bounds.height * 0.42))
         bottomSheet.setSnapHeights(
             collapsed: profile.collapsed,
             half: profile.half,
             full: developerModeEnabled ? maxFull : profile.half
         )
+        bottomSheet.setSnapPoint(.collapsed, animated: false)
     }
 
-    @objc private func dismissTapped() {
-        stopScanning(reason: .canceled)
-        dismiss(animated: true)
-    }
-
-    func configureManualFinishButton(title: String, target: Any?, action: Selector) {
-        DesignSystem.applyButton(manualFinishButton, title: title, style: .primary, size: .regular)
-        manualFinishButton.accessibilityIdentifier = "finishScanNowButton"
-        manualFinishButton.accessibilityLabel = title
-        manualFinishButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
-        manualFinishButton.removeTarget(nil, action: nil, for: .allEvents)
-        manualFinishButton.addTarget(target, action: action, for: .touchUpInside)
-        manualFinishButton.isEnabled = true
-        DesignSystem.updateButtonEnabled(manualFinishButton, style: .primary)
-        updateManualFinishButtonVisibility()
-    }
-
-    @objc func shutterTapped(_ sender: UIButton?) {
-        guard presentedViewController == nil, cameraManager.isSessionRunning else { return }
-
+    private func apply(state: ScanState) {
         switch state {
-        case .default:
-            sessionController.startCountdown { [weak self] in
-                self?.startScanning()
-            }
-        case .countdown:
-            sessionController.cancelCountdown()
-        case .scanning:
-            stopScanning(reason: .finished)
-        }
-    }
-
-    func finishScanNow() {
-        if state == .scanning {
-            stopScanning(reason: .finished)
-        }
-    }
-
-    private func startScanning() {
-        sessionController.autoFinishSeconds = autoFinishSeconds
-        sessionController.beginScanning()
-        assimilatedFrameIndex = 0
-        consecutiveFailedCount = 0
-        smoothedMotionSamples.removeAll(keepingCapacity: true)
-        lastProgressUpdateAt = .distantPast
-        invalidatePreviewSnapshotCache()
-        distanceTracker.reset()
-        suppressTextureSavingUntilAssimilationIndex = 0
-        cameraPerformanceMetrics.reset()
-        drawPerformanceMetrics.reset()
-        reconstructionPerformanceMetrics.reset()
-        captureProgressView.progress = 0
-        hudController.resetForNewCapture()
-        stopPromptLoop()
-        applyGuidanceUpdate(hudController.initialActiveScanGuidance())
-        emitGuidance(.start, force: true)
-        updateCaptureProgress()
-    }
-
-    private func stopScanning(reason: ScanningTerminationReason) {
-        guard sessionController.stopScanning(reason: reason) else { return }
-        invalidatePreviewSnapshotCache()
-        latestViewMatrix = matrix_identity_float4x4
-        hudController.resetAfterCapture()
-        currentHUDState = hudController.currentHUDState
-        startPromptLoop()
-
-        switch reason {
-        case .canceled:
-            reconstructionManager.reset()
-            delegate?.appScanningViewControllerDidCancel(self)
-            prepareMeshTexturingForNextScan()
-        case .finished:
-            cameraManager.stopSession(nil)
-            if let calibrationData = reconstructionManager.latestCameraCalibrationData {
-                meshTexturing.cameraCalibrationData = calibrationData
-                meshTexturing.cameraCalibrationFrameWidth = reconstructionManager.latestCameraCalibrationFrameWidth
-                meshTexturing.cameraCalibrationFrameHeight = reconstructionManager.latestCameraCalibrationFrameHeight
-            } else {
-                Log.scan.error("Missing camera calibration data at scan finalize; continuing without calibration metadata")
-            }
-            reconstructionManager.finalize { [weak self] in
-                guard let self else { return }
-                let completedMeshTexturing = self.meshTexturing
-                self.backgroundWorkRunner { [weak self] in
-                    guard let self else { return }
-                    let pointCloud = self.reconstructionManager.buildPointCloud()
-                    DispatchQueue.main.async { [weak self] in
-                        guard let self else { return }
-                        self.reconstructionManager.reset()
-                        let payload = ScanPreviewInput(
-                            pointCloud: pointCloud,
-                            meshTexturing: completedMeshTexturing,
-                            earVerificationImage: nil,
-                            earVerificationSelectionMetadata: nil
-                        )
-                        self.delegate?.appScanningViewController(self, didCompleteScan: payload)
-                        self.delegate?.appScanningViewController(
-                            self,
-                            didScan: pointCloud,
-                            meshTexturing: completedMeshTexturing
-                        )
-                        self.prepareMeshTexturingForNextScan()
-#if DEBUG
-                        self.debugFinishCompletionHandler?()
-#endif
-                    }
-                }
-            }
-        }
-    }
-
-    private func prepareMeshTexturingForNextScan() {
-        backgroundWorkRunner { [weak self] in
-            let nextMeshTexturing = SCMeshTexturing()
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                self.meshTexturing = nextMeshTexturing
-            }
-        }
-    }
-
-    private func startCameraSession() {
-        cameraManager.startSession { [weak self] result in
-            guard let self else { return }
-            if result != .success {
-                let authorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
-                let alertTitle: String
-                let alertMessage: String
-                if authorizationStatus == .denied || authorizationStatus == .restricted {
-                    alertTitle = L("scan.start.cameraDenied.title")
-                    alertMessage = L("scan.start.cameraDenied.message")
-                } else {
-                    alertTitle = L("scan.start.cameraUnavailable.title")
-                    alertMessage = L("scan.start.cameraUnavailable.message")
-                }
-                let alert = UIAlertController(
-                    title: alertTitle,
-                    message: alertMessage,
-                    preferredStyle: .alert
-                )
-                alert.addAction(UIAlertAction(title: L("common.ok"), style: .default, handler: { [weak self] _ in
-                    self?.dismiss(animated: true)
-                }))
-                self.present(alert, animated: true)
-            }
-        }
-    }
-
-    private func startMotionUpdates() {
-        guard motionManager.isDeviceMotionAvailable else { return }
-        motionManager.startDeviceMotionUpdates(to: OperationQueue.main) { [weak self] motion, _ in
-            guard let self, let motion, self.state == .scanning else { return }
-            self.reconstructionManager.accumulateDeviceMotion(motion)
-            self.handleMotionGuidance(forMagnitude: self.smoothedMotionMagnitude(with: motion))
-        }
-    }
-
-    private func stopMotionUpdates() {
-        motionManager.stopDeviceMotionUpdates()
-    }
-
-    private func setActiveScanningState(_ isActive: Bool) {
-        scanStateLock.lock()
-        activeScanningState = isActive
-        scanStateLock.unlock()
-        runtimeController.updateScanningState(isScanning: isActive)
-    }
-
-    private func isActiveScanningState() -> Bool {
-        scanStateLock.lock()
-        let isActive = activeScanningState
-        scanStateLock.unlock()
-        return isActive
-    }
-
-    // MARK: - CameraManagerDelegate
-
-    func cameraDidOutput(colorBuffer: CVPixelBuffer, depthBuffer: CVPixelBuffer, depthCalibrationData: AVCameraCalibrationData) {
-        let callbackStart = CACurrentMediaTime()
-        let isScanning = isActiveScanningState()
-        let pointCloud: SCPointCloud?
-
-        if isScanning {
-            pointCloud = activeScanPreviewPointCloud(now: callbackStart)
-        } else {
-            invalidatePreviewSnapshotCache()
-            pointCloud = reconstructionManager.reconstructSingleDepthBuffer(
-                depthBuffer,
-                colorBuffer: nil,
-                with: depthCalibrationData,
-                smoothingPoints: true
-            )
-        }
-
-        let drawStart = CACurrentMediaTime()
-        scanningViewRenderer.draw(
-            colorBuffer: colorBuffer,
-            pointCloud: pointCloud,
-            depthCameraCalibrationData: depthCalibrationData,
-            viewMatrix: latestViewMatrix,
-            into: metalLayer
-        )
-        if developerModeEnabled {
-            drawPerformanceMetrics.record(CACurrentMediaTime() - drawStart, budget: previewDrawBudget)
-        }
-
-        if isScanning {
-            // Hot path: keep this callback limited to rendering + reconstruction-critical work only.
-            // Keep the synchronized camera callback limited to reconstruction/rendering work.
-            reconstructionManager.accumulate(depthBuffer: depthBuffer, colorBuffer: colorBuffer, calibrationData: depthCalibrationData)
-        }
-        if developerModeEnabled {
-            cameraPerformanceMetrics.record(CACurrentMediaTime() - callbackStart, budget: cameraCallbackBudget)
-        }
-    }
-
-    private func activeScanPreviewPointCloud(now: CFTimeInterval) -> SCPointCloud? {
-        if let cachedSnapshot = previewSnapshotCache,
-           (now - lastPreviewSnapshotBuiltAt) < previewSnapshotMinimumInterval {
-            previewSnapshotReuseCount += 1
-            return cachedSnapshot
-        }
-
-        if let cachedSnapshot = previewSnapshotCache {
-            previewSnapshotReuseCount += 1
-            return cachedSnapshot
-        }
-        
-        // Do not synchronously build snapshots on the synchronized camera callback.
-        // Let reconstruction callbacks refresh the preview once assimilation has completed.
-        return nil
-    }
-
-    private func refreshActivePreviewSnapshotIfNeeded(now: CFTimeInterval) {
-        guard isActiveScanningState() else { return }
-
-        if (now - lastPreviewSnapshotRequestedAt) < previewSnapshotMinimumInterval {
-            return
-        }
-        lastPreviewSnapshotRequestedAt = now
-
-        guard let snapshot = reconstructionManager.buildPointCloudSnapshot() else {
-            return
-        }
-        previewSnapshotCache = snapshot
-        lastPreviewSnapshotBuiltAt = now
-        previewSnapshotBuildCount += 1
-    }
-
-    private func invalidatePreviewSnapshotCache() {
-        previewSnapshotCache = nil
-        lastPreviewSnapshotBuiltAt = -.greatestFiniteMagnitude
-        lastPreviewSnapshotRequestedAt = -.greatestFiniteMagnitude
-    }
-
-    // MARK: - SCReconstructionManagerDelegate
-
-    func reconstructionManager(
-        _ manager: SCReconstructionManager,
-        didProcessWith metadata: SCAssimilatedFrameMetadata,
-        statistics: SCReconstructionManagerStatistics
-    ) {
-        let callbackStart = CACurrentMediaTime()
-        guard state == .scanning else { return }
-        latestViewMatrix = metadata.viewMatrix
-        latestReconstructionStatistics = statistics
-        updateDistanceGuidanceIfNeeded(with: metadata.viewMatrix)
-
-        switch metadata.result {
-        case .succeeded, .poorTracking:
-            refreshActivePreviewSnapshotIfNeeded(now: callbackStart)
-            // Texture retention is optional; suppress it briefly after instability so reconstruction
-            // stays prioritized while tracking recovers.
-            let shouldSaveTextureBuffer = generatesTexturedMeshes &&
-                assimilatedFrameIndex >= suppressTextureSavingUntilAssimilationIndex
-            if shouldSaveTextureBuffer,
-               assimilatedFrameIndex % texturedMeshColorBufferSaveInterval == 0,
-               let colorBuffer = metadata.colorBuffer?.takeUnretainedValue() {
-                meshTexturing.saveColorBufferForReconstruction(
-                    colorBuffer,
-                    withViewMatrix: metadata.viewMatrix,
-                    projectionMatrix: metadata.projectionMatrix
-                )
-            }
-            assimilatedFrameIndex += 1
-            updateCaptureProgress()
-            consecutiveFailedCount = 0
-            if metadata.result == .poorTracking {
-                emitGuidance(.poorTracking)
-                suppressTextureSavingUntilAssimilationIndex = max(
-                    suppressTextureSavingUntilAssimilationIndex,
-                    assimilatedFrameIndex + textureSaveSuppressionAssimilationWindow
-                )
-            } else if assimilatedFrameIndex % goodTrackingFrameInterval == 0 {
-                emitGuidance(.goodTracking)
-            }
-        case .failed:
-            if requiresManualFinish {
-                break
-            }
-            consecutiveFailedCount += 1
-            emitGuidance(.trackingLost, force: true)
-            suppressTextureSavingUntilAssimilationIndex = max(
-                suppressTextureSavingUntilAssimilationIndex,
-                assimilatedFrameIndex + textureSaveSuppressionAssimilationWindow
-            )
-            let belowMinFrames = statistics.succeededCount < minSucceededFramesForCompletion
-            let exceededFailureTolerance = consecutiveFailedCount >= 5
-            if belowMinFrames && exceededFailureTolerance {
-                stopScanning(reason: .canceled)
-            } else if !belowMinFrames {
-                stopScanning(reason: .finished)
-            }
-        case .lostTracking:
-            emitGuidance(.trackingLost, force: true)
+        case .idle:
+            shutterButton.isEnabled = false
             break
-        @unknown default:
-            break
-        }
-        if developerModeEnabled {
-            reconstructionPerformanceMetrics.record(CACurrentMediaTime() - callbackStart, budget: reconstructionDelegateBudget)
-        }
-    }
-
-    func reconstructionManager(_ manager: SCReconstructionManager, didEncounterAPIError error: Error) {
-        handleReconstructionError(error)
-    }
-
-    // MARK: - UI helpers
-
-    private func updateUI() {
-        hudController.updateForSessionState(self.state)
-        switch self.state {
-        case .default:
+        case .requestingPermission:
+            shutterButton.isEnabled = false
+            dismissButton.isEnabled = false
+        case let .ready(viewData):
             shutterButton.shutterButtonState = .default
+            shutterButton.isEnabled = true
             countdownLabel.isHidden = true
-            currentHUDState = hudController.currentHUDState
-        case .countdown(let seconds):
+            promptLabel.text = viewData.promptText
+            focusHintLabel.text = viewData.focusHintText
+            focusHintLabel.isHidden = viewData.focusHintText == nil
+            guidanceStatusChip.isHidden = true
+            progressLabel.isHidden = true
+            autoFinishLabel.isHidden = true
+            thermalWarningLabel.isHidden = true
+            developerDiagnosticsLabel.text = viewData.developerDiagnosticsText
+            developerDiagnosticsLabel.isHidden = viewData.developerDiagnosticsText == nil
+            manualFinishButton.isHidden = !viewData.finishButtonVisible
+            manualFinishButton.isEnabled = viewData.finishButtonEnabled
+            dismissButton.isEnabled = viewData.dismissButtonEnabled
+        case let .countdown(viewData):
             shutterButton.shutterButtonState = .countdown
-            countdownLabel.text = "\(seconds)"
+            shutterButton.isEnabled = true
+            countdownLabel.text = viewData.countdownText
             countdownLabel.isHidden = false
-            currentHUDState = hudController.currentHUDState
-        case .scanning:
-            shutterButton.shutterButtonState = .scanning
+            promptLabel.text = nil
+            guidanceStatusChip.isHidden = true
+            progressLabel.isHidden = true
+            autoFinishLabel.isHidden = true
+            focusHintLabel.isHidden = true
+            thermalWarningLabel.isHidden = true
+            developerDiagnosticsLabel.isHidden = true
+            manualFinishButton.isHidden = true
+            dismissButton.isEnabled = viewData.dismissButtonEnabled
+        case let .capturing(viewData):
+            applyCapturing(viewData, shutterState: .scanning)
+        case let .finishing(viewData):
+            applyCapturing(viewData, shutterState: .scanning)
+            dismissButton.isEnabled = false
+            manualFinishButton.isEnabled = false
+            shutterButton.isEnabled = false
+        case .unavailable(let viewData):
+            shutterButton.isEnabled = false
+            promptLabel.text = viewData.message
+        case .failed(let failure):
+            shutterButton.isEnabled = true
+            promptLabel.text = failure.message
+            guidanceStatusChip.isHidden = true
             countdownLabel.isHidden = true
-            currentHUDState = hudController.currentHUDState
+            progressLabel.isHidden = true
+            autoFinishLabel.isHidden = true
+            focusHintLabel.isHidden = true
+            thermalWarningLabel.isHidden = true
+            developerDiagnosticsLabel.isHidden = true
+            manualFinishButton.isHidden = true
+            dismissButton.isEnabled = true
+        case let .completed(payload):
+            guard !didRouteCompletion else { return }
+            didRouteCompletion = true
+            delegate?.appScanningViewController(self, didCompleteScan: payload)
+            delegate?.appScanningViewController(self, didScan: payload.pointCloud, meshTexturing: payload.meshTexturing)
         }
-        updateManualFinishButtonVisibility()
     }
 
-    private func updateManualFinishButtonVisibility() {
-        let shouldShow = requiresManualFinish && state == .scanning
-        manualFinishButton.isHidden = !shouldShow
-        manualFinishButton.alpha = shouldShow ? 1.0 : 0.0
-        manualFinishButton.isEnabled = shouldShow
-        DesignSystem.updateButtonEnabled(manualFinishButton, style: .primary)
-        if shouldShow {
-            view.bringSubviewToFront(manualFinishButton)
-        }
-    }
-
-    private func startPromptLoop() {
-        stopPromptLoop()
-        promptLabel.text = hudController.resetIdlePrompts()
-        currentHUDState = hudController.currentHUDState
-    }
-
-    private func stopPromptLoop() {
-        promptTimer?.invalidate()
-        promptTimer = nil
-    }
-
-    @discardableResult
-    private func emitGuidance(_ state: AppScanGuidanceState, force: Bool = false) -> Bool {
-        guard let update = hudController.emitGuidance(state, force: force) else { return false }
-        applyGuidanceUpdate(update)
-        onRealtimeGuidance?(update.message)
-        return true
-    }
-
-    private func applyGuidanceUpdate(_ update: AppScanGuidanceUpdate) {
-        promptLabel.text = update.message
-        guidanceStatusChip.text = "  \(update.status.title)  "
-        guidanceStatusChip.backgroundColor = update.status.backgroundColor
-        guidanceStatusChip.textColor = update.status.textColor
-        guidanceStatusChip.accessibilityLabel = update.accessibilityLabel
-        currentHUDState = update.hudState
-    }
-
-    private func updateCaptureProgress() {
-        guard state == .scanning else { return }
-        let now = Date()
-        if now.timeIntervalSince(lastProgressUpdateAt) < progressUpdateMinimumInterval {
-            return
-        }
-        lastProgressUpdateAt = now
-        let update = hudController.progressUpdate(
-            autoFinishSeconds: autoFinishSeconds,
-            autoFinishRemaining: sessionController.autoFinishRemaining,
-            assimilatedFrameIndex: assimilatedFrameIndex,
-            minSucceededFramesForCompletion: minSucceededFramesForCompletion
-        )
-        progressLabel.text = update.text
-        if developerModeEnabled {
-            developerDiagnosticsLabel.text = developerDiagnosticsText(baseDiagnostics: update.diagnostics)
+    private func applyCapturing(_ viewData: ScanCapturingViewData, shutterState: ShutterButtonState) {
+        shutterButton.shutterButtonState = shutterState
+        shutterButton.isEnabled = false
+        countdownLabel.isHidden = true
+        promptLabel.text = viewData.promptText
+        if let chipText = viewData.guidanceChipText {
+            guidanceStatusChip.text = "  \(chipText)  "
+            guidanceStatusChip.backgroundColor = guidanceBackgroundColor(for: viewData.guidanceChipStyle)
+            guidanceStatusChip.isHidden = false
         } else {
-            developerDiagnosticsLabel.text = update.diagnostics
+            guidanceStatusChip.isHidden = true
+        }
+        progressLabel.text = viewData.progressText
+        progressLabel.isHidden = viewData.progressText == nil
+        autoFinishLabel.text = autoFinishSeconds > 0 ? String(format: L("scanning.autofinish"), max(0, autoFinishSeconds - (Int(round((viewData.progressFraction ?? 0) * Float(autoFinishSeconds)))))) : nil
+        autoFinishLabel.isHidden = autoFinishSeconds <= 0
+        focusHintLabel.text = viewData.focusHintText
+        focusHintLabel.isHidden = viewData.focusHintText == nil
+        thermalWarningLabel.isHidden = !viewData.thermalWarningVisible
+        developerDiagnosticsLabel.text = viewData.developerDiagnosticsText
+        developerDiagnosticsLabel.isHidden = viewData.developerDiagnosticsText == nil
+        manualFinishButton.isHidden = !viewData.finishButtonVisible
+        manualFinishButton.isEnabled = viewData.finishButtonEnabled
+        dismissButton.isEnabled = viewData.dismissButtonEnabled
+        bottomSheet.setSnapPoint(viewData.thermalWarningVisible || developerModeEnabled ? .half : .collapsed, animated: false)
+    }
+
+    private func handle(effect: ScanEffect) {
+        switch effect {
+        case let .alert(title, message, identifier):
+            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: L("common.ok"), style: .default, handler: { [weak self] _ in
+                guard let self else { return }
+                if identifier == "cameraDenied" || identifier == "cameraUnavailable" || identifier == "thermalShutdown" {
+                    self.dismiss(animated: true)
+                }
+            }))
+            if presentedViewController == nil {
+                present(alert, animated: true)
+            }
+        case .dismiss:
+            guard !didRouteCancel && !didRouteCompletion else { return }
+            didRouteCancel = true
+            delegate?.appScanningViewControllerDidCancel(self)
+        case .hapticPrimary:
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         }
     }
 
-    private func developerDiagnosticsText(baseDiagnostics: String) -> String {
-        guard developerModeEnabled else { return baseDiagnostics }
-        let cameraStats = cameraManager.diagnosticsSnapshot
-        let reconStats = latestReconstructionStatistics
-        return String(
-            format: "%@ · camera pair=%d drop=%d depth=%d video=%d miss=%d %.1f/%.1f/%.1f ms ovr=%d · draw %.1f/%.1f/%.1f ms ovr=%d · recon ok=%ld lost=%ld drop=%ld %.1f/%.1f/%.1f ms ovr=%d",
-            baseDiagnostics,
-            cameraStats.deliveredSynchronizedPairCount,
-            cameraStats.droppedSynchronizedPairCount,
-            cameraStats.droppedDepthDataCount,
-            cameraStats.droppedVideoDataCount,
-            cameraStats.missingSynchronizedDataCount,
-            cameraPerformanceMetrics.averageDurationMs,
-            cameraPerformanceMetrics.p95DurationMs,
-            cameraPerformanceMetrics.peakDurationMs,
-            cameraPerformanceMetrics.overBudgetCount,
-            drawPerformanceMetrics.averageDurationMs,
-            drawPerformanceMetrics.p95DurationMs,
-            drawPerformanceMetrics.peakDurationMs,
-            drawPerformanceMetrics.overBudgetCount,
-            reconStats.succeededCount,
-            reconStats.lostTrackingCount,
-            reconStats.droppedFrameCount,
-            reconstructionPerformanceMetrics.averageDurationMs,
-            reconstructionPerformanceMetrics.p95DurationMs,
-            reconstructionPerformanceMetrics.peakDurationMs,
-            reconstructionPerformanceMetrics.overBudgetCount
+    static func makeMetalContextForAssembly() -> ScanMetalContext? {
+        guard let device = MTLCreateSystemDefaultDevice(),
+              let algorithmCommandQueue = device.makeCommandQueue(),
+              let visualizationCommandQueue = device.makeCommandQueue() else {
+            return nil
+        }
+        return ScanMetalContext(
+            device: device,
+            algorithmCommandQueue: algorithmCommandQueue,
+            visualizationCommandQueue: visualizationCommandQueue
         )
     }
 
-    private func updateDistanceGuidanceIfNeeded(with viewMatrix: simd_float4x4) {
-        let translation = SIMD3<Float>(viewMatrix.columns.3.x, viewMatrix.columns.3.y, viewMatrix.columns.3.z)
-        distanceTracker.add(simd_length(translation))
-        if distanceTracker.shouldWarn(threshold: distanceInstabilityThreshold) {
-            emitGuidance(.adjustDistance)
-        }
+    static func makeUnavailableRuntimeEngineForAssembly() -> ScanRuntimeEngining {
+        UnavailableScanRuntimeEngine()
     }
 
-    private func updateHUDVisibility() {
-        let visibility = hudController.visibility(for: currentHUDState, autoFinishSeconds: autoFinishSeconds)
-        promptLabel.isHidden = visibility.promptHidden
-        progressLabel.isHidden = visibility.progressHidden
-        captureProgressView.isHidden = visibility.progressBarHidden
-        guidanceStatusChip.isHidden = visibility.statusHidden
-        autoFinishLabel.isHidden = visibility.autoFinishHidden
-        focusHintLabel.isHidden = visibility.focusHintHidden
-        developerDiagnosticsLabel.isHidden = !(developerModeEnabled && bottomSheet.currentSnapPoint == .full && state == .scanning)
-        switch currentHUDState {
-        case .idlePrompts:
-            bottomSheet.setSnapPoint(.collapsed, animated: true)
-        case .countdown:
-            bottomSheet.setSnapPoint(.collapsed, animated: true)
-        case .capturing, .warning, .critical:
-            bottomSheet.setSnapPoint(.half, animated: false)
-        }
+    private func refreshCurrentInterfaceOrientation() {
+        guard Thread.isMainThread else { return }
+        currentInterfaceOrientation = view.window?.windowScene?.effectiveGeometry.interfaceOrientation ?? .portrait
+        orientationSource.current = currentInterfaceOrientation
     }
 
-    @discardableResult
-    private func applyNextIdlePromptIfNeeded() -> Bool {
-        guard let prompt = hudController.nextIdlePromptIfNeeded(for: state) else { return false }
-        promptLabel.text = prompt
-        return true
-    }
-
-    private func showFocusHintIfIdle() {
-        UIView.animate(withDuration: 0.2) {
-            self.focusHintLabel.alpha = 1
+    private func guidanceBackgroundColor(for style: GuidanceChipStyle) -> UIColor {
+        switch style {
+        case .neutral:
+            return UIColor.systemGray.withAlphaComponent(0.85)
+        case .caution:
+            return UIColor.systemOrange.withAlphaComponent(0.9)
+        case .warning:
+            return UIColor.systemRed.withAlphaComponent(0.9)
+        case .good:
+            return UIColor.systemGreen.withAlphaComponent(0.86)
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
-            UIView.animate(withDuration: 0.2) {
-                self?.focusHintLabel.alpha = 0
-            }
-        }
-    }
-
-    private func updateAutoFinishLabel() {
-        autoFinishLabel.isHidden = autoFinishSeconds <= 0 || state != .scanning
-        autoFinishLabel.text = String(format: L("scanning.autofinish"), sessionController.autoFinishRemaining)
     }
 
     @objc private func focusOnTap(_ gesture: UITapGestureRecognizer) {
-        guard state != .scanning else { return }
         let location = gesture.location(in: metalContainerView)
-        cameraManager.focusOnTap(at: location)
-    }
-
-    private func handleCriticalThermalState() {
-        if state == .scanning {
-            stopScanning(reason: .finished)
-        }
-
-        let alert = UIAlertController(
-            title: L("scanning.thermal.title"),
-            message: L("scanning.thermal.message"),
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: L("common.ok"), style: .default, handler: { [weak self] _ in
-            self?.dismiss(animated: true)
-        }))
-
-        guard presentedViewController == nil else { return }
-        present(alert, animated: true)
+        store.send(.focusRequested(location))
     }
 
     private func installVolumeShutterIfNeeded() {
@@ -1177,7 +784,6 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         volumeView.isHidden = true
         view.addSubview(volumeView)
         self.volumeView = volumeView
-
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(volumeChanged(_:)),
@@ -1208,213 +814,24 @@ final class AppScanningViewController: UIViewController, CameraManagerDelegate, 
         shutterTapped(nil)
     }
 
-    private func handleReconstructionError(_ error: Error) {
-        Log.scan.error("Reconstruction API error: \(error.localizedDescription, privacy: .public)")
-        stopScanning(reason: .canceled)
-    }
-
-    private func smoothedMotionMagnitude(with motion: CMDeviceMotion) -> Double {
-        let acceleration = motion.userAcceleration
-        let magnitude = sqrt(
-            acceleration.x * acceleration.x +
-            acceleration.y * acceleration.y +
-            acceleration.z * acceleration.z
-        )
-        return smoothedMotionMagnitude(forMagnitude: magnitude)
-    }
-
-    private func smoothedMotionMagnitude(forMagnitude magnitude: Double) -> Double {
-        smoothedMotionSamples.append(magnitude)
-        if smoothedMotionSamples.count > motionSampleWindowSize {
-            smoothedMotionSamples.removeFirst()
+    private static func scanSheetProfile(forHeight h: CGFloat, isPad: Bool) -> ScanSheetProfile {
+        if isPad || h >= 900 {
+            return ScanSheetProfile(collapsed: 180, half: 250, full: 320)
         }
-        let sum = smoothedMotionSamples.reduce(0, +)
-        return sum / Double(smoothedMotionSamples.count)
-    }
-
-    @discardableResult
-    private func handleMotionGuidance(forMagnitude magnitude: Double) -> Bool {
-        guard magnitude > unstableMotionThreshold else { return false }
-        return emitGuidance(.moveSlower)
+        if h <= 700 {
+            return ScanSheetProfile(collapsed: 168, half: 236, full: 300)
+        }
+        return ScanSheetProfile(collapsed: 170, half: 260, full: 360)
     }
 
 #if DEBUG
     static func debug_scanSheetProfile(height: CGFloat, isPad: Bool) -> (collapsed: CGFloat, half: CGFloat, full: CGFloat) {
-        let p = scanSheetProfile(forHeight: height, isPad: isPad)
-        return (p.collapsed, p.half, p.full)
+        let profile = scanSheetProfile(forHeight: height, isPad: isPad)
+        return (profile.collapsed, profile.half, profile.full)
     }
 
-    func debug_setStateScanning() {
-        sessionController.debug_setStateScanning()
+    func debug_scanState() -> ScanState {
+        store.state
     }
-
-    func debug_setStateDefault() {
-        sessionController.debug_setStateDefault()
-    }
-
-    @discardableResult
-    func debug_emitGuidance(named name: String, force: Bool = false) -> Bool {
-        switch name {
-        case "start":
-            return emitGuidance(.start, force: force)
-        case "moveSlower":
-            return emitGuidance(.moveSlower, force: force)
-        case "adjustDistance":
-            return emitGuidance(.adjustDistance, force: force)
-        case "poorTracking":
-            return emitGuidance(.poorTracking, force: force)
-        case "goodTracking":
-            return emitGuidance(.goodTracking, force: force)
-        case "trackingLost":
-            return emitGuidance(.trackingLost, force: force)
-        default:
-            return false
-        }
-    }
-
-    @discardableResult
-    func debug_applyNextIdlePromptStep() -> Bool {
-        applyNextIdlePromptIfNeeded()
-    }
-
-    func debug_guidanceText() -> String? {
-        promptLabel.text
-    }
-
-    func debug_statusChipText() -> String? {
-        guidanceStatusChip.text?.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    func debug_statusChipHidden() -> Bool {
-        guidanceStatusChip.isHidden
-    }
-
-    func debug_progressLabelText() -> String? {
-        progressLabel.text
-    }
-
-    func debug_progressHidden() -> Bool {
-        progressLabel.isHidden || captureProgressView.isHidden
-    }
-
-    func debug_countdownHidden() -> Bool {
-        countdownLabel.isHidden
-    }
-
-    func debug_setAutoFinishForProgress(seconds: Int, remaining: Int) {
-        autoFinishSeconds = seconds
-        sessionController.debug_setAutoFinish(seconds: seconds, remaining: remaining)
-    }
-
-    func debug_setAssimilatedFramesForProgress(_ frames: Int) {
-        assimilatedFrameIndex = frames
-    }
-
-    func debug_updateCaptureProgress() {
-        updateCaptureProgress()
-    }
-
-    func debug_setLastProgressUpdate(_ date: Date) {
-        lastProgressUpdateAt = date
-    }
-
-    func debug_developerDiagnosticsText(baseDiagnostics: String) -> String {
-        developerDiagnosticsText(baseDiagnostics: baseDiagnostics)
-    }
-
-    func debug_recordCameraMetric(duration: CFTimeInterval, budget: CFTimeInterval) {
-        cameraPerformanceMetrics.record(duration, budget: budget)
-    }
-
-    func debug_recordReconstructionMetric(duration: CFTimeInterval, budget: CFTimeInterval) {
-        reconstructionPerformanceMetrics.record(duration, budget: budget)
-    }
-
-    func debug_setLatestReconstructionStatistics(_ statistics: SCReconstructionManagerStatistics) {
-        latestReconstructionStatistics = statistics
-    }
-
-    func debug_recordDrawMetric(duration: CFTimeInterval, budget: CFTimeInterval) {
-        drawPerformanceMetrics.record(duration, budget: budget)
-    }
-
-    func debug_buildActivePreviewPointCloud() -> SCPointCloud? {
-        activeScanPreviewPointCloud(now: CACurrentMediaTime())
-    }
-
-    func debug_buildActivePreviewPointCloud(at timestamp: CFTimeInterval) -> SCPointCloud? {
-        activeScanPreviewPointCloud(now: timestamp)
-    }
-
-    func debug_refreshActivePreviewSnapshot(at timestamp: CFTimeInterval) {
-        refreshActivePreviewSnapshotIfNeeded(now: timestamp)
-    }
-
-    func debug_previewSnapshotStats() -> (buildCount: Int, reuseCount: Int, hasCache: Bool) {
-        (previewSnapshotBuildCount, previewSnapshotReuseCount, previewSnapshotCache != nil)
-    }
-
-    func debug_previewSnapshotMinimumInterval() -> CFTimeInterval {
-        previewSnapshotMinimumInterval
-    }
-
-    func debug_invalidatePreviewSnapshotCache() {
-        invalidatePreviewSnapshotCache()
-    }
-
-    func debug_recordDistanceSamples(_ samples: [Float]) {
-        distanceTracker.reset()
-        for sample in samples {
-            distanceTracker.add(sample)
-        }
-    }
-
-    func debug_updateDistanceGuidance(with viewMatrix: simd_float4x4) {
-        updateDistanceGuidanceIfNeeded(with: viewMatrix)
-    }
-
-    func debug_smoothedMotionMagnitude(_ magnitudes: [Double]) -> Double {
-        smoothedMotionSamples.removeAll(keepingCapacity: true)
-        var result = 0.0
-        for magnitude in magnitudes {
-            result = smoothedMotionMagnitude(forMagnitude: magnitude)
-        }
-        return result
-    }
-
-    @discardableResult
-    func debug_handleMotionGuidance(forMagnitudes magnitudes: [Double]) -> Bool {
-        smoothedMotionSamples.removeAll(keepingCapacity: true)
-        var emitted = false
-        for magnitude in magnitudes {
-            emitted = handleMotionGuidance(forMagnitude: smoothedMotionMagnitude(forMagnitude: magnitude)) || emitted
-        }
-        return emitted
-    }
-
-    func debug_setStateCountdown(seconds: Int) {
-        sessionController.debug_setStateCountdown(seconds: seconds)
-    }
-
-    func debug_stopScanning(reason: ScanningTerminationReason) {
-        stopScanning(reason: reason)
-    }
-
-    func debug_handleReconstructionError(_ error: Error) {
-        handleReconstructionError(error)
-    }
-
-    func debug_triggerViewWillDisappear() {
-        viewWillDisappear(false)
-    }
-
-    func debug_handleCriticalThermalState() {
-        handleCriticalThermalState()
-    }
-
-    func debug_onFinishCompletion(_ handler: (() -> Void)?) {
-        debugFinishCompletionHandler = handler
-    }
-
 #endif
 }

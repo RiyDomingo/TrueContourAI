@@ -146,7 +146,7 @@ import UIKit
         _containerNode.name = "Container"
         sceneView.scene?.rootNode.addChildNode(_containerNode)
         sceneView.delegate = self
-        _initialPointOfView = sceneView.pointOfView!.transform
+        _initialPointOfView = sceneView.pointOfView?.transform ?? SCNMatrix4Identity
         
         meshingProgressView.isHidden = true
 
@@ -160,7 +160,7 @@ import UIKit
     override public func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        sceneView.pointOfView!.transform = _initialPointOfView
+        sceneView.pointOfView?.transform = _initialPointOfView
         
         leftButton.isHidden = leftButton.title(for: UIControl.State.normal)?.isEmpty ?? true
         rightButton.isHidden = rightButton.title(for: UIControl.State.normal)?.isEmpty ?? true
@@ -202,7 +202,7 @@ import UIKit
         // Min FOV: 10º
         // Max FOV: 120º
         
-        let currentFOV = sceneView.pointOfView!.camera!.fieldOfView
+        guard let currentFOV = sceneView.pointOfView?.camera?.fieldOfView else { return }
         let pointSize = 10.0 - 0.078 * currentFOV
         
         if let pointsElement = _containerNode.childNode(withName: "SCPointCloud", recursively: true)?.geometry?.elements.first {

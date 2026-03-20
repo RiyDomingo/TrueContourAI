@@ -23,7 +23,26 @@ final class AccessibilitySmokeTests: XCTestCase {
             settingsStore: SettingsStore(),
             earServiceFactory: { nil }
         )
-        let vc = HomeViewController(dependencies: deps)
+        let settingsAssembler = SettingsAssembler(dependencies: deps)
+        let scanAssembler = ScanAssembler(dependencies: deps)
+        let previewAssembler = PreviewAssembler(dependencies: deps)
+        let vc = HomeAssembler(
+            dependencies: deps,
+            makeSettingsViewController: { onScansChanged in
+                settingsAssembler.makeSettingsViewController(onScansChanged: onScansChanged)
+            },
+            makeScanCoordinator: {
+                scanAssembler.makeScanCoordinator()
+            },
+            makePreviewCoordinator: { presenter, scanFlowState, previewSessionState, onToast in
+                previewAssembler.makePreviewCoordinator(
+                    presenter: presenter,
+                    scanFlowState: scanFlowState,
+                    previewSessionState: previewSessionState,
+                    onToast: onToast
+                )
+            }
+        ).makeHomeViewController()
         _ = vc.view
 
         let startButton = vc.view.findView(withAccessibilityIdentifier: "startScanButton")
@@ -49,15 +68,9 @@ final class AccessibilitySmokeTests: XCTestCase {
     }
 
     func testPreviewVerifyButtonHasAccessibilityLabelAndHint() {
-        let coordinator = ScanPreviewCoordinator(
-            presenter: UIViewController(),
-            scanService: makeRepository(),
-            settingsStore: SettingsStore(),
-            scanFlowState: ScanFlowState(),
-            scanExporter: makeExporter(),
-            onToast: nil
-        )
-        let verifyButton = coordinator.debug_makeVerifyEarButton()
+        let overlay = PreviewOverlayUIController()
+        let host = UIView(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        let verifyButton = overlay.addVerifyEarUI(to: host, showHint: false)
         XCTAssertEqual(verifyButton.accessibilityLabel, L("scan.preview.accessibility.verify.label"))
         XCTAssertEqual(verifyButton.accessibilityHint, L("scan.preview.accessibility.verify.hint"))
     }
@@ -80,28 +93,14 @@ final class AccessibilitySmokeTests: XCTestCase {
         let defaultsOff = UserDefaults(suiteName: "FitBrowSliderOff.\(UUID().uuidString)")!
         let settingsOff = SettingsStore(defaults: defaultsOff)
         settingsOff.developerModeEnabled = false
-        let coordinatorOff = ScanPreviewCoordinator(
-            presenter: UIViewController(),
-            scanService: makeRepository(),
-            settingsStore: settingsOff,
-            scanFlowState: ScanFlowState(),
-            scanExporter: makeExporter()
-        )
-        XCTAssertFalse(coordinatorOff.debug_addFitControlsIfDeveloperMode(hostView: hostView))
-        XCTAssertFalse(coordinatorOff.debug_hasFitBrowSlider())
+        XCTAssertFalse(PreviewViewController.debug_addFitControlsIfDeveloperMode(hostView: hostView, settingsStore: settingsOff))
+        XCTAssertNil(hostView.findSlider())
 
         let defaultsOn = UserDefaults(suiteName: "FitBrowSliderOn.\(UUID().uuidString)")!
         let settingsOn = SettingsStore(defaults: defaultsOn)
         settingsOn.developerModeEnabled = true
-        let coordinatorOn = ScanPreviewCoordinator(
-            presenter: UIViewController(),
-            scanService: makeRepository(),
-            settingsStore: settingsOn,
-            scanFlowState: ScanFlowState(),
-            scanExporter: makeExporter()
-        )
-        XCTAssertTrue(coordinatorOn.debug_addFitControlsIfDeveloperMode(hostView: hostView))
-        XCTAssertTrue(coordinatorOn.debug_hasFitBrowSlider())
+        XCTAssertTrue(PreviewViewController.debug_addFitControlsIfDeveloperMode(hostView: hostView, settingsStore: settingsOn))
+        XCTAssertNotNil(hostView.findSlider())
     }
 
     func testPreviewSheetProfileCompactsOnSmallHeight() {
@@ -143,6 +142,16 @@ private extension UIView {
         for subview in subviews {
             if let match = subview.findView(withAccessibilityIdentifier: identifier) {
                 return match
+            }
+        }
+        return nil
+    }
+
+    func findSlider() -> UISlider? {
+        if let slider = self as? UISlider { return slider }
+        for subview in subviews {
+            if let slider = subview.findSlider() {
+                return slider
             }
         }
         return nil

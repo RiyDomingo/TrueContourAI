@@ -6,7 +6,7 @@ protocol SettingsScanServicing {
     func deleteAllScans() -> Result<Void, Error>
 }
 
-final class SettingsStorageWorkflow {
+final class SettingsStorageUseCase {
     private let scanService: SettingsScanServicing
 
     init(scanService: SettingsScanServicing) {
@@ -23,7 +23,12 @@ final class SettingsStorageWorkflow {
     }
 
     func deleteAllScans(completion: @escaping (Result<Void, Error>) -> Void) {
-        completion(scanService.deleteAllScans())
+        DispatchQueue.global(qos: .utility).async { [scanService] in
+            let result = scanService.deleteAllScans()
+            DispatchQueue.main.async {
+                completion(result)
+            }
+        }
     }
 
     private static func formatStorageUsage(scanService: SettingsScanServicing) -> String {
@@ -49,6 +54,53 @@ final class SettingsStorageWorkflow {
             total += Int64(values?.totalFileAllocatedSize ?? values?.fileAllocatedSize ?? 0)
         }
         return total
+    }
+}
+
+final class SettingsInteractionController {
+    private let store: SettingsStore
+    private let storageUseCase: SettingsStorageUseCase
+    private let feedbackController: SettingsFeedbackController
+
+    init(
+        store: SettingsStore,
+        storageUseCase: SettingsStorageUseCase,
+        feedbackController: SettingsFeedbackController
+    ) {
+        self.store = store
+        self.storageUseCase = storageUseCase
+        self.feedbackController = feedbackController
+    }
+
+    func refreshStorageUsage() {
+        store.send(.refreshStorageRequested)
+        storageUseCase.refreshStorageUsage { [weak store] usage in
+            store?.send(.storageUsageUpdated(usage))
+        }
+    }
+
+    func requestReset() {
+        feedbackController.confirmReset { [weak self] in
+            guard let self else { return }
+            self.store.send(.resetDefaults)
+            self.refreshStorageUsage()
+        }
+    }
+
+    func requestDeleteAllScans() {
+        feedbackController.confirmDeleteAllScans { [weak self] in
+            self?.deleteAllScansConfirmed()
+        }
+    }
+
+    func deleteAllScansConfirmed() {
+        storageUseCase.deleteAllScans { [weak self] result in
+            guard let self else { return }
+            self.store.send(.deleteAllCompleted(result))
+            if case .success = result {
+                self.refreshStorageUsage()
+            }
+        }
     }
 }
 
@@ -85,8 +137,8 @@ struct SettingsSection {
 }
 
 struct SettingsSectionBuilder {
-    let store: SettingsStore
-    let storageUsageText: String
+    let state: SettingsState
+    let onAction: (SettingsAction) -> Void
     let onDeleteAll: () -> Void
     let onReset: () -> Void
 
@@ -113,8 +165,8 @@ struct SettingsSectionBuilder {
                             .init(title: L("settings.scanDuration.10s"), value: 10),
                             .init(title: L("settings.scanDuration.20s"), value: 20)
                         ],
-                        selected: { [store] in store.scanDurationSeconds },
-                        setSelected: { [store] value in store.scanDurationSeconds = value }
+                        selected: { state.scanDurationSeconds },
+                        setSelected: { value in onAction(.setScanDurationSeconds(value)) }
                     ),
                     identifier: nil
                 ),
@@ -122,8 +174,8 @@ struct SettingsSectionBuilder {
                     title: L("settings.showChecklist.title"),
                     subtitle: L("settings.showChecklist.subtitle"),
                     kind: .toggle(
-                        isOn: { [store] in store.showPreScanChecklist },
-                        setOn: { [store] value in store.showPreScanChecklist = value },
+                        isOn: { state.showPreScanChecklist },
+                        setOn: { value in onAction(.setShowPreScanChecklist(value)) },
                         identifier: "settings.showPreScanChecklist"
                     ),
                     identifier: nil
@@ -132,8 +184,8 @@ struct SettingsSectionBuilder {
                     title: L("settings.ear.hint.title"),
                     subtitle: L("settings.ear.hint.subtitle"),
                     kind: .toggle(
-                        isOn: { [store] in store.showVerifyEarHint },
-                        setOn: { [store] value in store.showVerifyEarHint = value },
+                        isOn: { state.showVerifyEarHint },
+                        setOn: { value in onAction(.setShowVerifyEarHint(value)) },
                         identifier: "settings.showVerifyEarHint"
                     ),
                     identifier: nil
@@ -151,8 +203,8 @@ struct SettingsSectionBuilder {
                     title: L("settings.export.gltf.title"),
                     subtitle: L("settings.export.gltf.subtitle"),
                     kind: .toggle(
-                        isOn: { [store] in store.exportGLTF },
-                        setOn: { [store] value in store.exportGLTF = value },
+                        isOn: { state.exportGLTF },
+                        setOn: { value in onAction(.setExportGLTF(value)) },
                         identifier: "settings.exportGLTF"
                     ),
                     identifier: nil
@@ -161,8 +213,8 @@ struct SettingsSectionBuilder {
                     title: L("settings.export.obj.title"),
                     subtitle: L("settings.export.obj.subtitle"),
                     kind: .toggle(
-                        isOn: { [store] in store.exportOBJ },
-                        setOn: { [store] value in store.exportOBJ = value },
+                        isOn: { state.exportOBJ },
+                        setOn: { value in onAction(.setExportOBJ(value)) },
                         identifier: "settings.exportOBJ"
                     ),
                     identifier: nil
@@ -186,8 +238,8 @@ struct SettingsSectionBuilder {
                     title: L("settings.developerMode.title"),
                     subtitle: L("settings.developerMode.subtitle"),
                     kind: .toggle(
-                        isOn: { [store] in store.developerModeEnabled },
-                        setOn: { [store] value in store.developerModeEnabled = value },
+                        isOn: { state.developerModeEnabled },
+                        setOn: { value in onAction(.setDeveloperModeEnabled(value)) },
                         identifier: "settings.developerModeEnabled"
                     ),
                     identifier: nil
@@ -196,12 +248,8 @@ struct SettingsSectionBuilder {
                     title: L("settings.advanced.qualityGate.title"),
                     subtitle: L("settings.advanced.qualityGate.subtitle"),
                     kind: .toggle(
-                        isOn: { [store] in store.scanQualityConfig.gateEnabled },
-                        setOn: { [store] value in
-                            var cfg = store.scanQualityConfig
-                            cfg.gateEnabled = value
-                            store.scanQualityConfig = cfg
-                        },
+                        isOn: { state.scanQualityConfig.gateEnabled },
+                        setOn: { value in onAction(.setQualityGateEnabled(value)) },
                         identifier: "settings.qualityGateEnabled"
                     ),
                     identifier: nil
@@ -215,12 +263,8 @@ struct SettingsSectionBuilder {
                             .init(title: L("settings.advanced.minQualityScore.balanced"), value: 65),
                             .init(title: L("settings.advanced.minQualityScore.strict"), value: 75)
                         ],
-                        selected: { [store] in Int(round(store.scanQualityConfig.minQualityScore * 100)) },
-                        setSelected: { [store] value in
-                            var cfg = store.scanQualityConfig
-                            cfg.minQualityScore = Float(value) / 100.0
-                            store.scanQualityConfig = cfg
-                        }
+                        selected: { Int(round(state.scanQualityConfig.minQualityScore * 100)) },
+                        setSelected: { value in onAction(.setMinQualityScorePercent(value)) }
                     ),
                     identifier: nil
                 ),
@@ -233,12 +277,8 @@ struct SettingsSectionBuilder {
                             .init(title: L("settings.advanced.minValidPoints.recommended"), value: 90_000),
                             .init(title: L("settings.advanced.minValidPoints.high"), value: 120_000)
                         ],
-                        selected: { [store] in store.scanQualityConfig.minValidPoints },
-                        setSelected: { [store] value in
-                            var cfg = store.scanQualityConfig
-                            cfg.minValidPoints = value
-                            store.scanQualityConfig = cfg
-                        }
+                        selected: { state.scanQualityConfig.minValidPoints },
+                        setSelected: { value in onAction(.setMinValidPoints(value)) }
                     ),
                     identifier: nil
                 ),
@@ -251,12 +291,8 @@ struct SettingsSectionBuilder {
                             .init(title: L("settings.advanced.minValidRatio.recommended"), value: 60),
                             .init(title: L("settings.advanced.minValidRatio.high"), value: 70)
                         ],
-                        selected: { [store] in Int(round(store.scanQualityConfig.minValidRatio * 100)) },
-                        setSelected: { [store] value in
-                            var cfg = store.scanQualityConfig
-                            cfg.minValidRatio = Float(value) / 100.0
-                            store.scanQualityConfig = cfg
-                        }
+                        selected: { Int(round(state.scanQualityConfig.minValidRatio * 100)) },
+                        setSelected: { value in onAction(.setMinValidRatioPercent(value)) }
                     ),
                     identifier: nil
                 )
@@ -271,7 +307,7 @@ struct SettingsSectionBuilder {
             rows: [
                 SettingsRow(
                     title: L("settings.storage.used.title"),
-                    subtitle: storageUsageText,
+                    subtitle: state.storageUsageText,
                     kind: .info,
                     identifier: "settings.storageUsageRow"
                 ),

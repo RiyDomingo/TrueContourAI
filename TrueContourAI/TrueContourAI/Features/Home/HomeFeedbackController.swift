@@ -19,11 +19,9 @@ final class HomeFeedbackController {
     }()
 
     init(
-        hostViewController: UIViewController,
         environment: AppEnvironment,
         diagnosticsTextProvider: @escaping () -> String?
     ) {
-        self.hostViewController = hostViewController
         self.environment = environment
         self.diagnosticsTextProvider = diagnosticsTextProvider
 #if DEBUG
@@ -41,6 +39,10 @@ final class HomeFeedbackController {
         if let diagnosticsObserver {
             NotificationCenter.default.removeObserver(diagnosticsObserver)
         }
+    }
+
+    func attach(hostViewController: UIViewController) {
+        self.hostViewController = hostViewController
     }
 
     func handleToast(_ message: String) {

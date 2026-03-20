@@ -7,15 +7,40 @@ import UIKit
 
 final class AppCoordinator {
     private let window: UIWindow
-    private let dependencies: AppDependencies
+    private let scanAssembler: ScanAssembler
+    private let previewAssembler: PreviewAssembler
+    private let homeAssembler: HomeAssembler
+    private let settingsAssembler: SettingsAssembler
 
     init(window: UIWindow, dependencies: AppDependencies) {
         self.window = window
-        self.dependencies = dependencies
+        let scanAssembler = ScanAssembler(dependencies: dependencies)
+        self.scanAssembler = scanAssembler
+        let previewAssembler = PreviewAssembler(dependencies: dependencies)
+        self.previewAssembler = previewAssembler
+        let settingsAssembler = SettingsAssembler(dependencies: dependencies)
+        self.settingsAssembler = settingsAssembler
+        self.homeAssembler = HomeAssembler(
+            dependencies: dependencies,
+            makeSettingsViewController: { [settingsAssembler] onScansChanged in
+                settingsAssembler.makeSettingsViewController(onScansChanged: onScansChanged)
+            },
+            makeScanCoordinator: {
+                scanAssembler.makeScanCoordinator()
+            },
+            makePreviewCoordinator: { presenter, scanFlowState, previewSessionState, onToast in
+                previewAssembler.makePreviewCoordinator(
+                    presenter: presenter,
+                    scanFlowState: scanFlowState,
+                    previewSessionState: previewSessionState,
+                    onToast: onToast
+                )
+            }
+        )
     }
 
     func start() {
-        window.rootViewController = HomeViewController(dependencies: dependencies)
+        window.rootViewController = homeAssembler.makeHomeViewController()
         window.makeKeyAndVisible()
     }
 }

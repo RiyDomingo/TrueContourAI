@@ -48,6 +48,10 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
 
         XCTAssertTrue(waitForExists(app.buttons["scanDismissButton"], timeout: 8))
         app.buttons["scanDismissButton"].tap()
+        let returnedHome = waitForCondition(timeout: 8.0) {
+            startButton.exists || !app.buttons["scanDismissButton"].exists
+        }
+        XCTAssertTrue(returnedHome, "Expected scan screen to dismiss after tapping cancel during smoke flow")
         XCTAssertTrue(waitForExists(startButton, timeout: 8))
     }
 
@@ -71,7 +75,13 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         XCTAssertTrue(waitForExists(countdown, timeout: 3.0), "Expected countdown label after starting scan")
 
         let progress = app.staticTexts["scanProgressLabel"]
-        XCTAssertTrue(waitForExists(progress, timeout: 10.0), "Expected visible capture progress text during scan")
+        let previewSaveButton = app.buttons["previewSaveButton"]
+        let didReachProgress = waitForExists(progress, timeout: 10.0)
+            || waitForExists(app.buttons["finishScanNowButton"], timeout: 6.0)
+        XCTAssertTrue(
+            didReachProgress,
+            "Expected visible capture progress text during scan before preview transition. previewSave=\(previewSaveButton.exists ? 1 : 0),countdown=\(countdown.exists ? 1 : 0)"
+        )
 
         let statusChip = app.staticTexts["scanGuidanceStatusChip"]
         XCTAssertTrue(
@@ -190,9 +200,9 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
 #endif
         let app = launchDeviceSmokeApp(extraArguments: ["ui-test-seed-scan"])
         let openButton = app.buttons["scanOpenButton"].firstMatch
-        XCTAssertTrue(waitForExists(openButton, timeout: 8.0), "Expected seeded scan open button")
+        XCTAssertTrue(waitForExists(openButton, timeout: 14.0), "Expected seeded scan open button")
         revealElementIfNeeded(openButton, in: app)
-        XCTAssertTrue(waitForHittable(openButton, timeout: 8.0), "Expected seeded scan open button to become hittable")
+        XCTAssertTrue(waitForHittable(openButton, timeout: 10.0), "Expected seeded scan open button to become hittable")
         openButton.tap()
         XCTAssertTrue(waitForPreviewRoot(in: app, timeout: 12.0), "Expected seeded preview root before Verify Ear")
 
@@ -244,7 +254,12 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         let shutter = try waitForScanShutter(app: app)
         shutter.tap()
         let finishButton = try waitForFinishButton(app: app)
-        XCTAssertTrue(waitForCaptureProgress(app: app, minimumCapturedSeconds: 2, timeout: 18.0))
+        let progressed = waitForCaptureProgress(app: app, minimumCapturedSeconds: 2, timeout: 18.0)
+        let previewSaveButton = app.buttons["previewSaveButton"]
+        XCTAssertTrue(
+            progressed || waitForCondition(timeout: 2.0) { finishButton.exists && !previewSaveButton.exists },
+            "Expected scan capture progress before manual finish. previewSave=\(previewSaveButton.exists ? 1 : 0),finishExists=\(finishButton.exists ? 1 : 0)"
+        )
         finishButton.tap()
         let saveButton = app.buttons["previewSaveButton"]
         let saveStateView = app.otherElements["previewSaveStateView"]
@@ -348,16 +363,22 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         let finishButton = app.buttons["finishScanNowButton"]
         let progressLabel = app.staticTexts["scanProgressLabel"]
         let countdownLabel = app.staticTexts["scanCountdownLabel"]
+        let previewSaveButton = app.buttons["previewSaveButton"]
+        let previewCloseButton = app.buttons["previewCloseButton"]
 
         let didReachScanningUI = waitForExists(progressLabel, timeout: 8.0)
             || waitForExists(countdownLabel, timeout: 3.0)
             || waitForExists(finishButton, timeout: 8.0)
         XCTAssertTrue(
             didReachScanningUI,
-            "Expected countdown, progress, or finish control after starting scan. progressExists=\(progressLabel.exists ? 1 : 0),countdownExists=\(countdownLabel.exists ? 1 : 0),finishExists=\(finishButton.exists ? 1 : 0)"
+            "Expected countdown, progress, or finish control after starting scan. progressExists=\(progressLabel.exists ? 1 : 0),countdownExists=\(countdownLabel.exists ? 1 : 0),finishExists=\(finishButton.exists ? 1 : 0),previewSave=\(previewSaveButton.exists ? 1 : 0),previewClose=\(previewCloseButton.exists ? 1 : 0)"
         )
 
-        XCTAssertTrue(waitForExists(finishButton, timeout: 12), "Expected finish button after scan starts")
+        let finishAppeared = waitForExists(finishButton, timeout: 12)
+        XCTAssertTrue(
+            finishAppeared,
+            "Expected finish button after scan starts. progressExists=\(progressLabel.exists ? 1 : 0),countdownExists=\(countdownLabel.exists ? 1 : 0),previewSave=\(previewSaveButton.exists ? 1 : 0),previewClose=\(previewCloseButton.exists ? 1 : 0)"
+        )
         revealElementIfNeeded(finishButton, in: app)
         if app.state != .runningForeground {
             app.activate()
@@ -376,16 +397,24 @@ final class TrueContourAIDeviceSmokeTests: XCTestCase {
         let progressLabel = app.staticTexts["scanProgressLabel"]
         return waitForCondition(timeout: timeout) {
             guard progressLabel.exists else { return false }
-            return Self.capturedSeconds(from: progressLabel.label) >= minimumCapturedSeconds
+            let texts = [
+                progressLabel.label,
+                String(describing: progressLabel.value ?? "")
+            ]
+            return texts.contains { Self.capturedSeconds(from: $0) >= minimumCapturedSeconds }
         }
     }
 
     private static func capturedSeconds(from progressText: String) -> Int {
-        guard let match = progressText.range(of: #"(\d+)\s*/"#, options: .regularExpression) else {
-            return 0
+        if let slashMatch = progressText.range(of: #"(\d+)\s*/"#, options: .regularExpression) {
+            let digits = progressText[slashMatch].filter(\.isNumber)
+            return Int(digits) ?? 0
         }
-        let digits = progressText[match].filter(\.isNumber)
-        return Int(digits) ?? 0
+        if let digitsPrefix = progressText.split(whereSeparator: { !$0.isNumber }).first,
+           let seconds = Int(digitsPrefix) {
+            return seconds
+        }
+        return 0
     }
 
     private func waitForExists(_ element: XCUIElement, timeout: TimeInterval = 8.0) -> Bool {

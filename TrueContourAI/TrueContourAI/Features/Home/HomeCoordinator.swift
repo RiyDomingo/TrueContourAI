@@ -124,6 +124,7 @@ final class HomeCoordinator {
     private let scanService: any HomeScanManaging & SettingsScanServicing
     private let settingsStore: SettingsStore
     private let previewSessionState: PreviewSessionState
+    private let makeSettingsViewController: (@escaping () -> Void) -> SettingsViewController
     private lazy var scanDetailsWorkflow = HomeScanDetailsWorkflow(scanService: scanService)
     private lazy var scanLibraryEditWorkflow = HomeScanLibraryEditWorkflow(
         scanService: scanService,
@@ -132,15 +133,18 @@ final class HomeCoordinator {
 
     var onOpenScan: ((ScanItem) -> Void)?
     var onScansChanged: (() -> Void)?
+    weak var hostViewController: UIViewController?
 
     init(
         scanService: any HomeScanManaging & SettingsScanServicing,
         settingsStore: SettingsStore,
-        previewSessionState: PreviewSessionState
+        previewSessionState: PreviewSessionState,
+        makeSettingsViewController: @escaping (@escaping () -> Void) -> SettingsViewController
     ) {
         self.scanService = scanService
         self.settingsStore = settingsStore
         self.previewSessionState = previewSessionState
+        self.makeSettingsViewController = makeSettingsViewController
     }
 
     func presentPreScanChecklist(from presenter: UIViewController, onStart: @escaping () -> Void) {
@@ -160,6 +164,18 @@ final class HomeCoordinator {
             return
         }
         onOpenScan?(item)
+    }
+
+    func presentStorageUnavailableIfNeeded(from presenter: UIViewController) {
+        if case .failure = scanService.ensureScansRootFolder() {
+            presenter.present(
+                alert(
+                    title: L("scan.storage.unavailable.title"),
+                    message: L("scan.storage.unavailable.message")
+                ),
+                animated: true
+            )
+        }
     }
 
     func presentScansFolderShare(from presenter: UIViewController, sourceView: UIView?) {
@@ -186,8 +202,7 @@ final class HomeCoordinator {
     }
 
     func presentSettings(from presenter: UIViewController) {
-        let vc = SettingsViewController(store: settingsStore, scanService: scanService)
-        vc.onScansChanged = { [weak self] in
+        let vc = makeSettingsViewController { [weak self] in
             self?.onScansChanged?()
         }
         let nav = UINavigationController(rootViewController: vc)

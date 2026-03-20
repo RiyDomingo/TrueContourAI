@@ -1,4 +1,5 @@
 import AVFoundation
+import Metal
 import StandardCyborgFusion
 import UIKit
 
@@ -25,6 +26,21 @@ import UIKit
     CameraManagerDelegate,
     SCReconstructionManagerDelegate
 {
+    private final class UnavailableScanningViewRenderer: ScanningViewRenderer {
+        var flipsInputHorizontally: Bool = false
+
+        required init(device: MTLDevice, commandQueue: MTLCommandQueue) {}
+        init() {}
+
+        func draw(
+            colorBuffer: CVPixelBuffer?,
+            pointCloud: SCPointCloud?,
+            depthCameraCalibrationData: AVCameraCalibrationData,
+            viewMatrix: matrix_float4x4,
+            into metalLayer: CAMetalLayer
+        ) {}
+    }
+
     
     // MARK: - Public
     
@@ -36,8 +52,12 @@ import UIKit
     @objc public weak var delegate: ScanningViewControllerDelegate?
     
     /** Override to drop in your own visualization */
-    @objc public lazy var scanningViewRenderer: ScanningViewRenderer =
-        DefaultScanningViewRenderer(device: _metalDevice, commandQueue: _visualizationCommandQueue)
+    @objc public lazy var scanningViewRenderer: ScanningViewRenderer = {
+        guard let device = _metalDevice, let commandQueue = _visualizationCommandQueue else {
+            return UnavailableScanningViewRenderer()
+        }
+        return DefaultScanningViewRenderer(device: device, commandQueue: commandQueue)
+    }()
     
     /** The duration of each count in the pre-scan countdown after tapping the shutter button */
     @objc public var countdownPerSecondDuration = 0.75
@@ -106,23 +126,25 @@ import UIKit
         if reason == .finished {
             _cameraManager.stopSession()
 
-            if let calibrationData = _reconstructionManager.latestCameraCalibrationData {
+            if let reconstructionManager = _reconstructionManager,
+               let calibrationData = reconstructionManager.latestCameraCalibrationData {
                 meshTexturing.cameraCalibrationData = calibrationData
-                meshTexturing.cameraCalibrationFrameWidth = _reconstructionManager.latestCameraCalibrationFrameWidth
-                meshTexturing.cameraCalibrationFrameHeight = _reconstructionManager.latestCameraCalibrationFrameHeight
+                meshTexturing.cameraCalibrationFrameWidth = reconstructionManager.latestCameraCalibrationFrameWidth
+                meshTexturing.cameraCalibrationFrameHeight = reconstructionManager.latestCameraCalibrationFrameHeight
             }
             
             // Do final cleanup on the scan
-            _reconstructionManager.finalize {
-                let pointCloud = self._reconstructionManager.buildPointCloud()
+            _reconstructionManager?.finalize {
+                guard let reconstructionManager = self._reconstructionManager else { return }
+                let pointCloud = reconstructionManager.buildPointCloud()
                 
                 // Reset it now to keep peak memory usage down
-                self._reconstructionManager.reset()
+                reconstructionManager.reset()
                 
                 self.delegate?.scanningViewController?(self, didScan: pointCloud)
             }
         } else {
-            _reconstructionManager.reset()
+            _reconstructionManager?.reset()
             meshTexturing.reset()
         }
     }
@@ -168,7 +190,7 @@ import UIKit
     }
     
     @objc public var generatesTexturedMeshes: Bool = false {
-        didSet { _reconstructionManager.includesColorBuffersInMetadata = generatesTexturedMeshes }
+        didSet { _reconstructionManager?.includesColorBuffersInMetadata = generatesTexturedMeshes }
     }
     @objc public var texturedMeshColorBufferSaveInterval: Int = 8
     @objc public lazy var meshTexturing = SCMeshTexturing()
@@ -184,7 +206,7 @@ import UIKit
         _cameraManager.delegate = self
         _cameraManager.configureCaptureSession(maxResolution: maxDepthResolution)
         
-        _reconstructionManager.delegate = self
+        _reconstructionManager?.delegate = self
         
         NotificationCenter.default.addObserver(self, selector: #selector(_thermalStateChanged), name: ProcessInfo.thermalStateDidChangeNotification, object: nil)
     }
@@ -265,21 +287,24 @@ import UIKit
     // MARK: - CameraManagerDelegate
     
     public func cameraDidOutput(colorBuffer: CVPixelBuffer, depthBuffer: CVPixelBuffer, depthCalibrationData: AVCameraCalibrationData) {
+        guard let reconstructionManager = _reconstructionManager else { return }
         let isScanning = _isActiveScanningState()
 
         let pointCloud: SCPointCloud
         
         if isScanning {
-            pointCloud = _reconstructionManager.buildPointCloud()
+            pointCloud = reconstructionManager.buildPointCloud()
         } else {
             // When the user is not scanning, render a preview by reconstructing the most recent depth buffer
             // into a point cloud from the current point of view, drawn on top of the RGB camera
             // As the result is never saved and the RGB color not used for visualization, there is no need to
             // pass it the color buffer to build the point cloud
-            pointCloud = _reconstructionManager.reconstructSingleDepthBuffer(depthBuffer,
-                                                                             colorBuffer: nil,
-                                                                             with: depthCalibrationData,
-                                                                             smoothingPoints: true)
+            pointCloud = reconstructionManager.reconstructSingleDepthBuffer(
+                depthBuffer,
+                colorBuffer: nil,
+                with: depthCalibrationData,
+                smoothingPoints: true
+            )
         }
         
         scanningViewRenderer.draw(colorBuffer: colorBuffer,
@@ -289,9 +314,11 @@ import UIKit
                                   into: _metalLayer)
         
         if isScanning {
-            _reconstructionManager.accumulate(depthBuffer: depthBuffer,
-                                              colorBuffer: colorBuffer,
-                                              calibrationData: depthCalibrationData)
+            reconstructionManager.accumulate(
+                depthBuffer: depthBuffer,
+                colorBuffer: colorBuffer,
+                calibrationData: depthCalibrationData
+            )
         }
     }
     
@@ -351,10 +378,13 @@ import UIKit
     
     // MARK: - Private properties
         
-    private let _metalDevice = MTLCreateSystemDefaultDevice()!
-    private lazy var _algorithmCommandQueue = _metalDevice.makeCommandQueue()!
-    private lazy var _visualizationCommandQueue = _metalDevice.makeCommandQueue()!
-    private lazy var _reconstructionManager = SCReconstructionManager(device: _metalDevice, commandQueue: _algorithmCommandQueue, maxThreadCount: _maxReconstructionThreadCount)
+    private let _metalDevice = MTLCreateSystemDefaultDevice()
+    private lazy var _algorithmCommandQueue = _metalDevice?.makeCommandQueue()
+    private lazy var _visualizationCommandQueue = _metalDevice?.makeCommandQueue()
+    private lazy var _reconstructionManager: SCReconstructionManager? = {
+        guard let device = _metalDevice, let commandQueue = _algorithmCommandQueue else { return nil }
+        return SCReconstructionManager(device: device, commandQueue: commandQueue, maxThreadCount: _maxReconstructionThreadCount)
+    }()
     private let _cameraManager = CameraManager()
     private let _scanStateLock = NSLock()
     private var _activeScanningState = false
@@ -429,7 +459,7 @@ import UIKit
         _mirrorModeLabel.textAlignment = NSTextAlignment.center
         _mirrorModeLabel.numberOfLines = 2
         _mirrorModeButton.addTarget(self, action: #selector(toggleMirrorMode(_:)), for: UIControl.Event.touchUpInside)
-        _mirrorModeButton.setImage(UIImage(named: "FlipCamera", in: Bundle.scuiResourcesBundle, compatibleWith: nil)!, for: UIControl.State.normal)
+        _mirrorModeButton.setImage(UIImage(named: "FlipCamera", in: Bundle.scuiResourcesBundle, compatibleWith: nil), for: UIControl.State.normal)
         
         _countdownLabel.textColor = UIColor.white
         _countdownLabel.textAlignment = NSTextAlignment.center
@@ -472,7 +502,7 @@ import UIKit
         _mirrorModeBackground.isHidden = !showsMirrorModeButton
         _mirrorModeLabel.isHidden = !mirrorModeEnabled
         scanningViewRenderer.flipsInputHorizontally = mirrorModeEnabled
-        _reconstructionManager.flipsInputHorizontally = mirrorModeEnabled
+        _reconstructionManager?.flipsInputHorizontally = mirrorModeEnabled
     }
     
     private func _startCameraSession() {
@@ -491,7 +521,9 @@ import UIKit
                 alertController.addAction(UIAlertAction(title: "Open Settings",
                                                         style: .`default`)
                 { _ in
-                    UIApplication.shared.open(URL.init(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
+                    if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(settingsURL, options: [:], completionHandler: nil)
+                    }
                 })
                 
                 self.present(alertController, animated: true)

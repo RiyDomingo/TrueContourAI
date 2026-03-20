@@ -27,7 +27,7 @@ final class SettingsViewControllerTests: XCTestCase {
 
     func testRefreshStorageUsageTransitionsFromCalculatingToResolvedText() {
         let service = SettingsScanServiceFake()
-        let vc = SettingsViewController(store: store, scanService: service)
+        let vc = SettingsViewController(store: store, storageUseCase: SettingsStorageUseCase(scanService: service))
         vc.loadViewIfNeeded()
 
         vc.debug_refreshStorageUsage()
@@ -49,7 +49,7 @@ final class SettingsViewControllerTests: XCTestCase {
     func testDeleteAllSuccessTriggersOnScansChanged() {
         let service = SettingsScanServiceFake()
         service.deleteAllResult = .success(())
-        let vc = SettingsViewController(store: store, scanService: service)
+        let vc = SettingsViewController(store: store, storageUseCase: SettingsStorageUseCase(scanService: service))
         vc.loadViewIfNeeded()
 
         var changedCount = 0
@@ -57,15 +57,18 @@ final class SettingsViewControllerTests: XCTestCase {
 
         vc.debug_deleteAllScansConfirmed()
 
+        XCTAssertEqual(changedCount, 0)
+        waitUntil(timeout: 2.0) { changedCount == 1 }
         XCTAssertEqual(changedCount, 1)
         XCTAssertEqual(service.deleteAllCallCount, 1)
+        XCTAssertFalse(service.deleteAllExecutedOnMainThread)
     }
 
     func testDeleteAllFailurePresentsErrorAlert() {
         let service = SettingsScanServiceFake()
         service.deleteAllResult = .failure(NSError(domain: "SettingsTests", code: 1, userInfo: [NSLocalizedDescriptionKey: "boom"]))
 
-        let vc = SettingsViewController(store: store, scanService: service)
+        let vc = SettingsViewController(store: store, storageUseCase: SettingsStorageUseCase(scanService: service))
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let window = UIWindow(windowScene: windowScene)
             window.rootViewController = vc
@@ -74,15 +77,19 @@ final class SettingsViewControllerTests: XCTestCase {
         vc.loadViewIfNeeded()
 
         vc.debug_deleteAllScansConfirmed()
+        waitUntil(timeout: 2.0) {
+            (vc.presentedViewController as? UIAlertController)?.title == L("settings.delete.failed")
+        }
 
         let alert = vc.presentedViewController as? UIAlertController
         XCTAssertEqual(alert?.title, L("settings.delete.failed"))
         XCTAssertEqual(alert?.message, "boom")
+        XCTAssertFalse(service.deleteAllExecutedOnMainThread)
     }
 
     func testSettingsSectionsUseGeneralExportAdvancedStorageLayout() {
         let service = SettingsScanServiceFake()
-        let vc = SettingsViewController(store: store, scanService: service)
+        let vc = SettingsViewController(store: store, storageUseCase: SettingsStorageUseCase(scanService: service))
         vc.loadViewIfNeeded()
 
         guard let table = vc.tableView else {
@@ -108,7 +115,7 @@ final class SettingsViewControllerTests: XCTestCase {
         store.exportGLTF = true
         store.exportOBJ = false
         let service = SettingsScanServiceFake()
-        let vc = SettingsViewController(store: store, scanService: service)
+        let vc = SettingsViewController(store: store, storageUseCase: SettingsStorageUseCase(scanService: service))
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let window = UIWindow(windowScene: windowScene)
             window.rootViewController = vc
@@ -143,11 +150,12 @@ final class SettingsViewControllerTests: XCTestCase {
     }
 }
 
-private final class SettingsScanServiceFake: SettingsScanServicing {
+final class SettingsScanServiceFake: SettingsScanServicing {
     var scansRootURL: URL
     var ensureResult: Result<Void, Error>
     var deleteAllResult: Result<Void, Error>
     private(set) var deleteAllCallCount = 0
+    private(set) var deleteAllExecutedOnMainThread = false
 
     init() {
         scansRootURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -162,6 +170,7 @@ private final class SettingsScanServiceFake: SettingsScanServicing {
 
     func deleteAllScans() -> Result<Void, Error> {
         deleteAllCallCount += 1
+        deleteAllExecutedOnMainThread = Thread.isMainThread
         return deleteAllResult
     }
 }

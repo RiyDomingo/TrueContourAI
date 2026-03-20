@@ -97,18 +97,18 @@ Physical-device validation should confirm the artifact set matches the active ex
 
 ## Current Runtime Shape
 - App startup routes through `AppCoordinator` and `AppEnvironment`.
-- Home flow is thinner than before and now delegates scan session/flow, recent-scan table behavior, and user feedback into dedicated controllers.
-- Scan runtime delegates session timing/state and HUD/runtime lifecycle concerns into dedicated runtime helpers.
-- Preview flow no longer depends on a single oversized coordinator for all behavior:
-  - session
-  - presentation
-  - routing
-  - export
-  - interaction
-  - reset
-  - scene-specific preview UI
-  are now split into concrete collaborators.
-- Scan storage/export behavior is no longer centered only on `ScanService`; the active app path now uses:
+- Home flow is driven by `HomeViewModel` state/effects and assembled through `HomeAssembler`.
+- Scan flow centers on `ScanAssembler`, `ScanCoordinator`, `ScanStore`, `ScanCaptureService`, `ScanRuntimeEngine`, and `AppScanningViewController`.
+- Preview flow centers on `PreviewAssembler`, `PreviewCoordinator`, `PreviewViewController`, `PreviewStore`, `PreviewExportUseCase`, `PreviewFitUseCase`, `PreviewEarVerificationUseCase`, and `PreviewSceneAdapter`.
+- Settings flow centers on `SettingsAssembler`, `SettingsStore`, and `SettingsStorageUseCase`.
+- Preview still uses a few UI/session helpers for presentation and overlays:
+  - `PreviewPresentationController`
+  - `PreviewPresentationWorkflow`
+  - `PreviewOverlayWorkflow`
+  - `PreviewOverlayUIController`
+  - `PreviewSessionController`
+  - `PreviewSessionWorkflows`
+- Scan storage/export behavior is owned directly by:
   - `ScanRepository`
   - `ScanExporterService`
   - `ScanTestSeedService` for UI-test seeding

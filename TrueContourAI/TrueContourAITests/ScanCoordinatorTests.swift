@@ -1,5 +1,9 @@
 import XCTest
 import StandardCyborgFusion
+import AVFoundation
+import CoreMotion
+import ObjectiveC.runtime
+import StandardCyborgUI
 @testable import TrueContourAI
 
 @MainActor
@@ -29,7 +33,6 @@ final class ScanCoordinatorTests: XCTestCase {
     func testUnavailableTrueDepthPresentsUnavailableAlert() {
         let presenter = CapturingPresenterViewController()
         let coordinator = ScanCoordinator(
-            settingsStore: settingsStore,
             deviceCapabilityProvider: { false },
             scanningViewControllerFactory: { AppScanningViewController() },
             simulatorProvider: { false }
@@ -48,49 +51,36 @@ final class ScanCoordinatorTests: XCTestCase {
         XCTAssertEqual(flowState.phase, .idle)
     }
 
-    func testStartScanFlowAppliesConfigurationToScanningViewController() {
+    func testScanAssemblerAppliesConfigurationToScanningViewController() {
         var processing = settingsStore.processingConfig
         processing.decimateRatio = 1.25
         processing.meshResolution = 5
         settingsStore.processingConfig = processing
         settingsStore.scanDurationSeconds = 20
 
-        let presenter = CapturingPresenterViewController()
-        let scanVC = AppScanningViewController()
-        let coordinator = ScanCoordinator(
-            settingsStore: settingsStore,
-            deviceCapabilityProvider: { true },
-            scanningViewControllerFactory: { scanVC },
-            simulatorProvider: { false },
-            cameraAuthorizationStatusProvider: { .authorized }
+        let dependencies = AppDependencies(
+            environment: .current,
+            settingsStore: settingsStore
+        )
+        let assembler = ScanAssembler(dependencies: dependencies)
+
+        let scanVC = assembler.makeScanningViewController(
+            reconstructionManagerFactory: { _, _, _ in ReconstructionManagerFake() },
+            cameraManager: CameraManagerFake(),
+            hapticEngine: HapticsFake(),
+            backgroundWorkRunner: { work in work() }
         )
 
-        let flowState = ScanFlowState()
-        let exp = expectation(description: "presented")
-
-        coordinator.startScanFlow(
-            from: presenter,
-            delegate: ScanDelegateSpy(),
-            scanFlowState: flowState,
-            onPresented: { presented in
-                XCTAssertTrue(presented === scanVC)
-                XCTAssertEqual(presented.autoFinishSeconds, 20)
-                XCTAssertTrue(presented.requiresManualFinish)
-                XCTAssertTrue(presented.generatesTexturedMeshes)
-                XCTAssertEqual(presented.maxDepthResolution, 256)
-                XCTAssertEqual(presented.texturedMeshColorBufferSaveInterval, 12)
-                exp.fulfill()
-            }
-        )
-
-        wait(for: [exp], timeout: 1.0)
-        XCTAssertEqual(flowState.phase, .scanning)
+        XCTAssertEqual(scanVC.autoFinishSeconds, 20)
+        XCTAssertTrue(scanVC.requiresManualFinish)
+        XCTAssertTrue(scanVC.generatesTexturedMeshes)
+        XCTAssertEqual(scanVC.maxDepthResolution, 256)
+        XCTAssertEqual(scanVC.texturedMeshColorBufferSaveInterval, 12)
     }
 
     func testDeniedCameraPresentsCameraAccessAlert() {
         let presenter = CapturingPresenterViewController()
         let coordinator = ScanCoordinator(
-            settingsStore: settingsStore,
             deviceCapabilityProvider: { true },
             scanningViewControllerFactory: { AppScanningViewController() },
             simulatorProvider: { false },
@@ -117,7 +107,6 @@ final class ScanCoordinatorTests: XCTestCase {
         let scanVC = AppScanningViewController()
         var requestedAccess = false
         let coordinator = ScanCoordinator(
-            settingsStore: settingsStore,
             deviceCapabilityProvider: { true },
             scanningViewControllerFactory: { scanVC },
             simulatorProvider: { false },
@@ -145,64 +134,81 @@ final class ScanCoordinatorTests: XCTestCase {
         XCTAssertEqual(flowState.phase, .scanning)
     }
 
-    func testSuggestedDepthResolutionUsesLowerResolutionForHighDecimation() {
+    func testScanAssemblerUsesLowerResolutionForHighDecimation() {
         var config = settingsStore.processingConfig
         config.decimateRatio = 1.4
         config.meshResolution = 6
-        let coordinator = ScanCoordinator(settingsStore: settingsStore)
-        XCTAssertEqual(coordinator.debug_suggestedDepthResolution(for: config), 256)
+        settingsStore.processingConfig = config
+        let scanVC = makeAssembler().makeScanningViewController(
+            reconstructionManagerFactory: { _, _, _ in ReconstructionManagerFake() },
+            cameraManager: CameraManagerFake(),
+            hapticEngine: HapticsFake(),
+            backgroundWorkRunner: { work in work() }
+        )
+        XCTAssertEqual(scanVC.maxDepthResolution, 256)
     }
 
-    func testSuggestedDepthResolutionUsesLowerResolutionForLowMeshResolution() {
+    func testScanAssemblerUsesLowerResolutionForLowMeshResolution() {
         var config = settingsStore.processingConfig
         config.decimateRatio = 1.0
         config.meshResolution = 5
-        let coordinator = ScanCoordinator(settingsStore: settingsStore)
-        XCTAssertEqual(coordinator.debug_suggestedDepthResolution(for: config), 256)
+        settingsStore.processingConfig = config
+        let scanVC = makeAssembler().makeScanningViewController(
+            reconstructionManagerFactory: { _, _, _ in ReconstructionManagerFake() },
+            cameraManager: CameraManagerFake(),
+            hapticEngine: HapticsFake(),
+            backgroundWorkRunner: { work in work() }
+        )
+        XCTAssertEqual(scanVC.maxDepthResolution, 256)
     }
 
-    func testSuggestedDepthResolutionUsesDefaultWhenConfigIsBalanced() {
+    func testScanAssemblerUsesDefaultResolutionWhenConfigIsBalanced() {
         var config = settingsStore.processingConfig
         config.decimateRatio = 1.2
         config.meshResolution = 6
-        let coordinator = ScanCoordinator(settingsStore: settingsStore)
-        XCTAssertEqual(coordinator.debug_suggestedDepthResolution(for: config), 320)
+        settingsStore.processingConfig = config
+        let scanVC = makeAssembler().makeScanningViewController(
+            reconstructionManagerFactory: { _, _, _ in ReconstructionManagerFake() },
+            cameraManager: CameraManagerFake(),
+            hapticEngine: HapticsFake(),
+            backgroundWorkRunner: { work in work() }
+        )
+        XCTAssertEqual(scanVC.maxDepthResolution, 320)
     }
 
-    func testSuggestedColorBufferIntervalClampsToMinimum() {
+    func testScanAssemblerColorBufferIntervalClampsToMinimum() {
         var config = settingsStore.processingConfig
         config.decimateRatio = 0.1
-        let coordinator = ScanCoordinator(settingsStore: settingsStore)
-        XCTAssertEqual(coordinator.debug_suggestedColorBufferInterval(for: config), 4)
+        settingsStore.processingConfig = config
+        let scanVC = makeAssembler().makeScanningViewController(
+            reconstructionManagerFactory: { _, _, _ in ReconstructionManagerFake() },
+            cameraManager: CameraManagerFake(),
+            hapticEngine: HapticsFake(),
+            backgroundWorkRunner: { work in work() }
+        )
+        XCTAssertEqual(scanVC.texturedMeshColorBufferSaveInterval, 4)
     }
 
-    func testSuggestedColorBufferIntervalScalesAndClampsToMaximum() {
+    func testScanAssemblerColorBufferIntervalScalesAndClampsToMaximum() {
         var config = settingsStore.processingConfig
         config.decimateRatio = 3.0
-        let coordinator = ScanCoordinator(settingsStore: settingsStore)
-        XCTAssertEqual(coordinator.debug_suggestedColorBufferInterval(for: config), 20)
+        settingsStore.processingConfig = config
+        let scanVC = makeAssembler().makeScanningViewController(
+            reconstructionManagerFactory: { _, _, _ in ReconstructionManagerFake() },
+            cameraManager: CameraManagerFake(),
+            hapticEngine: HapticsFake(),
+            backgroundWorkRunner: { work in work() }
+        )
+        XCTAssertEqual(scanVC.texturedMeshColorBufferSaveInterval, 20)
     }
 
-    func testSuggestedCaptureTuningUsesHeavyConfigValues() {
-        var config = settingsStore.processingConfig
-        config.decimateRatio = 1.4
-        config.meshResolution = 5
-        let coordinator = ScanCoordinator(settingsStore: settingsStore)
-        let tuning = coordinator.debug_suggestedCaptureTuning(for: config)
-
-        XCTAssertEqual(tuning.maxDepthResolution, 256)
-        XCTAssertEqual(tuning.textureSaveInterval, 13)
-    }
-
-    func testSuggestedCaptureTuningUsesBalancedConfigValues() {
-        var config = settingsStore.processingConfig
-        config.decimateRatio = 1.0
-        config.meshResolution = 6
-        let coordinator = ScanCoordinator(settingsStore: settingsStore)
-        let tuning = coordinator.debug_suggestedCaptureTuning(for: config)
-
-        XCTAssertEqual(tuning.maxDepthResolution, 320)
-        XCTAssertEqual(tuning.textureSaveInterval, 8)
+    private func makeAssembler() -> ScanAssembler {
+        ScanAssembler(
+            dependencies: AppDependencies(
+                environment: .current,
+                settingsStore: settingsStore
+            )
+        )
     }
 }
 
@@ -228,4 +234,61 @@ private final class ScanDelegateSpy: NSObject, AppScanningViewControllerDelegate
         didScan pointCloud: SCPointCloud,
         meshTexturing: SCMeshTexturing
     ) {}
+}
+
+private final class ReconstructionManagerFake: ReconstructionManaging {
+    weak var delegate: SCReconstructionManagerDelegate?
+    var includesColorBuffersInMetadata = false
+    var latestCameraCalibrationData: AVCameraCalibrationData?
+    var latestCameraCalibrationFrameWidth = 1
+    var latestCameraCalibrationFrameHeight = 1
+
+    func reset() {}
+    func finalize(_ completion: @escaping () -> Void) { completion() }
+    func buildPointCloud() -> SCPointCloud { placeholderPointCloud() }
+    func buildPointCloudSnapshot() -> SCPointCloud? { placeholderPointCloud() }
+
+    func reconstructSingleDepthBuffer(
+        _ depthBuffer: CVPixelBuffer,
+        colorBuffer: CVPixelBuffer?,
+        with calibrationData: AVCameraCalibrationData,
+        smoothingPoints: Bool
+    ) -> SCPointCloud {
+        placeholderPointCloud()
+    }
+
+    func accumulate(depthBuffer: CVPixelBuffer, colorBuffer: CVPixelBuffer, calibrationData: AVCameraCalibrationData) {}
+    func accumulateDeviceMotion(_ motion: CMDeviceMotion) {}
+
+    private func placeholderPointCloud() -> SCPointCloud {
+        guard let placeholder = class_createInstance(SCPointCloud.self, 0) as? SCPointCloud else {
+            fatalError("Failed to allocate SCPointCloud placeholder")
+        }
+        return placeholder
+    }
+}
+
+private final class CameraManagerFake: CameraManaging {
+    weak var delegate: CameraManagerDelegate?
+    var isSessionRunning = true
+    var diagnosticsSnapshot = CameraDiagnosticsSnapshot()
+
+    func configureCaptureSession(maxResolution: Int) {}
+
+    func startSession(_ completion: ((CameraManager.SessionSetupResult) -> Void)?) {
+        completion?(.success)
+    }
+
+    func stopSession(_ completion: (() -> Void)?) {
+        completion?()
+    }
+
+    func focusOnTap(at location: CGPoint) {}
+}
+
+private final class HapticsFake: ScanningHapticFeedbackProviding {
+    func countdownCountedDown() {}
+    func scanningBegan() {}
+    func scanningFinished() {}
+    func scanningCanceled() {}
 }

@@ -2,21 +2,24 @@ import UIKit
 
 final class SettingsViewController: UITableViewController {
     private let store: SettingsStore
-    private let scanService: SettingsScanServicing
-    private lazy var storageWorkflow = SettingsStorageWorkflow(scanService: scanService)
+    private let storageUseCase: SettingsStorageUseCase
     private lazy var feedbackController = SettingsFeedbackController(presenter: self)
+    private lazy var interactionController = SettingsInteractionController(
+        store: store,
+        storageUseCase: storageUseCase,
+        feedbackController: feedbackController
+    )
     var onScansChanged: (() -> Void)?
     private var sections: [SettingsSection] = []
-    private var storageUsageText = L("settings.calculating")
 
-    init(store: SettingsStore, scanService: SettingsScanServicing) {
+    init(store: SettingsStore, storageUseCase: SettingsStorageUseCase) {
         self.store = store
-        self.scanService = scanService
+        self.storageUseCase = storageUseCase
         super.init(style: .insetGrouped)
         title = L("settings.title")
     }
 
-    @available(*, unavailable, message: "Programmatic-only. Use init(store:scanService:).")
+    @available(*, unavailable, message: "Programmatic-only. Use init(store:storageUseCase:).")
     required init?(coder: NSCoder) {
         fatalError("init(coder:) is unavailable")
     }
@@ -34,8 +37,15 @@ final class SettingsViewController: UITableViewController {
         ]
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .close, target: self, action: #selector(closeTapped))
         navigationItem.rightBarButtonItem?.accessibilityLabel = L("settings.close")
-        buildSections()
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        bindStore()
+        apply(state: store.state)
+        interactionController.refreshStorageUsage()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        interactionController.refreshStorageUsage()
     }
 
     override func tableView(_ tableView: UITableView, willDisplayHeaderView view: UIView, forSection section: Int) {
@@ -44,20 +54,40 @@ final class SettingsViewController: UITableViewController {
         header.textLabel?.font = DesignSystem.Typography.caption()
     }
 
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        buildSections()
-        tableView.reloadData()
-        refreshStorageUsage()
+    private func bindStore() {
+        store.onStateChange = { [weak self] state in
+            self?.apply(state: state)
+        }
+        store.onEffect = { [weak self] effect in
+            self?.handle(effect: effect)
+        }
     }
 
-    private func buildSections() {
+    private func apply(state: SettingsState) {
         sections = SettingsSectionBuilder(
-            store: store,
-            storageUsageText: storageUsageText,
-            onDeleteAll: { [weak self] in self?.presentDeleteAllConfirmation() },
-            onReset: { [weak self] in self?.presentResetConfirmation() }
+            state: state,
+            onAction: { [weak self] action in
+                self?.store.send(action)
+            },
+            onDeleteAll: { [weak self] in
+                self?.presentDeleteAllConfirmation()
+            },
+            onReset: { [weak self] in
+                self?.presentResetConfirmation()
+            }
         ).build()
+        if isViewLoaded {
+            tableView.reloadData()
+        }
+    }
+
+    private func handle(effect: SettingsEffect) {
+        switch effect {
+        case .alert(let title, let message, _):
+            feedbackController.showError(title: title, message: message)
+        case .scansChanged:
+            onScansChanged?()
+        }
     }
 
     @objc private func closeTapped() {
@@ -137,25 +167,14 @@ final class SettingsViewController: UITableViewController {
         tableView.deselectRow(at: indexPath, animated: true)
         let row = sections[indexPath.section].rows[indexPath.row]
         switch row.kind {
-        case .toggle(let isOn, let setOn, let toggleIdentifier):
-            let nextValue = !isOn()
-            if toggleIdentifier == "settings.exportGLTF",
-               nextValue == false {
-                feedbackController.showError(
-                    title: L("settings.export.minimum.title"),
-                    message: L("settings.export.minimum.message")
-                )
-                return
-            }
-            setOn(nextValue)
-            buildSections()
+        case .toggle(let isOn, let setOn, _):
+            setOn(!isOn())
             tableView.reloadRows(at: [indexPath], with: .none)
         case .action(let handler):
             handler()
         case .option(let options, let selected, let setSelected):
             feedbackController.presentOptionSheet(title: row.title, options: options, selected: selected()) { [weak self] value in
                 setSelected(value)
-                self?.buildSections()
                 self?.tableView.reloadData()
             }
         default:
@@ -168,100 +187,39 @@ final class SettingsViewController: UITableViewController {
         let row = sender.tag % 100
         guard sections.indices.contains(section), sections[section].rows.indices.contains(row) else { return }
         let item = sections[section].rows[row]
-        if case .toggle(_, let setOn, let toggleIdentifier) = item.kind {
-            if toggleIdentifier == "settings.exportGLTF",
-               sender.isOn == false {
-                sender.setOn(true, animated: true)
-                feedbackController.showError(
-                    title: L("settings.export.minimum.title"),
-                    message: L("settings.export.minimum.message")
-                )
-                return
-            }
-            setOn(sender.isOn)
-        }
-    }
-
-    private func refreshStorageUsage() {
-        updateStorageUsageRow(with: L("settings.calculating"))
-        storageWorkflow.refreshStorageUsage { [weak self] usage in
-            guard let self else { return }
-            self.updateStorageUsageRow(with: usage)
-        }
-    }
-
-    private func updateStorageUsageRow(with text: String) {
-        storageUsageText = text
-        guard let sectionIndex = sections.firstIndex(where: { $0.kind == .storage }) else {
-            buildSections()
-            tableView.reloadData()
-            return
-        }
-
-        guard let rowIndex = sections[sectionIndex].rows.firstIndex(where: { $0.identifier == "settings.storageUsageRow" }) else {
-            buildSections()
-            tableView.reloadData()
-            return
-        }
-
-        sections[sectionIndex].rows[rowIndex] = SettingsRow(
-            title: L("settings.storage.used.title"),
-            subtitle: text,
-            kind: .info,
-            identifier: "settings.storageUsageRow"
-        )
-
-        let indexPath = IndexPath(row: rowIndex, section: sectionIndex)
-        if tableView.numberOfSections > sectionIndex, tableView.numberOfRows(inSection: sectionIndex) > rowIndex {
-            tableView.reloadRows(at: [indexPath], with: .none)
-        } else {
-            tableView.reloadData()
-        }
+        guard case .toggle(_, let setOn, _) = item.kind else { return }
+        setOn(sender.isOn)
+        sender.setOn(currentToggleValue(for: item), animated: true)
     }
 
     private func presentResetConfirmation() {
-        feedbackController.confirmReset { [weak self] in
-            self?.store.resetToDefaults()
-            self?.buildSections()
-            self?.tableView.reloadData()
-            self?.refreshStorageUsage()
-        }
+        interactionController.requestReset()
     }
 
     private func presentDeleteAllConfirmation() {
-        feedbackController.confirmDeleteAllScans { [weak self] in
-            self?.deleteAllScansConfirmed()
-        }
-    }
-
-    private func deleteAllScansConfirmed() {
-        storageWorkflow.deleteAllScans { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case .success:
-                self.refreshStorageUsage()
-                self.onScansChanged?()
-            case .failure(let error):
-                self.feedbackController.showError(title: L("settings.delete.failed"), message: error.localizedDescription)
-            }
-        }
+        interactionController.requestDeleteAllScans()
     }
 
 #if DEBUG
     func debug_refreshStorageUsage() {
-        refreshStorageUsage()
+        interactionController.refreshStorageUsage()
     }
 
     func debug_confirmDeleteAllScans() {
-        presentDeleteAllConfirmation()
+        interactionController.requestDeleteAllScans()
     }
 
     func debug_deleteAllScansConfirmed() {
-        deleteAllScansConfirmed()
+        interactionController.deleteAllScansConfirmed()
     }
 
     func debug_storageUsageText() -> String {
-        storageUsageText
+        store.state.storageUsageText
     }
 #endif
+
+    private func currentToggleValue(for row: SettingsRow) -> Bool {
+        guard case .toggle(let isOn, _, _) = row.kind else { return false }
+        return isOn()
+    }
 }

@@ -1,11 +1,5 @@
 import Foundation
 
-enum AppScanningSessionState: Equatable {
-    case `default`
-    case countdown(Int)
-    case scanning
-}
-
 enum AppScanningTerminationReason {
     case canceled
     case finished
@@ -18,15 +12,10 @@ final class ScanSessionController {
 
     var autoFinishSeconds: Int = 0
 
-    var onStateChange: ((AppScanningSessionState) -> Void)?
+    var onCountdownChange: ((Int?) -> Void)?
+    var onScanningChanged: ((Bool) -> Void)?
     var onAutoFinishRemainingChange: ((Int) -> Void)?
     var onAutoFinishTriggered: (() -> Void)?
-
-    private(set) var state: AppScanningSessionState = .default {
-        didSet {
-            onStateChange?(state)
-        }
-    }
 
     private(set) var autoFinishRemaining: Int = 0 {
         didSet {
@@ -37,6 +26,8 @@ final class ScanSessionController {
     private var countdownTimer: Timer?
     private var autoFinishTimer: Timer?
     private var autoFinishCountdownTimer: Timer?
+    private var isScanning = false
+    private var countdownValue: Int?
 
     init(
         hapticEngine: ScanningHapticFeedbackProviding,
@@ -51,40 +42,48 @@ final class ScanSessionController {
     func startCountdown(completion: @escaping () -> Void) {
         invalidateCountdownTimer()
         var remaining = countdownStartCount
-        state = .countdown(remaining)
+        countdownValue = remaining
+        onCountdownChange?(remaining)
 
-        countdownTimer = Timer.scheduledTimer(withTimeInterval: countdownPerSecondDuration, repeats: true) { [weak self] timer in
+        let timer = Timer(timeInterval: countdownPerSecondDuration, repeats: true) { [weak self] timer in
             guard let self else { return }
             hapticEngine.countdownCountedDown()
             remaining -= 1
             if remaining <= 0 {
                 timer.invalidate()
                 countdownTimer = nil
-                state = .default
+                countdownValue = nil
                 completion()
+                onCountdownChange?(nil)
             } else {
-                state = .countdown(remaining)
+                countdownValue = remaining
+                onCountdownChange?(remaining)
             }
         }
+        countdownTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
     }
 
     func cancelCountdown() {
         invalidateCountdownTimer()
         hapticEngine.scanningCanceled()
-        state = .default
+        countdownValue = nil
+        onCountdownChange?(nil)
     }
 
     func beginScanning() {
         hapticEngine.scanningBegan()
-        state = .scanning
+        isScanning = true
+        onScanningChanged?(true)
         startAutoFinishTimerIfNeeded()
     }
 
     @discardableResult
     func stopScanning(reason: AppScanningTerminationReason) -> Bool {
-        guard state == .scanning else { return false }
-        state = .default
+        guard isScanning else { return false }
+        isScanning = false
         stopAutoFinishTimers()
+        onScanningChanged?(false)
 
         switch reason {
         case .canceled:
@@ -99,22 +98,13 @@ final class ScanSessionController {
     func invalidate() {
         invalidateCountdownTimer()
         stopAutoFinishTimers()
-        state = .default
+        countdownValue = nil
+        isScanning = false
+        onCountdownChange?(nil)
+        onScanningChanged?(false)
     }
 
 #if DEBUG
-    func debug_setStateScanning() {
-        state = .scanning
-    }
-
-    func debug_setStateDefault() {
-        state = .default
-    }
-
-    func debug_setStateCountdown(seconds: Int) {
-        state = .countdown(seconds)
-    }
-
     func debug_setAutoFinish(seconds: Int, remaining: Int) {
         autoFinishSeconds = seconds
         autoFinishRemaining = remaining
@@ -129,10 +119,13 @@ final class ScanSessionController {
         }
 
         autoFinishRemaining = autoFinishSeconds
-        autoFinishTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval(autoFinishSeconds), repeats: false) { [weak self] _ in
+        let finishTimer = Timer(timeInterval: TimeInterval(autoFinishSeconds), repeats: false) { [weak self] _ in
             self?.onAutoFinishTriggered?()
         }
-        autoFinishCountdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+        autoFinishTimer = finishTimer
+        RunLoop.main.add(finishTimer, forMode: .common)
+
+        let countdownTimer = Timer(timeInterval: 1.0, repeats: true) { [weak self] timer in
             guard let self else { return }
             autoFinishRemaining = max(0, autoFinishRemaining - 1)
             if autoFinishRemaining <= 0 {
@@ -140,6 +133,8 @@ final class ScanSessionController {
                 autoFinishCountdownTimer = nil
             }
         }
+        autoFinishCountdownTimer = countdownTimer
+        RunLoop.main.add(countdownTimer, forMode: .common)
     }
 
     private func stopAutoFinishTimers() {

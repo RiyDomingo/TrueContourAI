@@ -3,6 +3,14 @@ import UIKit
 @testable import TrueContourAI
 
 final class HomeCoordinatorTests: XCTestCase {
+    private func makeSettingsViewController(onScansChanged: @escaping () -> Void) -> SettingsViewController {
+        let vc = SettingsViewController(
+            store: SettingsStore(defaults: defaults),
+            storageUseCase: SettingsStorageUseCase(scanService: makeRepository())
+        )
+        vc.onScansChanged = onScansChanged
+        return vc
+    }
 
     private final class TestPresenter: UIViewController {
         var lastPresented: UIViewController?
@@ -50,7 +58,8 @@ final class HomeCoordinatorTests: XCTestCase {
         let coordinator = HomeCoordinator(
             scanService: scanRepository,
             settingsStore: settingsStore,
-            previewSessionState: PreviewSessionState()
+            previewSessionState: PreviewSessionState(),
+            makeSettingsViewController: makeSettingsViewController
         )
 
         coordinator.openLastScan(from: presenter)
@@ -67,7 +76,8 @@ final class HomeCoordinatorTests: XCTestCase {
         let coordinator = HomeCoordinator(
             scanService: scanRepository,
             settingsStore: settingsStore,
-            previewSessionState: PreviewSessionState()
+            previewSessionState: PreviewSessionState(),
+            makeSettingsViewController: makeSettingsViewController
         )
         let folder = tempDir.appendingPathComponent("sample", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -98,7 +108,8 @@ final class HomeCoordinatorTests: XCTestCase {
         let coordinator = HomeCoordinator(
             scanService: scanRepository,
             settingsStore: settingsStore,
-            previewSessionState: PreviewSessionState()
+            previewSessionState: PreviewSessionState(),
+            makeSettingsViewController: makeSettingsViewController
         )
 
         let folder = tempDir.appendingPathComponent("sample", isDirectory: true)
@@ -139,7 +150,8 @@ final class HomeCoordinatorTests: XCTestCase {
         let coordinator = HomeCoordinator(
             scanService: scanRepository,
             settingsStore: settingsStore,
-            previewSessionState: PreviewSessionState()
+            previewSessionState: PreviewSessionState(),
+            makeSettingsViewController: makeSettingsViewController
         )
 
         coordinator.presentScansFolderShare(from: presenter, sourceView: presenter.view)

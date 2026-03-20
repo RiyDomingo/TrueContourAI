@@ -2,14 +2,14 @@ import Foundation
 import UIKit
 
 final class PreviewSessionController {
-    let viewModel: PreviewViewModel
+    let store: PreviewStore
     let sessionState: PreviewSessionState
 
     init(
-        viewModel: PreviewViewModel = PreviewViewModel(),
+        store: PreviewStore,
         sessionState: PreviewSessionState = PreviewSessionState()
     ) {
-        self.viewModel = viewModel
+        self.store = store
         self.sessionState = sessionState
     }
 
@@ -18,7 +18,7 @@ final class PreviewSessionController {
         preservedEarVerificationImage: UIImage? = nil,
         preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata? = nil
     ) -> UUID {
-        viewModel.beginExistingScanSession(
+        store.beginExistingScanSession(
             preservedEarVerificationImage: preservedEarVerificationImage,
             preservedEarVerificationSelectionMetadata: preservedEarVerificationSelectionMetadata
         )
@@ -30,7 +30,7 @@ final class PreviewSessionController {
         preservedEarVerificationImage: UIImage? = nil,
         preservedEarVerificationSelectionMetadata: EarVerificationSelectionMetadata? = nil
     ) -> UUID {
-        viewModel.beginPreviewSession(
+        store.beginPreviewSession(
             sessionMetrics: sessionMetrics,
             preservedEarVerificationImage: preservedEarVerificationImage,
             preservedEarVerificationSelectionMetadata: preservedEarVerificationSelectionMetadata
@@ -38,15 +38,15 @@ final class PreviewSessionController {
     }
 
     func invalidateSession() {
-        viewModel.invalidateSession()
+        store.invalidateSession()
     }
 
     func isCurrentSession(_ sessionID: UUID) -> Bool {
-        viewModel.isCurrentSession(sessionID)
+        store.isCurrentSession(sessionID)
     }
 
     var sessionID: UUID {
-        viewModel.sessionID
+        store.sessionID
     }
 
     var currentPreviewedFolderURL: URL? {
@@ -55,6 +55,6 @@ final class PreviewSessionController {
     }
 
     func clearPreviewArtifacts() {
-        viewModel.clearPreviewArtifacts()
+        store.clearPreviewArtifacts()
     }
 }

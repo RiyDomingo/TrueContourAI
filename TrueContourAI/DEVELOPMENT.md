@@ -76,10 +76,11 @@ xcodebuild test -project TrueContourAI.xcodeproj -scheme TrueContourAIUITests -d
 - Prefer concrete feature collaborators over adding more helper methods inside the same oversized coordinator/controller file.
 
 ## Current Architecture Direction
-- `HomeViewController` should mainly bind and forward intents.
-- `AppScanningViewController` should mainly bind scan UI and camera callbacks, not own all runtime state directly.
-- `ScanPreviewCoordinator` is now composition-focused; new preview behavior should land in preview collaborators first, not back in the coordinator.
-- New scan persistence/export work should target `ScanRepository` / `ScanExporterService`, not expand the legacy `ScanService` compatibility facade.
+- `HomeViewController` should mainly bind `HomeState` and forward `HomeAction`.
+- `AppScanningViewController` should mainly bind `ScanStore` UI and forward scan intents, not own runtime state directly.
+- `PreviewCoordinator` should stay route-only; new preview behavior should land in `PreviewStore`, preview use cases, or narrow preview UI helpers first.
+- `SettingsViewController` should bind `SettingsState`, forward `SettingsAction`, and leave storage work to `SettingsStorageUseCase`.
+- New scan persistence/export work should target `ScanRepository` / `ScanExporterService`.
 
 ## Logging and Diagnostics
 - Use existing structured `Log.*` channels.

@@ -2,18 +2,32 @@ import Foundation
 import UIKit
 import StandardCyborgFusion
 
+struct ScanFolderValidator {
+    let fileManager: FileManager = .default
+
+    func sceneGLTFURL(in folderURL: URL) -> URL? {
+        let gltfURL = folderURL.appendingPathComponent("scene.gltf")
+        return fileManager.fileExists(atPath: gltfURL.path) ? gltfURL : nil
+    }
+
+    func isValidScanFolder(_ folderURL: URL) -> Bool {
+        sceneGLTFURL(in: folderURL) != nil
+    }
+}
+
 struct ScanStorageRepository {
     let scansRootURL: URL
     let defaults: UserDefaults
     let lastScanFolderPathKey: String
     let fileManager: FileManager = .default
+    let folderValidator = ScanFolderValidator()
 
     func ensureScansRootFolder() -> Result<Void, Error> {
         var isDirectory: ObjCBool = false
         if fileManager.fileExists(atPath: scansRootURL.path, isDirectory: &isDirectory) {
             if !isDirectory.boolValue {
                 let error = NSError(
-                    domain: "ScanService",
+                    domain: "ScanStorageRepository",
                     code: 1,
                     userInfo: [NSLocalizedDescriptionKey: "Scans root path exists but is not a directory."]
                 )
@@ -38,6 +52,7 @@ struct ScanStorageRepository {
 
         var items: [ScanItem] = []
         for folder in urls where folder.hasDirectoryPath {
+            guard let gltfURL = folderValidator.sceneGLTFURL(in: folder) else { continue }
             let values = try? folder.resourceValues(forKeys: [.contentModificationDateKey])
             let date = values?.contentModificationDate ?? Date.distantPast
             let overlay = folder.appendingPathComponent("thumbnail_ear_overlay.png")
@@ -46,9 +61,6 @@ struct ScanStorageRepository {
             if fileManager.fileExists(atPath: overlay.path) { thumbURL = overlay }
             else if fileManager.fileExists(atPath: thumb.path) { thumbURL = thumb }
             else { thumbURL = nil }
-
-            let gltf = folder.appendingPathComponent("scene.gltf")
-            let gltfURL = fileManager.fileExists(atPath: gltf.path) ? gltf : nil
 
             items.append(.init(
                 folderURL: folder,
@@ -65,7 +77,8 @@ struct ScanStorageRepository {
     func resolveLastScanFolderURL() -> URL? {
         if let path = defaults.string(forKey: lastScanFolderPathKey) {
             let url = URL(fileURLWithPath: path, isDirectory: true)
-            if fileManager.fileExists(atPath: url.path) { return url }
+            if folderValidator.isValidScanFolder(url) { return url }
+            defaults.removeObject(forKey: lastScanFolderPathKey)
         }
 
         return listScans().first?.folderURL
@@ -269,10 +282,43 @@ struct ScanUITestSeedRepository {
         {"asset":{"version":"2.0"},"scene":0,"scenes":[{"nodes":[]}]}
         """
         try? gltf.data(using: .utf8)?.write(to: gltfURL, options: [.atomic])
+        let summaryURL = seedFolder.appendingPathComponent("scan_summary.json")
+        let summary = ScanSummary(
+            schemaVersion: 2,
+            startedAt: Date(timeIntervalSince1970: 1_725_200_000),
+            finishedAt: Date(timeIntervalSince1970: 1_725_200_005),
+            durationSeconds: 5,
+            overallConfidence: 0.7,
+            completedPoses: 0,
+            skippedPoses: 0,
+            poseRecords: [],
+            pointCountEstimate: 20_000,
+            hadEarVerification: false,
+            processingProfile: nil,
+            derivedMeasurements: .init(
+                sliceHeightNormalized: 0.5,
+                circumferenceMm: 560,
+                widthMm: 170,
+                depthMm: 190,
+                confidence: 0.7,
+                status: "ok"
+            )
+        )
+        if let summaryData = try? JSONEncoder().encode(summary) {
+            try? summaryData.write(to: summaryURL, options: [.atomic])
+        }
         let earViewURL = seedFolder.appendingPathComponent("ear_view.png")
         if let png = Self.makeEarVerificationPNG() {
             try? png.write(to: earViewURL, options: [.atomic])
         }
+        let thumbnailURL = seedFolder.appendingPathComponent("thumbnail.png")
+        if let png = makeThumbnailPNG() {
+            try? png.write(to: thumbnailURL, options: [.atomic])
+        }
+        try? fileManager.setAttributes(
+            [.modificationDate: Date(timeIntervalSince1970: 1_725_200_005)],
+            ofItemAtPath: seedFolder.path
+        )
     }
 
     func seedMissingSceneScanIfNeeded() {

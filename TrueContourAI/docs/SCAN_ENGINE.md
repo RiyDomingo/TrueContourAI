@@ -7,31 +7,44 @@ TrueContourAI scan runtime is built on StandardCyborg components and most closel
 - Camera stream from `CameraManager`
 - Reconstruction through `SCReconstructionManager`
 - Texturing via `SCMeshTexturing`
-- Final handoff into preview/export coordinator
+- Final handoff into `PreviewCoordinator`, `PreviewViewController`, and `PreviewStore`
 
 ## Main Runtime Classes
 - [TrueContourAI/Features/Scan/AppScanningViewController.swift](../TrueContourAI/Features/Scan/AppScanningViewController.swift)
+- [TrueContourAI/Features/Scan/ScanStore.swift](../TrueContourAI/Features/Scan/ScanStore.swift)
+- [TrueContourAI/Features/Scan/ScanCaptureService.swift](../TrueContourAI/Features/Scan/ScanCaptureService.swift)
+- [TrueContourAI/Features/Scan/ScanRuntimeEngine.swift](../TrueContourAI/Features/Scan/ScanRuntimeEngine.swift)
 - [TrueContourAI/Features/Scan/ScanSessionController.swift](../TrueContourAI/Features/Scan/ScanSessionController.swift)
 - [TrueContourAI/Features/Scan/ScanRuntimeController.swift](../TrueContourAI/Features/Scan/ScanRuntimeController.swift)
-- [TrueContourAI/Features/Scan/ScanHUDController.swift](../TrueContourAI/Features/Scan/ScanHUDController.swift)
 - [TrueContourAI/Features/Scan/ScanCoordinator.swift](../TrueContourAI/Features/Scan/ScanCoordinator.swift)
-- [TrueContourAI/Features/Preview/ScanPreviewCoordinator.swift](../TrueContourAI/Features/Preview/ScanPreviewCoordinator.swift)
+- [TrueContourAI/Features/Preview/PreviewCoordinator.swift](../TrueContourAI/Features/Preview/PreviewCoordinator.swift)
+- [TrueContourAI/Features/Preview/PreviewViewController.swift](../TrueContourAI/Features/Preview/PreviewViewController.swift)
 - [TrueContourAI/Core/Services/ScanRepository.swift](../TrueContourAI/Core/Services/ScanRepository.swift)
 - [TrueContourAI/Core/Services/ScanExporterService.swift](../TrueContourAI/Core/Services/ScanExporterService.swift)
 
 ## Lifecycle
 1. `ScanCoordinator.startScanFlow(...)`
 - Checks runtime capability and simulator/device constraints.
-- Creates and configures `AppScanningViewController`.
+- Requests a fully assembled scan feature from `ScanAssembler` and presents `AppScanningViewController`.
 
-2. `AppScanningViewController` starts camera session
-- Receives synchronized color + depth frames.
+2. `AppScanningViewController` binds scan state and forwards scan intents
 - Renders live preview.
-- Accumulates frames into reconstruction manager while scanning.
-- Delegates countdown/auto-finish/session timing to `ScanSessionController`.
-- Delegates thermal + idle-timer lifecycle to `ScanRuntimeController`.
-- Delegates guidance/prompt/progress/HUD visibility state to `ScanHUDController`.
+- Forwards start, finish, dismiss, and focus events into `ScanStore`.
+- Applies `ScanStore` state/effects to the scan HUD and accessibility surface.
 - Hot-path rule: camera callbacks must not create `UIImage` / `CIImage` / `CIContext`, run ML, or do heavy scoring/allocation work. Any preserved-frame design must use bounded retention and defer conversion until after scanning.
+
+3. `ScanCaptureService` owns the TrueDepth capture session
+- Starts/stops `CameraManager`.
+- Delivers synchronized color + depth frames.
+- Handles focus requests and camera lifecycle.
+
+4. `ScanRuntimeEngine` owns reconstruction/runtime work
+- Consumes frame payloads from `ScanCaptureService`.
+- Drives reconstruction, metrics, thermal warnings, and preview payload creation.
+
+5. `ScanSessionController` and `ScanRuntimeController`
+- `ScanSessionController` owns countdown and auto-finish timer mechanics.
+- `ScanRuntimeController` owns runtime-side lifecycle concerns such as idle-timer handling.
 
 ## Hot Path Constraints
 - Allowed in camera / reconstruction callbacks:
@@ -54,19 +67,21 @@ TrueContourAI scan runtime is built on StandardCyborg components and most closel
 - Validate depth resolution and texture-save interval on the connected TrueDepth iPhone before and after changes.
 - Compare tracking stability, preview output, and export behavior against the pre-change device baseline.
 
-3. Reconstruction callbacks
+6. Reconstruction callbacks
 - Uses `SCReconstructionManagerDelegate` callbacks for tracking state.
 - Saves color buffers periodically for mesh texturing.
 
-4. Finish/cancel behavior
+7. Finish/cancel behavior
+- `ScanStore` owns the UI-facing finish/cancel state transitions.
 - Cancel path resets reconstruction and returns delegate cancel callback.
 - Manual finish path finalizes reconstruction, builds point cloud, and returns delegate scan callback.
 - Auto-finish uses the configured scan duration when enabled.
 - Both finish paths should be validated on a physical TrueDepth device.
 
-5. Preview and export
-- `ScanPreviewCoordinator` now acts primarily as a preview composition/entrypoint object.
-- Preview session, routing, export, reset, interaction, and scene UI are split into dedicated preview collaborators.
+8. Preview and export
+- `PreviewCoordinator` routes presentation only.
+- `PreviewViewController` hosts preview UI and forwards intents into `PreviewStore`.
+- `PreviewExportUseCase` performs save prechecks and export execution.
 - Quality gate can block export if thresholds fail.
 - Save flow calls `ScanExporterService.exportScanFolder(...)`.
 - Existing-scan reopen flows load summaries/artifacts through `ScanRepository`.
@@ -76,7 +91,7 @@ TrueContourAI scan runtime is built on StandardCyborg components and most closel
   - metadata/thumbnail outputs remain part of the saved scan folder flow
 
 ## Important Seams Added for Testability
-`AppScanningViewController` now has protocol seams around high-risk dependencies:
+`AppScanningViewController` and the scan runtime now use protocol seams around high-risk dependencies:
 - `ReconstructionManaging`
 - `CameraManaging`
 - `ScanningHapticFeedbackProviding`

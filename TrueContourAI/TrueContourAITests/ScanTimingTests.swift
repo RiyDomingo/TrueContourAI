@@ -64,7 +64,26 @@ final class ScanTimingTests: XCTestCase {
             settingsStore: SettingsStore(),
             earServiceFactory: { nil }
         )
-        return HomeViewController(dependencies: deps)
+        let settingsAssembler = SettingsAssembler(dependencies: deps)
+        let scanAssembler = ScanAssembler(dependencies: deps)
+        let previewAssembler = PreviewAssembler(dependencies: deps)
+        return HomeAssembler(
+            dependencies: deps,
+            makeSettingsViewController: { onScansChanged in
+                settingsAssembler.makeSettingsViewController(onScansChanged: onScansChanged)
+            },
+            makeScanCoordinator: {
+                scanAssembler.makeScanCoordinator()
+            },
+            makePreviewCoordinator: { presenter, scanFlowState, previewSessionState, onToast in
+                previewAssembler.makePreviewCoordinator(
+                    presenter: presenter,
+                    scanFlowState: scanFlowState,
+                    previewSessionState: previewSessionState,
+                    onToast: onToast
+                )
+            }
+        ).makeHomeViewController()
     }
 }
 

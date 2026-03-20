@@ -14,17 +14,14 @@ final class ScanCoordinator {
     typealias CameraAuthorizationStatusProvider = () -> AVAuthorizationStatus
     typealias CameraAccessRequester = (@escaping (Bool) -> Void) -> Void
 
-    private let settingsStore: SettingsStore
     private let environment: AppEnvironment
     private let deviceCapabilityProvider: DeviceCapabilityProvider
     private let scanningViewControllerFactory: ScanningViewControllerFactory
     private let simulatorProvider: SimulatorProvider
     private let cameraAuthorizationStatusProvider: CameraAuthorizationStatusProvider
     private let cameraAccessRequester: CameraAccessRequester
-    private weak var activeScanVC: AppScanningViewController?
 
     init(
-        settingsStore: SettingsStore,
         environment: AppEnvironment = .current,
         deviceCapabilityProvider: @escaping DeviceCapabilityProvider,
         scanningViewControllerFactory: @escaping ScanningViewControllerFactory = { AppScanningViewController() },
@@ -32,7 +29,6 @@ final class ScanCoordinator {
         cameraAuthorizationStatusProvider: @escaping CameraAuthorizationStatusProvider = ScanCoordinator.defaultCameraAuthorizationStatus,
         cameraAccessRequester: @escaping CameraAccessRequester = ScanCoordinator.defaultRequestCameraAccess
     ) {
-        self.settingsStore = settingsStore
         self.environment = environment
         self.deviceCapabilityProvider = deviceCapabilityProvider
         self.scanningViewControllerFactory = scanningViewControllerFactory
@@ -42,7 +38,6 @@ final class ScanCoordinator {
     }
 
     convenience init(
-        settingsStore: SettingsStore,
         environment: AppEnvironment = .current,
         scanningViewControllerFactory: @escaping ScanningViewControllerFactory = { AppScanningViewController() },
         simulatorProvider: @escaping SimulatorProvider = ScanCoordinator.defaultSimulatorState,
@@ -50,7 +45,6 @@ final class ScanCoordinator {
         cameraAccessRequester: @escaping CameraAccessRequester = ScanCoordinator.defaultRequestCameraAccess
     ) {
         self.init(
-            settingsStore: settingsStore,
             environment: environment,
             deviceCapabilityProvider: { ScanCoordinator.defaultTrueDepthAvailability(environment: environment) },
             scanningViewControllerFactory: scanningViewControllerFactory,
@@ -127,48 +121,11 @@ final class ScanCoordinator {
     ) {
         scanFlowState.startScanSession()
         let scanningVC = scanningViewControllerFactory()
-        let processingConfig = settingsStore.processingConfig
-        let captureTuning = suggestedCaptureTuning(for: processingConfig)
-        scanningVC.autoFinishSeconds = settingsStore.scanDurationSeconds
         scanningVC.delegate = delegate
-        scanningVC.generatesTexturedMeshes = true
-        scanningVC.requiresManualFinish = true
-        scanningVC.developerModeEnabled = settingsStore.developerModeEnabled
-        scanningVC.maxDepthResolution = captureTuning.maxDepthResolution
-        scanningVC.texturedMeshColorBufferSaveInterval = captureTuning.textureSaveInterval
         scanningVC.modalPresentationStyle = .fullScreen
-        scanningVC.onRealtimeGuidance = { [weak scanFlowState] hint in
-            guard let scanFlowState else { return }
-            if !hint.isEmpty {
-                scanFlowState.setPhase(.scanning)
-            }
-        }
-        Log.scanning.info(
-            """
-            Applied processing config: outlierSigma=\(processingConfig.outlierSigma, privacy: .public) \
-            decimateRatio=\(processingConfig.decimateRatio, privacy: .public) \
-            cropBelowNeck=\(processingConfig.cropBelowNeck, privacy: .public) \
-            meshResolution=\(processingConfig.meshResolution, privacy: .public) \
-            meshSmoothness=\(processingConfig.meshSmoothness, privacy: .public) \
-            maxDepthResolution=\(scanningVC.maxDepthResolution, privacy: .public) \
-            textureSaveInterval=\(scanningVC.texturedMeshColorBufferSaveInterval, privacy: .public)
-            """
-        )
-
-        activeScanVC = scanningVC
-        scanningVC.configureManualFinishButton(
-            title: L("common.finish"),
-            target: self,
-            action: #selector(finishScanNowTapped(_:))
-        )
-
         presenter.present(scanningVC, animated: true) {
             onPresented(scanningVC)
         }
-    }
-
-    @objc private func finishScanNowTapped(_ sender: UIButton) {
-        activeScanVC?.finishScanNow()
     }
 
     private func alert(title: String, message: String) -> UIAlertController {
@@ -208,44 +165,4 @@ final class ScanCoordinator {
     private static func defaultRequestCameraAccess(_ completion: @escaping (Bool) -> Void) {
         AVCaptureDevice.requestAccess(for: .video, completionHandler: completion)
     }
-
-    private func suggestedCaptureTuning(for config: SettingsStore.ProcessingConfig) -> ScanCaptureTuning {
-        // Heavier processing configs are more likely to destabilize live capture, so bias toward
-        // lower depth resolution and less frequent texture retention in exchange for steadier scans.
-        let isHeavyConfig = config.decimateRatio > 1.25 || config.meshResolution <= 5
-        let maxDepthResolution = isHeavyConfig ? 256 : 320
-        let scaledInterval = Int(round(8.0 * Double(max(0.5, config.decimateRatio))))
-        let minimumInterval = isHeavyConfig ? 6 : 4
-        let maximumInterval = isHeavyConfig ? 20 : 16
-        let textureSaveInterval = max(
-            minimumInterval,
-            min(maximumInterval, scaledInterval + (isHeavyConfig ? 2 : 0))
-        )
-        return ScanCaptureTuning(
-            maxDepthResolution: maxDepthResolution,
-            textureSaveInterval: textureSaveInterval
-        )
-    }
-
-    private func suggestedDepthResolution(for config: SettingsStore.ProcessingConfig) -> Int {
-        suggestedCaptureTuning(for: config).maxDepthResolution
-    }
-
-    private func suggestedColorBufferInterval(for config: SettingsStore.ProcessingConfig) -> Int {
-        suggestedCaptureTuning(for: config).textureSaveInterval
-    }
-
-#if DEBUG
-    func debug_suggestedCaptureTuning(for config: SettingsStore.ProcessingConfig) -> ScanCaptureTuning {
-        suggestedCaptureTuning(for: config)
-    }
-
-    func debug_suggestedDepthResolution(for config: SettingsStore.ProcessingConfig) -> Int {
-        suggestedDepthResolution(for: config)
-    }
-
-    func debug_suggestedColorBufferInterval(for config: SettingsStore.ProcessingConfig) -> Int {
-        suggestedColorBufferInterval(for: config)
-    }
-#endif
 }

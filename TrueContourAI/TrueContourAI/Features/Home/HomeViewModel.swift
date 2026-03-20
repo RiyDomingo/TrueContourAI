@@ -1,20 +1,60 @@
 import Foundation
 
-final class HomeViewModel {
-    struct ViewState {
-        let scans: [ScanItem]
-        let totalScanCount: Int
-        let isEmpty: Bool
-        let canViewLast: Bool
-        let sortMode: ScanSortMode
-        let filterMode: ScanFilterMode
-        let trend: HomeTrend?
+enum ScanQualityTier: Equatable {
+    case high
+    case medium
+    case low
+}
 
-        var isFilteredEmpty: Bool {
-            isEmpty && totalScanCount > 0 && filterMode == .goodPlus
-        }
+struct HomeState: Equatable {
+    let status: Status
+    let viewData: HomeViewData
+
+    enum Status: Equatable {
+        case idle
+        case loading
+        case loaded
+        case failed(String)
     }
+}
 
+enum HomeAction {
+    case viewDidLoad
+    case viewWillAppear
+    case sortChanged(HomeViewModel.ScanSortMode)
+    case filterChanged(HomeViewModel.ScanFilterMode)
+    case clearFilter
+    case scansChangedExternally
+}
+
+enum HomeEffect: Equatable {
+    case refreshDiagnostics
+}
+
+struct HomeViewData: Equatable {
+    let scanRows: [HomeScanRowViewData]
+    let totalScanCount: Int
+    let isEmpty: Bool
+    let isFilteredEmpty: Bool
+    let canViewLast: Bool
+    let selectedSortMode: HomeViewModel.ScanSortMode
+    let selectedFilterMode: HomeViewModel.ScanFilterMode
+    let subtitleText: String
+    let trendText: String?
+    let trendAccessibilityText: String?
+}
+
+struct HomeScanRowViewData: Equatable {
+    let folderURL: URL
+    let title: String
+    let subtitle: String?
+    let qualityTier: ScanQualityTier?
+    let confidencePercentText: String?
+    let thumbnailURL: URL?
+    let isOpenEnabled: Bool
+}
+
+final class HomeViewModel {
     struct ScanQualityBadge {
         enum Tier {
             case high
@@ -25,12 +65,12 @@ final class HomeViewModel {
         let tier: Tier
     }
 
-    enum ScanSortMode: Int {
+    enum ScanSortMode: Int, Equatable {
         case dateNewest = 0
         case qualityHighest = 1
     }
 
-    enum ScanFilterMode: Int {
+    enum ScanFilterMode: Int, Equatable {
         case all = 0
         case goodPlus = 1
     }
@@ -59,28 +99,85 @@ final class HomeViewModel {
     }
 
     private let scanService: ScanListing
-    var onChange: (() -> Void)?
-    private var refreshGeneration: Int = 0
-
-    private(set) var scans: [ScanItem] = []
-    private(set) var totalScanCount: Int = 0
+    private var refreshGeneration = 0
     private var allScans: [ScanItem] = []
-    private(set) var isEmpty: Bool = true
-    private(set) var canViewLast: Bool = false
-    private(set) var insightsByFolderPath: [String: ScanInsight] = [:]
+    private var insightsByFolderPath: [String: ScanInsight] = [:]
     private var qualityScoreByFolderPath: [String: Float] = [:]
     private var qualityBadgeByFolderPath: [String: ScanQualityBadge] = [:]
-    private(set) var trend: HomeTrend?
-    private(set) var sortMode: ScanSortMode = .dateNewest
-    private(set) var filterMode: ScanFilterMode = .all
+    private var trend: HomeTrend?
+    private var sortMode: ScanSortMode = .dateNewest
+    private var filterMode: ScanFilterMode = .all
+    private var itemsByFolderPath: [String: ScanItem] = [:]
+
+    private(set) var state: HomeState = .init(
+        status: .idle,
+        viewData: HomeViewData(
+            scanRows: [],
+            totalScanCount: 0,
+            isEmpty: true,
+            isFilteredEmpty: false,
+            canViewLast: false,
+            selectedSortMode: .dateNewest,
+            selectedFilterMode: .all,
+            subtitleText: L("home.subtitle"),
+            trendText: nil,
+            trendAccessibilityText: nil
+        )
+    ) {
+        didSet {
+            guard oldValue != state else { return }
+            emitStateChange()
+        }
+    }
+
+    var onStateChange: ((HomeState) -> Void)?
+    var onEffect: ((HomeEffect) -> Void)?
 
     init(scanService: ScanListing) {
         self.scanService = scanService
     }
 
-    func refresh() {
+    var scans: [ScanItem] {
+        state.viewData.scanRows.compactMap { itemsByFolderPath[$0.folderURL.path] }
+    }
+
+    var totalScanCount: Int {
+        state.viewData.totalScanCount
+    }
+
+    func send(_ action: HomeAction) {
+        switch action {
+        case .viewDidLoad:
+            refresh(status: .loading)
+        case .viewWillAppear:
+            refresh()
+            emitEffect(.refreshDiagnostics)
+        case .sortChanged(let newMode):
+            guard sortMode != newMode else { return }
+            sortMode = newMode
+            rebuildLoadedState()
+        case .filterChanged(let newMode):
+            guard filterMode != newMode else { return }
+            filterMode = newMode
+            rebuildLoadedState()
+        case .clearFilter:
+            guard filterMode != .all else { return }
+            filterMode = .all
+            rebuildLoadedState()
+        case .scansChangedExternally:
+            refresh()
+            emitEffect(.refreshDiagnostics)
+        }
+    }
+
+    func scanItem(for folderURL: URL) -> ScanItem? {
+        itemsByFolderPath[folderURL.path]
+    }
+
+    private func refresh(status: HomeState.Status = .loaded) {
         refreshGeneration += 1
         let generation = refreshGeneration
+        state = .init(status: status, viewData: state.viewData)
         scanService.listScansAsync { [weak self] items in
             guard let self else { return }
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -90,53 +187,85 @@ final class HomeViewModel {
                 let qualityScores = self.buildQualityScores(summariesByPath: summaries)
                 let qualityBadges = self.buildQualityBadges(summariesByPath: summaries)
                 let trend = self.buildTrend(for: items, summariesByPath: summaries)
-                DispatchQueue.main.async {
-                    guard self.refreshGeneration == generation else { return }
+                DispatchQueue.main.async { [weak self] in
+                    guard let self, self.refreshGeneration == generation else { return }
                     self.allScans = items
+                    self.itemsByFolderPath = Dictionary(uniqueKeysWithValues: items.map { ($0.folderURL.path, $0) })
                     self.insightsByFolderPath = insights
                     self.qualityScoreByFolderPath = qualityScores
                     self.qualityBadgeByFolderPath = qualityBadges
                     self.trend = trend
-                    self.applyPresentation()
-                    self.canViewLast = self.scanService.resolveLastScanGLTFURL() != nil
-                    self.onChange?()
+                    self.rebuildLoadedState()
                 }
             }
         }
     }
 
-    func updateSortMode(_ newMode: ScanSortMode) {
-        guard sortMode != newMode else { return }
-        sortMode = newMode
-        applyPresentation()
-        onChange?()
-    }
+    private func rebuildLoadedState() {
+        let filteredItems: [ScanItem]
+        switch filterMode {
+        case .all:
+            filteredItems = allScans
+        case .goodPlus:
+            filteredItems = allScans.filter {
+                (qualityScoreByFolderPath[$0.folderURL.path] ?? 0.0) >= 0.8
+            }
+        }
 
-    func updateFilterMode(_ newMode: ScanFilterMode) {
-        guard filterMode != newMode else { return }
-        filterMode = newMode
-        applyPresentation()
-        onChange?()
-    }
+        let sortedItems: [ScanItem]
+        switch sortMode {
+        case .dateNewest:
+            sortedItems = filteredItems.sorted { $0.date > $1.date }
+        case .qualityHighest:
+            sortedItems = filteredItems.sorted { lhs, rhs in
+                let lhsScore = qualityScoreByFolderPath[lhs.folderURL.path] ?? -1
+                let rhsScore = qualityScoreByFolderPath[rhs.folderURL.path] ?? -1
+                if lhsScore == rhsScore {
+                    return lhs.date > rhs.date
+                }
+                return lhsScore > rhsScore
+            }
+        }
 
-    func insight(for item: ScanItem) -> ScanInsight? {
-        insightsByFolderPath[item.folderURL.path]
-    }
-
-    func qualityBadge(for item: ScanItem) -> ScanQualityBadge? {
-        qualityBadgeByFolderPath[item.folderURL.path]
-    }
-
-    func makeViewState() -> ViewState {
-        .init(
-            scans: scans,
-            totalScanCount: totalScanCount,
-            isEmpty: isEmpty,
-            canViewLast: canViewLast,
-            sortMode: sortMode,
-            filterMode: filterMode,
-            trend: trend
+        let trendDisplay = trend.map(HomeDisplayFormatter.trend)
+        let rows = sortedItems.map(makeRowViewData(for:))
+        let viewData = HomeViewData(
+            scanRows: rows,
+            totalScanCount: allScans.count,
+            isEmpty: rows.isEmpty,
+            isFilteredEmpty: rows.isEmpty && !allScans.isEmpty && filterMode == .goodPlus,
+            canViewLast: scanService.resolveLastScanGLTFURL() != nil,
+            selectedSortMode: sortMode,
+            selectedFilterMode: filterMode,
+            subtitleText: L("home.subtitle"),
+            trendText: trendDisplay?.compactText,
+            trendAccessibilityText: trendDisplay?.accessibilityText
         )
+        state = .init(status: .loaded, viewData: viewData)
+    }
+
+    private func makeRowViewData(for item: ScanItem) -> HomeScanRowViewData {
+        let insight = insightsByFolderPath[item.folderURL.path]
+        let badge = qualityBadgeByFolderPath[item.folderURL.path]
+        let subtitle = insight.map { HomeDisplayFormatter.insight($0).compactText }
+        let confidencePercentText = insight.map { "\($0.confidencePercent)%" }
+        return HomeScanRowViewData(
+            folderURL: item.folderURL,
+            title: item.displayName,
+            subtitle: subtitle,
+            qualityTier: badge.map(Self.mapTier),
+            confidencePercentText: confidencePercentText,
+            thumbnailURL: item.thumbnailURL,
+            isOpenEnabled: item.sceneGLTFURL != nil
+        )
+    }
+
+    private static func mapTier(_ tier: ScanQualityBadge) -> ScanQualityTier {
+        switch tier.tier {
+        case .high: return .high
+        case .medium: return .medium
+        case .low: return .low
+        }
     }
 
     private func buildSummaries(for items: [ScanItem]) -> [String: ScanSummary] {
@@ -197,33 +326,24 @@ final class HomeViewModel {
         return badges
     }
 
-    private func applyPresentation() {
-        totalScanCount = allScans.count
-        let filtered: [ScanItem]
-        switch filterMode {
-        case .all:
-            filtered = allScans
-        case .goodPlus:
-            filtered = allScans.filter { item in
-                let score = qualityScoreByFolderPath[item.folderURL.path] ?? 0.0
-                return score >= 0.8
+    private func emitStateChange() {
+        if Thread.isMainThread {
+            onStateChange?(state)
+        } else {
+            DispatchQueue.main.async { [weak self, state] in
+                self?.onStateChange?(state)
             }
         }
+    }
 
-        switch sortMode {
-        case .dateNewest:
-            scans = filtered.sorted { $0.date > $1.date }
-        case .qualityHighest:
-            scans = filtered.sorted { lhs, rhs in
-                let lhsScore = qualityScoreByFolderPath[lhs.folderURL.path] ?? -1
-                let rhsScore = qualityScoreByFolderPath[rhs.folderURL.path] ?? -1
-                if lhsScore == rhsScore {
-                    return lhs.date > rhs.date
-                }
-                return lhsScore > rhsScore
+    private func emitEffect(_ effect: HomeEffect) {
+        if Thread.isMainThread {
+            onEffect?(effect)
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                self?.onEffect?(effect)
             }
         }
-        isEmpty = scans.isEmpty
     }
 }
 
